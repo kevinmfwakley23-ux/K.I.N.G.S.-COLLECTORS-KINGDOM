@@ -1,0 +1,22 @@
+import { readdir, readFile } from "node:fs/promises";
+import { resolve } from "node:path";
+
+const root = resolve(new URL("..", import.meta.url).pathname);
+const contractFiles = [
+  "config/runtime.mjs",
+  "packages/core/src/health.mjs",
+  "packages/observability/src/logger.mjs",
+  "apps/web/server.mjs"
+];
+
+for (const relative of contractFiles) {
+  const source = await readFile(resolve(root, relative), "utf8");
+  if (!source.includes("export ") && !relative.endsWith("server.mjs")) {
+    throw new Error(`${relative} exposes no explicit module contract.`);
+  }
+}
+
+const entries = await readdir(resolve(root, "packages"), { withFileTypes: true });
+if (!entries.some((entry) => entry.isDirectory())) throw new Error("No package boundaries found.");
+
+console.log("Type contract check passed for the JavaScript foundation. No TypeScript source is present yet.");
