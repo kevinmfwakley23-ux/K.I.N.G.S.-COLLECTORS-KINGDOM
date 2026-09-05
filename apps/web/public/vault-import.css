@@ -1,0 +1,30 @@
+.import-card { width: min(900px, calc(100vw - 2rem)); }
+.import-form { display: grid; gap: 1rem; margin: 1rem 0; }
+.import-file-label { display: grid; gap: .45rem; font: 700 .82rem/1.3 system-ui, sans-serif; }
+.import-file-label input { border: 1px solid var(--line); background: white; padding: .8rem; }
+.import-option { display: flex; gap: .7rem; align-items: flex-start; margin: 0; font: .84rem/1.45 system-ui, sans-serif; color: var(--ink-soft); }
+.import-option input { width: auto; margin-top: .15rem; }
+.import-actions { display: flex; gap: .7rem; flex-wrap: wrap; }
+.import-status { min-height: 1.4rem; }
+.import-summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .65rem; margin: 1rem 0; }
+.import-summary-cell { border: 1px solid var(--line); background: rgba(255,255,255,.72); padding: .8rem; display: grid; gap: .35rem; }
+.import-summary-cell span { color: var(--ink-soft); font: 700 .65rem/1.2 system-ui, sans-serif; text-transform: uppercase; letter-spacing: .06em; }
+.import-summary-cell strong { font: 600 1.3rem/1.1 Georgia, serif; }
+.import-results { margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 1rem; }
+.import-results h3 { margin: 0 0 .75rem; }
+.import-result-list { max-height: 360px; overflow: auto; margin: 0; padding: 0; list-style: none; display: grid; gap: .55rem; }
+.import-row { border: 1px solid var(--line); background: rgba(255,255,255,.72); padding: .75rem .85rem; font: .82rem/1.45 system-ui, sans-serif; }
+.import-row-invalid { border-left: 4px solid #8b3d31; }
+.import-row-valid { border-left: 4px solid var(--gold); }
+.import-row-category { display: block; color: var(--ink-soft); margin-top: .2rem; }
+.import-row-error, .import-row-warning { margin: .35rem 0 0; }
+.import-row-error { color: #71352b; font-weight: 700; }
+.import-row-warning { color: #6a5318; }
+.import-row-note { color: var(--ink-soft); font-style: italic; }
+@media (max-width: 760px) {
+  .import-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  .import-summary { grid-template-columns: 1fr; }
+  .import-actions > * { width: 100%; }
+}
