@@ -6,19 +6,21 @@ K.I.N.G.S. Collector's Kingdom is being built as a collector-first environment f
 
 Active milestone: **IMP-005 — Royal Vault, Phase 1**.
 
-**Latest verified checkpoint:** the Royal Vault now includes permanent owner-scoped treasure records, hierarchical storage, secure private media, Kingdom voice/talk-to-text, transactional JSON/CSV migration, a cross-device **Royal Intake Queue**, a **secure progressive barcode scanner**, and the first real **review-only external catalog candidate provider** for ISBN/book intake.
+**Latest verified checkpoint:** the Royal Vault now includes permanent owner-scoped treasure records, hierarchical storage, secure private media, Kingdom voice/talk-to-text, transactional JSON/CSV migration, a cross-device **Royal Intake Queue**, a **secure progressive barcode scanner**, and real **review-only external catalog candidate resolution** for ISBN plus UPC/EAN/GTIN retail identifiers.
 
-Latest verified code gate: **Kingdom Quality Gates #379** — run `33960516422` — **PASS** on commit `62aa769353fc6fee1dc87850bb3390491c7d5b19`.
+Latest verified code gate: **Kingdom Quality Gates #396** — run `33961349239` — **PASS** on commit `3175e5f74f55c0dca4d72ed634b572128d032044`.
 
-Pending ISBN captures can request Open Library metadata evidence, inspect the provider/source/reason, and copy a selected candidate into a new **unsaved** Book editor. Lookup itself performs no Vault mutation, and an ISBN/provider result is never treated as proof of an exact edition or authoritative treasure identity.
+Pending ISBN captures can request Open Library book evidence. Pending UPC/EAN captures can request UPCitemdb product evidence. Both workflows show provider/source/reason and copy only allowlisted metadata into a new **unsaved** treasure editor. Lookup itself performs no Vault mutation, never changes market value, and never treats a provider result as proof of an exact collectible variant.
 
-The next engineering target is broader review-only identifier coverage, beginning with a carefully rate-limited UPC/EAN candidate adapter only if current provider terms and free-tier constraints can be honored safely. Evidence-backed market valuation, image recognition, broad trading-card/comic/game/music catalog coverage, and Marketplace ownership mutations remain separate future milestones and are not represented as live.
+UPCitemdb financial/merchant fields are intentionally excluded from the identification layer. Provider prices, offers, merchant links, and provider images are not mapped into Vault value or purchase fields.
+
+The next engineering target is a structured **Provenance & Ownership Ledger** tied to permanent treasure UUIDs: append-oriented acquisition, ownership evidence, supporting-document, custody/loan, disposition, loss/recovery, and correction events that remain portable and auditable. Evidence-backed market valuation, image recognition, broad trading-card/comic/game/music catalog coverage, and Marketplace ownership mutations remain separate future milestones and are not represented as live.
 
 ## Durable engineering records
 
 - [`docs/MISSION-STATEMENT.md`](docs/MISSION-STATEMENT.md) — permanent engineering mission and authority order.
 - [`docs/MISSION-PROGRESS.md`](docs/MISSION-PROGRESS.md) — exact recoverable build state, verification evidence, limitations, and next target.
-- [`docs/research/`](docs/research/) — dated competitor, GitHub, standards, provider/API, and technical reconnaissance used before meaningful build work.
+- [`docs/research/`](docs/research/) — dated competitor, standards, provider/API, GitHub, and technical reconnaissance used before meaningful build work.
 
 After every substantial verified implementation milestone, `docs/MISSION-PROGRESS.md` must be updated so development can resume from the repository rather than depending on a chat session.
 
@@ -26,7 +28,7 @@ After every substantial verified implementation milestone, `docs/MISSION-PROGRES
 
 - Build real, executable, production-oriented functionality; never present simulated integrations or decorative-only interfaces as complete features.
 - Verify changes with the strongest available lint, contract, automated-test, production-build, artifact, and dependency-audit gates.
-- Never fabricate collection totals, market values, Marketplace activity, notifications, identification certainty, or other domain data when no authoritative evidence exists.
+- Never fabricate collection totals, market values, Marketplace activity, notifications, identification certainty, provenance verification, or other domain data when no authoritative evidence exists.
 - Never commit credentials, provider keys, access tokens, or secrets.
 - Keep collector authority over destructive, ownership-changing, and authoritative record actions.
 - AI and provider assistance must surface uncertainty rather than silently inventing an identification, value, provenance claim, or exact variant.
@@ -116,28 +118,32 @@ Camera permission is least-privilege: `/vault.html` receives `camera=(self)`, wh
 
 ### Review-only external catalog evidence
 
-The first external provider is Open Library for low-volume ISBN/book candidate lookup. The provider-neutral catalog boundary includes:
+The provider-neutral catalog boundary now supports two real evidence providers:
 
-- ISBN-10/ISBN-13 checksum validation before network use;
+- **Open Library** for low-volume ISBN/book candidate lookup;
+- **UPCitemdb** for low-volume checksum-valid UPC/EAN/GTIN retail product candidate lookup.
+
+The catalog boundary includes:
+
+- ISBN and GS1 checksum validation before network use;
 - HTTPS-only external provider transport outside local testing;
-- bounded timeout and response size;
-- conservative serialized request rate;
-- bounded cache;
-- optional configured contact identity rather than a hard-coded address;
+- bounded timeouts and response sizes;
+- provider-specific conservative serialized request rates;
+- bounded shared cache;
 - source URL/provider record/evidence reason;
 - explicit `reviewRequired` candidate semantics;
 - authenticated Kingdom API rather than direct browser/provider authority;
 - no lookup-time Vault mutation;
-- review-only copy into a new unsaved Book editor.
+- review-only copy into a new unsaved treasure editor.
 
-The browser displays provider candidates as evidence. The collector still decides whether the metadata belongs to the physical item and must explicitly save the treasure record.
+UPCitemdb's free-plan limits are treated as engineering constraints, including a default 10-second provider request interval. Retail provider price, offer, merchant, and image data are deliberately excluded from the identification candidate model and cannot become Kingdom valuation evidence.
 
 ## Truthfulness boundary
 
-Market values remain absent until a real evidence-backed valuation service is implemented. A barcode, image, title match, external provider result, AI suggestion, ISBN match, or catalog ID is not automatically authoritative. Provider identifiers may support evidence and discovery, but the permanent Kingdom treasure UUID remains the authoritative item identity.
+Market values remain absent until a real evidence-backed valuation service is implemented. A barcode, image, title match, external provider result, AI suggestion, ISBN match, catalog ID, receipt note, or collector-entered provenance statement is not automatically authoritative. Provider identifiers may support evidence and discovery, but the permanent Kingdom treasure UUID remains the authoritative item identity.
 
 ## Current next target
 
-**Broader identifier candidate coverage — first safe UPC/EAN slice.**
+**Provenance & Ownership Ledger.**
 
-Current research shows UPCitemdb offers UPC/EAN/GTIN lookup, including a no-signup free tier, but its free usage is tightly rate-limited and provider terms disclaim data accuracy. Any Kingdom adapter will therefore remain review-only, cached, rate-aware, server-side, and honest about unavailable/rate-limited states. Restricted merchant/offer data will not be treated as valuation evidence.
+The next Vault slice will add owner-scoped append-oriented lifecycle events tied to permanent treasure UUIDs. It will preserve acquisition source/method, supporting references, optional monetary transaction facts separated by currency, loans/custody, disposition, loss/recovery, and corrections without turning collector-entered claims into independently verified provenance.
