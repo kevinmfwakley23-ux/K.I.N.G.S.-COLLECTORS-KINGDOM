@@ -5,7 +5,8 @@ const REVIEW_POLICIES = Object.freeze({
   "pokemon-card-id": Object.freeze({ actionLabel: "Find Pokémon card candidate", loadingMessage: "Requesting review-only Pokémon card evidence…", noMatchMessage: "No Pokémon TCG candidate was returned for this exact provider card ID. Nothing in the Vault was changed; verify the ID or continue with manual entry.", defaultCategory: "Trading Card" }),
   "pokemon-set-number": Object.freeze({ actionLabel: "Find Pokémon card candidate", loadingMessage: "Requesting review-only Pokémon set/card evidence…", noMatchMessage: "No Pokémon TCG candidate was returned for this exact set/card key. Nothing in the Vault was changed; verify the set ID and printed card number or continue with manual entry.", defaultCategory: "Trading Card" }),
   "mtg-scryfall-id": Object.freeze({ actionLabel: "Find Magic printing candidate", loadingMessage: "Requesting review-only Scryfall printing evidence…", noMatchMessage: "No Scryfall card printing was returned for this exact printing ID. Nothing in the Vault was changed; verify the ID or continue with manual entry.", defaultCategory: "Trading Card" }),
-  "mtg-set-number": Object.freeze({ actionLabel: "Find Magic printing candidate", loadingMessage: "Requesting review-only Magic set/collector evidence…", noMatchMessage: "No Scryfall printing was returned for this exact set code and collector number. Nothing in the Vault was changed; verify the key or continue with manual entry.", defaultCategory: "Trading Card" })
+  "mtg-set-number": Object.freeze({ actionLabel: "Find Magic printing candidate", loadingMessage: "Requesting review-only Magic set/collector evidence…", noMatchMessage: "No Scryfall printing was returned for this exact set code and collector number. Nothing in the Vault was changed; verify the key or continue with manual entry.", defaultCategory: "Trading Card" }),
+  "psa-cert": Object.freeze({ actionLabel: "Verify PSA cert record", loadingMessage: "Requesting PSA certification-database evidence…", noMatchMessage: "PSA returned no certification database record for this number. Nothing in the Vault was changed.", defaultCategory: null, certificationOnly: true })
 });
 
 function normalizedType(value) {
@@ -32,7 +33,31 @@ export function catalogReviewPolicy(identifierType) {
   return Object.freeze({ identifierType: type, supported: Boolean(policy), ...(policy ?? {}) });
 }
 
+function psaSummary(fields) {
+  const psa = fields?.psaCert ?? null;
+  const dna = fields?.dnaCert ?? null;
+  const parts = [];
+  if (psa) {
+    if (psa.year) parts.push(psa.year);
+    if (psa.brand) parts.push(psa.brand);
+    if (psa.subject) parts.push(psa.subject);
+    if (psa.cardNumber) parts.push(`#${psa.cardNumber}`);
+    if (psa.variety) parts.push(psa.variety);
+    if (psa.gradeDescription || psa.cardGrade) parts.push(`PSA ${psa.gradeDescription ?? psa.cardGrade}`);
+    if (psa.itemStatus) parts.push(psa.itemStatus);
+  }
+  if (dna) {
+    if (dna.itemDescription) parts.push(dna.itemDescription);
+    if (dna.authenticationResult) parts.push(`PSA/DNA ${dna.authenticationResult}`);
+    if (dna.signatureGrade) parts.push(`Signature ${dna.signatureGrade}`);
+  }
+  return parts.join(" • ");
+}
+
 export function catalogCandidateSummary(candidate) {
+  if (candidate?.evidenceClass === "certification-database-record") {
+    return psaSummary(candidate.fields) || "PSA returned a certification database record with limited display metadata.";
+  }
   const fields = candidate?.fields ?? {};
   const parts = [];
   if (Array.isArray(fields.creators) && fields.creators.length) parts.push(fields.creators.join(", "));
@@ -58,6 +83,9 @@ export function catalogCandidateSummary(candidate) {
 }
 
 export function catalogCandidateDraft(item, candidate) {
+  if (candidate?.evidenceClass === "certification-database-record" || candidate?.providerId === "psa-cert") {
+    throw new TypeError("Certification database evidence cannot automatically become treasure identity, grade, condition, authenticity, provenance, or value.");
+  }
   const title = safeText(candidate?.fields?.title, 240);
   if (!title) throw new TypeError("Catalog candidate requires a usable title.");
   const identifierType = normalizedType(item?.identifierType);

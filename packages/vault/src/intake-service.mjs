@@ -3,7 +3,7 @@ import { VaultError } from "./service.mjs";
 
 const IDENTIFIER_TYPES = new Set([
   "barcode", "upc", "ean", "isbn", "catalog", "serial", "sku", "custom",
-  "pokemon-card-id", "pokemon-set-number", "mtg-scryfall-id", "mtg-set-number"
+  "pokemon-card-id", "pokemon-set-number", "mtg-scryfall-id", "mtg-set-number", "psa-cert"
 ]);
 const SOURCE_TYPES = new Set(["manual", "camera"]);
 const POKEMON_TYPES = new Set(["pokemon-card-id", "pokemon-set-number"]);
@@ -22,13 +22,14 @@ function cleanIdentifierType(value) {
     "upc-a": "upc", "upc-e": "upc", "ean-8": "ean", "ean-13": "ean",
     "isbn-10": "isbn", "isbn-13": "isbn", "catalog-number": "catalog", "serial-number": "serial",
     "pokemon-card": "pokemon-set-number", "pokemon-tcg": "pokemon-set-number",
-    "magic-card": "mtg-set-number", "magic-the-gathering": "mtg-set-number", mtg: "mtg-set-number"
+    "magic-card": "mtg-set-number", "magic-the-gathering": "mtg-set-number", mtg: "mtg-set-number",
+    psa: "psa-cert", "psa-certification": "psa-cert"
   };
   const result = aliases[normalized] ?? normalized;
   if (!IDENTIFIER_TYPES.has(result)) {
     throw new VaultError(
       "invalid_intake_identifier_type",
-      "Identifier type must be barcode, UPC, EAN, ISBN, Pokémon card ID, Pokémon set/card number, Magic Scryfall ID, Magic set/collector number, catalog, serial, SKU, or custom."
+      "Identifier type must be barcode, UPC, EAN, ISBN, Pokémon card ID, Pokémon set/card number, Magic Scryfall ID, Magic set/collector number, PSA certification number, catalog, serial, SKU, or custom."
     );
   }
   return result;
@@ -89,6 +90,12 @@ function parseMtgSetNumber(value) {
   return Object.freeze({ setCode: setCode.toLowerCase(), collectorNumber });
 }
 
+function cleanPsaCert(value) {
+  const cleaned = String(value ?? "").normalize("NFKC").trim().replace(/\s+/g, "");
+  if (!/^\d{1,12}$/.test(cleaned)) throw new VaultError("invalid_intake_identifier", "PSA certification number must contain 1 to 12 digits.");
+  return cleaned;
+}
+
 function cleanIdentifierValue(value, type) {
   if (!["string", "number"].includes(typeof value)) throw new VaultError("invalid_intake_identifier", "An identifier value is required.");
   const cleaned = String(value).normalize("NFKC").trim();
@@ -110,6 +117,7 @@ function cleanIdentifierValue(value, type) {
     const parsed = parseMtgSetNumber(cleaned);
     return `${parsed.setCode}/${parsed.collectorNumber}`;
   }
+  if (type === "psa-cert") return cleanPsaCert(cleaned);
   return cleaned;
 }
 
@@ -122,6 +130,7 @@ function normalizeIdentifier(value, type) {
     const parsed = parseMtgSetNumber(value);
     return `${parsed.setCode.toUpperCase()}/${parsed.collectorNumber.toUpperCase()}`;
   }
+  if (type === "psa-cert") return cleanPsaCert(value);
   return value.replace(/\s+/g, " ").trim().toUpperCase();
 }
 

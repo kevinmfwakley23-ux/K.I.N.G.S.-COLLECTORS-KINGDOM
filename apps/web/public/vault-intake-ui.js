@@ -2,6 +2,7 @@ import {
   captureCountMessage,
   intakeCandidateMessage,
   intakeTypeLabel,
+  isCertificationEvidenceType,
   treasurePrefillFromIntake
 } from "./vault-intake-core.js";
 import {
@@ -109,6 +110,13 @@ function prefillCatalogCandidate(item, candidate, status) {
   status.textContent = "Catalog candidate copied into a new unsaved treasure editor. The Intake Queue item remains pending and no authoritative record, physical variant/finish, grade, ownership fact, or value was changed.";
 }
 
+function candidateHeading(candidate) {
+  if (candidate?.evidenceClass === "certification-database-record") {
+    return `PSA Certification #${candidate.providerRecordId ?? "record"}`;
+  }
+  return candidate?.fields?.title || "Untitled provider candidate";
+}
+
 export function createVaultIntakeUi() {
   const mainColumn = document.querySelector(".vault-main-column");
   const importPanel = document.querySelector(".import-panel");
@@ -125,7 +133,7 @@ export function createVaultIntakeUi() {
   headingCopy.append(
     node("p", "eyebrow", "Royal Intake Queue"),
     node("h2", "", "Capture now. Identify carefully. Finish anywhere."),
-    node("p", "muted-copy", "Save UPC, EAN, ISBN, Pokémon, Magic: The Gathering, barcode, catalog, serial, SKU, or custom identifiers to your account queue. Repeated pending captures become a count instead of noisy duplicate rows. A captured identifier or provider candidate is evidence, not proof of exact collectible identity, physical variant/finish, language, grade, authenticity, ownership, or value.")
+    node("p", "muted-copy", "Save UPC, EAN, ISBN, Pokémon, Magic: The Gathering, PSA certification, barcode, catalog, serial, SKU, or custom identifiers to your account queue. Repeated pending captures become a count instead of noisy duplicate rows. Provider evidence is not proof of exact physical identity, variant/finish, grade-holder authenticity, ownership, provenance, or value.")
   );
   headingCopy.querySelector("h2").id = "royal-intake-title";
   const cameraNote = node("aside", "intake-camera-note", "Secure camera scanning is progressive and appears only when this browser exposes the required camera and native barcode APIs. Manual capture remains available on every supported device.");
@@ -150,6 +158,7 @@ export function createVaultIntakeUi() {
     "barcode", "upc", "ean", "isbn",
     "pokemon-set-number", "pokemon-card-id",
     "mtg-set-number", "mtg-scryfall-id",
+    "psa-cert",
     "catalog", "serial", "sku", "custom"
   ]) {
     const option = document.createElement("option");
@@ -175,6 +184,7 @@ export function createVaultIntakeUi() {
     if (type.value === "pokemon-card-id") return setHint(value, "Provider card ID, for example base1-4");
     if (type.value === "mtg-set-number") return setHint(value, "Set code/collector number, for example lea/233");
     if (type.value === "mtg-scryfall-id") return setHint(value, "Scryfall printing UUID");
+    if (type.value === "psa-cert") return setHint(value, "PSA certification number from the holder label");
     setHint(value, "Scan result or type the identifier");
   }
   type.addEventListener("change", updateIdentifierHint);
@@ -226,7 +236,7 @@ export function createVaultIntakeUi() {
 
   async function resolveCatalogCandidates(item, output, button, policy) {
     button.disabled = true;
-    button.textContent = "Finding candidates…";
+    button.textContent = policy.certificationOnly ? "Verifying record…" : "Finding candidates…";
     output.replaceChildren(node("p", "muted-copy", policy.loadingMessage));
     try {
       const params = new URLSearchParams({ identifierType: item.identifierType, identifierValue: item.identifierValue });
@@ -238,8 +248,8 @@ export function createVaultIntakeUi() {
       }
       const evidenceHeader = node("div", "catalog-evidence-header");
       evidenceHeader.append(
-        node("strong", "", `${result.candidates.length} review candidate${result.candidates.length === 1 ? "" : "s"}`),
-        node("small", "", `Retrieved ${formatTime(result.retrievedAt)} • no Vault write or valuation performed`)
+        node("strong", "", `${result.candidates.length} review record${result.candidates.length === 1 ? "" : "s"}`),
+        node("small", "", `Retrieved ${formatTime(result.retrievedAt)} • no Vault write, authenticity claim, or valuation performed`)
       );
       output.append(evidenceHeader);
       for (const candidate of result.candidates) {
@@ -247,9 +257,9 @@ export function createVaultIntakeUi() {
         const copy = node("div", "catalog-candidate-copy");
         copy.append(
           node("span", "catalog-provider", candidate.providerName || candidate.providerId),
-          node("h4", "", candidate.fields?.title || "Untitled provider candidate"),
+          node("h4", "", candidateHeading(candidate)),
           node("p", "muted-copy", catalogCandidateSummary(candidate)),
-          node("p", "catalog-match-reason", candidate.matchReason || "Provider identifier evidence requires collector review.")
+          node("p", "catalog-match-reason", candidate.matchReason || "Provider evidence requires collector review.")
         );
         const candidateActions = node("div", "catalog-candidate-actions");
         if (candidate.sourceUrl) {
@@ -259,12 +269,16 @@ export function createVaultIntakeUi() {
           source.rel = "noopener noreferrer";
           candidateActions.append(source);
         }
-        const review = node("button", "dark-button", "Review in treasure editor");
-        review.type = "button";
-        review.addEventListener("click", () => {
-          try { prefillCatalogCandidate(item, candidate, status); } catch (error) { status.textContent = error.message; }
-        });
-        candidateActions.append(review);
+        if (candidate.evidenceClass === "certification-database-record" || policy.certificationOnly) {
+          candidateActions.append(node("p", "muted-copy", "Certification database evidence only. Compare the returned label data with the physical holder; no grade, authenticity, ownership, or value will be copied automatically."));
+        } else {
+          const review = node("button", "dark-button", "Review in treasure editor");
+          review.type = "button";
+          review.addEventListener("click", () => {
+            try { prefillCatalogCandidate(item, candidate, status); } catch (error) { status.textContent = error.message; }
+          });
+          candidateActions.append(review);
+        }
         candidateCard.append(copy, candidateActions);
         output.append(candidateCard);
       }
@@ -297,13 +311,16 @@ export function createVaultIntakeUi() {
         candidateButton.addEventListener("click", () => resolveCatalogCandidates(item, catalogOutput, candidateButton, policy));
         actions.append(candidateButton);
       }
-      const useButton = node("button", "quiet-button", "Use in treasure editor");
+      if (!isCertificationEvidenceType(item.identifierType)) {
+        const useButton = node("button", "quiet-button", "Use in treasure editor");
+        useButton.type = "button";
+        useButton.addEventListener("click", () => {
+          try { prefillTreasureEditor(item, status); } catch (error) { status.textContent = error.message; }
+        });
+        actions.append(useButton);
+      }
       const dismissButton = node("button", "quiet-button", "Dismiss");
-      useButton.type = "button";
       dismissButton.type = "button";
-      useButton.addEventListener("click", () => {
-        try { prefillTreasureEditor(item, status); } catch (error) { status.textContent = error.message; }
-      });
       dismissButton.addEventListener("click", async () => {
         if (!window.confirm(`Dismiss ${item.identifierValue} from the pending intake queue? Its history will be preserved.`)) return;
         status.textContent = "Dismissing intake item…";
@@ -313,7 +330,7 @@ export function createVaultIntakeUi() {
           await load();
         } catch (error) { status.textContent = error.message; }
       });
-      actions.append(useButton, dismissButton);
+      actions.append(dismissButton);
       top.append(actions);
     } else {
       top.append(node("span", "intake-dismissed-label", `Dismissed ${formatTime(item.dismissedAt)}`));

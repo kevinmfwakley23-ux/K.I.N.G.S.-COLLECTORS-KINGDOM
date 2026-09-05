@@ -1,4 +1,5 @@
 const BARCODE_TYPES = new Set(["barcode", "upc", "ean", "isbn"]);
+const CERTIFICATION_TYPES = new Set(["psa-cert"]);
 
 export function intakeTypeLabel(type) {
   const labels = {
@@ -10,6 +11,7 @@ export function intakeTypeLabel(type) {
     "pokemon-set-number": "Pokémon set + card number",
     "mtg-scryfall-id": "Magic Scryfall printing ID",
     "mtg-set-number": "Magic set + collector number",
+    "psa-cert": "PSA certification number",
     catalog: "Catalog number",
     serial: "Serial number",
     sku: "SKU",
@@ -18,12 +20,19 @@ export function intakeTypeLabel(type) {
   return labels[type] ?? String(type ?? "Identifier");
 }
 
+export function isCertificationEvidenceType(type) {
+  return CERTIFICATION_TYPES.has(String(type ?? "").trim().toLowerCase());
+}
+
 export function treasurePrefillFromIntake(item) {
   if (!item || typeof item !== "object") throw new TypeError("An intake item is required.");
   if (typeof item.identifierValue !== "string" || !item.identifierValue.trim()) {
     throw new TypeError("The intake item has no usable identifier value.");
   }
   const type = String(item.identifierType ?? "barcode").toLowerCase();
+  if (isCertificationEvidenceType(type)) {
+    throw new TypeError("Certification numbers are verification evidence and cannot automatically become a treasure catalog identifier.");
+  }
   return Object.freeze({
     fieldSelector: BARCODE_TYPES.has(type) ? "#treasure-barcode" : "#treasure-catalog",
     value: item.identifierValue.trim(),

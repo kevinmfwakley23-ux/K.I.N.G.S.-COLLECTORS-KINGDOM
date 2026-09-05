@@ -16,19 +16,19 @@ function requireCollector(identity) {
 }
 
 function cleanIdentifierType(value) {
-  if (typeof value !== "string") throw new CatalogError("invalid_catalog_identifier_type", "A catalog identifier type is required.");
+  if (typeof value !== "string") throw new CatalogError("invalid_catalog_identifier_type", "A catalog/evidence identifier type is required.");
   const cleaned = value.trim().toLowerCase().replace(/[_\s]+/g, "-");
   if (!cleaned || cleaned.length > 40 || !/^[a-z0-9-]+$/.test(cleaned)) {
-    throw new CatalogError("invalid_catalog_identifier_type", "Catalog identifier type is invalid.");
+    throw new CatalogError("invalid_catalog_identifier_type", "Catalog/evidence identifier type is invalid.");
   }
   return cleaned;
 }
 
 function cleanIdentifierValue(value) {
-  if (!["string", "number"].includes(typeof value)) throw new CatalogError("invalid_catalog_identifier", "A catalog identifier value is required.");
+  if (!["string", "number"].includes(typeof value)) throw new CatalogError("invalid_catalog_identifier", "A catalog/evidence identifier value is required.");
   const cleaned = String(value).normalize("NFKC").trim();
   if (!cleaned || cleaned.length > 180 || /[^\x20-\x7E]/.test(cleaned)) {
-    throw new CatalogError("invalid_catalog_identifier", "Catalog identifier value must contain 1 to 180 printable characters.");
+    throw new CatalogError("invalid_catalog_identifier", "Catalog/evidence identifier value must contain 1 to 180 printable characters.");
   }
   return cleaned;
 }
@@ -47,14 +47,20 @@ function publicProviderResult(result, { cached }) {
   });
 }
 
+function providerCacheOptions(provider) {
+  return Number.isInteger(provider?.cacheTtlMs) && provider.cacheTtlMs > 0
+    ? { ttlMs: provider.cacheTtlMs }
+    : undefined;
+}
+
 export function createCatalogService({ providers = [], cache = null, now = () => new Date() } = {}) {
   if (!Array.isArray(providers) || providers.some((provider) => !provider || typeof provider.supports !== "function" || typeof provider.lookup !== "function")) {
-    throw new TypeError("Catalog providers must expose supports() and lookup().");
+    throw new TypeError("Catalog/evidence providers must expose supports() and lookup().");
   }
   if (!cache || typeof cache.get !== "function" || typeof cache.set !== "function") {
-    throw new TypeError("Catalog service requires a cache with get() and set().");
+    throw new TypeError("Catalog/evidence service requires a cache with get() and set().");
   }
-  if (typeof now !== "function") throw new TypeError("Catalog service now must be a function.");
+  if (typeof now !== "function") throw new TypeError("Catalog/evidence service now must be a function.");
 
   async function lookup(identity, input = {}) {
     requireCollector(identity);
@@ -62,7 +68,7 @@ export function createCatalogService({ providers = [], cache = null, now = () =>
     const identifierValue = cleanIdentifierValue(input.identifierValue);
     const matchingProviders = providers.filter((provider) => provider.supports(identifierType));
     if (!matchingProviders.length) {
-      throw new CatalogError("catalog_identifier_unsupported", `No configured catalog provider supports '${identifierType}' yet.`, { statusCode: 400 });
+      throw new CatalogError("catalog_identifier_unsupported", `No configured evidence provider supports '${identifierType}' yet.`, { statusCode: 400 });
     }
 
     const providerSummaries = [];
@@ -93,17 +99,12 @@ export function createCatalogService({ providers = [], cache = null, now = () =>
 
       try {
         const result = await provider.lookup({ identifierType, identifierValue: normalizedIdentifier });
-        cache.set(key, result);
+        cache.set(key, result, providerCacheOptions(provider));
         providerSummaries.push(publicProviderResult(result, { cached: false }));
         candidates.push(...result.candidates);
       } catch (error) {
         if (error instanceof CatalogProviderError) {
-          failures.push(Object.freeze({
-            providerId: provider.id,
-            code: error.code,
-            message: error.message,
-            retryable: error.retryable
-          }));
+          failures.push(Object.freeze({ providerId: provider.id, code: error.code, message: error.message, retryable: error.retryable }));
           continue;
         }
         throw error;
@@ -112,11 +113,26 @@ export function createCatalogService({ providers = [], cache = null, now = () =>
 
     if (!providerSummaries.length && failures.length) {
       const timeoutOnly = failures.every((failure) => failure.code === "catalog_provider_timeout");
-      throw new CatalogError(
-        timeoutOnly ? "catalog_lookup_timeout" : "catalog_provider_unavailable",
-        timeoutOnly ? "Catalog lookup timed out before any provider returned evidence." : "No catalog provider could return evidence for this lookup.",
-        { statusCode: timeoutOnly ? 504 : 503, details: { providers: failures } }
-      );
+      const configurationOnly = failures.every((failure) => failure.code === "catalog_provider_configuration_required");
+      const unauthorizedOnly = failures.every((failure) => failure.code === "catalog_provider_unauthorized");
+      const code = timeoutOnly
+        ? "catalog_lookup_timeout"
+        : configurationOnly
+          ? "catalog_provider_configuration_required"
+          : unauthorizedOnly
+            ? "catalog_provider_unauthorized"
+            : "catalog_provider_unavailable";
+      const message = timeoutOnly
+        ? "Evidence lookup timed out before any provider returned evidence."
+        : configurationOnly
+          ? "This evidence provider requires server-side credentials before lookup can run."
+          : unauthorizedOnly
+            ? "The configured evidence-provider credentials were rejected."
+            : "No evidence provider could return evidence for this lookup.";
+      throw new CatalogError(code, message, {
+        statusCode: timeoutOnly ? 504 : 503,
+        details: { providers: failures }
+      });
     }
 
     const retrievedAt = now().toISOString();
