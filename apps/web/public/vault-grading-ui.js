@@ -2,6 +2,7 @@ import { BROWSER_CARD_SIZE_PROFILES, BROWSER_CENTERING_PROFILES, evaluateBrowser
 import { analyzeCardContourCondition } from "./vault-grading-contour-core.js";
 import { detectCardGeometry } from "./vault-grading-geometry-core.js";
 import { analyzeBrowserCapturePixels, captureQualityLabel } from "./vault-grading-image-core.js";
+import { compareRakingLightCaptures } from "./vault-grading-surface-core.js";
 
 function node(tag, className, text) {
   const element = document.createElement(tag);
@@ -59,6 +60,60 @@ function signalLabel(signal) {
   return signal.type === "corner-contour-asymmetry" ? "Possible corner contour damage" : "Possible edge contour roughness";
 }
 
+function loadLocalImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => resolve({ image, url });
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("The selected image could not be decoded by this browser."));
+    };
+    image.src = url;
+  });
+}
+
+function sampleImage(image, maxSampleSide = 420) {
+  const scale = Math.min(1, maxSampleSide / Math.max(image.naturalWidth, image.naturalHeight));
+  const width = Math.max(16, Math.round(image.naturalWidth * scale));
+  const height = Math.max(16, Math.round(image.naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) throw new Error("This browser cannot create the pixel-analysis canvas.");
+  context.drawImage(image, 0, 0, width, height);
+  return context.getImageData(0, 0, width, height);
+}
+
+function normalizedCardCrop(image, geometry, cardSizeProfile) {
+  if (!geometry?.detected || !geometry.normalizedBounds) throw new Error("A detected card boundary is required before normalizing a surface capture.");
+  const landscape = geometry.bounds.width > geometry.bounds.height;
+  const ratio = cardSizeProfile.widthMm / cardSizeProfile.heightMm;
+  const short = 240;
+  const long = Math.round(short / ratio);
+  const width = landscape ? long : short;
+  const height = landscape ? short : long;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) throw new Error("This browser cannot normalize the detected card crop.");
+  const bounds = geometry.normalizedBounds;
+  context.drawImage(
+    image,
+    bounds.x * image.naturalWidth,
+    bounds.y * image.naturalHeight,
+    bounds.width * image.naturalWidth,
+    bounds.height * image.naturalHeight,
+    0,
+    0,
+    width,
+    height
+  );
+  return context.getImageData(0, 0, width, height);
+}
+
 export function createVaultGradingUi() {
   const mainColumn = document.querySelector(".vault-main-column");
   const importPanel = document.querySelector(".import-panel");
@@ -74,7 +129,7 @@ export function createVaultGradingUi() {
   copy.append(
     node("p", "eyebrow", "AI Pre-Grade Lab"),
     node("h2", "", "Measure first. Estimate second. Never fake an official grade."),
-    node("p", "muted-copy", "Load a straight-on card photo, align the four inner-border guides, and compare measured centering against published reference thresholds. The Kingdom checks image quality, outer-card geometry, and the detected physical silhouette for possible corner/edge contour damage before trusting the photo.")
+    node("p", "muted-copy", "Load a straight-on card photo for centering, image quality, geometry and contour checks. Add a second aligned raking-light photo from the opposite light direction to compare surface reflectance for possible scratches, scuffs, print lines, dents or gloss disturbances.")
   );
   copy.querySelector("h2").id = "ai-pregrade-title";
   heading.append(copy, node("span", "grading-advisory-badge", "Advisory • not an official grade"));
@@ -82,12 +137,20 @@ export function createVaultGradingUi() {
 
   const toolbar = node("div", "grading-toolbar");
   const fileLabel = node("label", "grading-file-label");
-  fileLabel.append(node("span", "", "Card image (local analysis)"));
+  fileLabel.append(node("span", "", "Primary card image"));
   const file = document.createElement("input");
   file.id = "grading-image-file";
   file.type = "file";
   file.accept = "image/jpeg,image/png,image/webp,image/avif";
   fileLabel.append(file);
+
+  const companionLabel = node("label", "grading-file-label");
+  companionLabel.append(node("span", "", "Opposite raking-light image"));
+  const companionFile = document.createElement("input");
+  companionFile.id = "grading-raking-companion-file";
+  companionFile.type = "file";
+  companionFile.accept = file.accept;
+  companionLabel.append(companionFile);
 
   const sizeLabel = node("label", "");
   sizeLabel.append(node("span", "", "Card size profile"));
@@ -103,7 +166,7 @@ export function createVaultGradingUi() {
   sideLabel.append(node("span", "", "Card side"));
   const side = makeSelect("grading-card-side", [["front", "Front"], ["back", "Back"]]);
   sideLabel.append(side);
-  toolbar.append(fileLabel, sizeLabel, profileLabel, sideLabel);
+  toolbar.append(fileLabel, companionLabel, sizeLabel, profileLabel, sideLabel);
   panel.append(toolbar);
 
   const workspace = node("div", "grading-workspace");
@@ -111,15 +174,16 @@ export function createVaultGradingUi() {
   const preview = node("div", "grading-image-stage");
   const empty = node("div", "grading-image-empty", "Choose a straight-on card photo. Put the unsleeved card on a solid contrasting matte background, keep all four card edges visible, use diffuse light, and minimize perspective.");
   const image = document.createElement("img");
-  image.alt = "Card preview for centering measurement";
+  image.alt = "Card preview for AI pre-grade measurement";
   image.hidden = true;
   const detectedBoundary = node("span", "grading-card-boundary");
   detectedBoundary.hidden = true;
+  const surfaceOverlay = node("span", "grading-surface-overlay");
   const guideLeft = node("span", "grading-guide grading-guide-vertical guide-left");
   const guideRight = node("span", "grading-guide grading-guide-vertical guide-right");
   const guideTop = node("span", "grading-guide grading-guide-horizontal guide-top");
   const guideBottom = node("span", "grading-guide grading-guide-horizontal guide-bottom");
-  preview.append(empty, image, detectedBoundary, guideLeft, guideRight, guideTop, guideBottom);
+  preview.append(empty, image, detectedBoundary, surfaceOverlay, guideLeft, guideRight, guideTop, guideBottom);
   const imageStatus = node("p", "muted-copy grading-image-status", "No image loaded. Centering measurements still work as a manual calculator.");
 
   const qualityPanel = node("section", "grading-quality-panel");
@@ -135,10 +199,17 @@ export function createVaultGradingUi() {
   const contourSignals = node("div", "grading-contour-signals");
   const contourLimitations = node("ul", "grading-quality-warnings");
   contourPanel.append(contourSummary, contourSignals, contourLimitations);
-  previewColumn.append(preview, imageStatus, qualityPanel, contourPanel);
+
+  const surfacePanel = node("section", "grading-quality-panel grading-surface-panel");
+  surfacePanel.append(node("h3", "", "Paired raking-light surface signals"));
+  const surfaceSummary = node("p", "grading-quality-summary", "Add an opposite raking-light capture to compare surface reflectance.");
+  const surfaceSignals = node("div", "grading-contour-signals");
+  const surfaceLimitations = node("ul", "grading-quality-warnings");
+  surfacePanel.append(surfaceSummary, surfaceSignals, surfaceLimitations);
+  previewColumn.append(preview, imageStatus, qualityPanel, contourPanel, surfacePanel);
 
   const controls = node("div", "grading-controls");
-  controls.append(node("h3", "", "Inner-border guide distances"), node("p", "muted-copy", "Enter each visible border as a percentage of the card image width/height. The red guides mark the printed inner frame/art boundary; the gold rectangle is the automatically detected outer card edge when detection succeeds. Borderless/asymmetric cards require issue-specific references."));
+  controls.append(node("h3", "", "Inner-border guide distances"), node("p", "muted-copy", "Enter each visible border as a percentage of the card image width/height. Red guides mark the printed inner frame/art boundary; the gold rectangle is the detected outer card edge. Borderless/asymmetric cards require issue-specific references."));
   const left = makeBorderInput("grading-border-left", "Left %", 8);
   const right = makeBorderInput("grading-border-right", "Right %", 8);
   const top = makeBorderInput("grading-border-top", "Top %", 8);
@@ -167,14 +238,18 @@ export function createVaultGradingUi() {
     "Straight-on front and back on a contrasting matte background for card geometry, centering, color and print registration.",
     "Four high-resolution corner views for whitening, rounding, dings, bends and layering.",
     "Edge/macro views for chipping, notches, roughness and possible trimming signals.",
-    "Raking-light surface views from multiple directions for scratches, scuffs, dents, print lines, gloss loss and creases.",
+    "Two aligned raking-light surface views from opposite directions for scratches, scuffs, dents, print lines, gloss loss and creases.",
     "Autograph close-up when present; signature comparison must retain sourced reference exemplars and cannot claim professional authentication."
   ]) list.append(node("li", "", item));
-  capture.append(list, node("p", "muted-copy", "Capture-quality, card-edge/crop/perspective, and physical silhouette corner/edge contour analysis are live. Contour signals do not detect printed whitening or microscopic surface damage. Surface/color/autograph evidence contracts are live; automatic surface localization, color-reference comparison and sourced autograph retrieval remain separate detectors and are not represented as completed here."));
+  capture.append(list, node("p", "muted-copy", "Capture-quality, card geometry, physical contour, and paired raking-light reflectance analysis are live. Surface signals are possible anomalies, never confirmed scratches from image comparison alone. Printed whitening/color-reference comparison and sourced autograph retrieval remain separate detectors and are not represented as completed here."));
   panel.append(capture);
 
   importPanel.before(panel);
   let objectUrl = null;
+  let companionUrl = null;
+  let companionImage = null;
+  let mainGeometry = null;
+  let mainSamplePixels = null;
 
   function renderCentering() {
     const measurement = measureBrowserCentering({ left: left.input.value, right: right.input.value, top: top.input.value, bottom: bottom.input.value });
@@ -186,23 +261,17 @@ export function createVaultGradingUi() {
     guideBottom.style.bottom = `${guidePercent(bottom.input.value)}%`;
     thresholdList.replaceChildren();
     const evaluations = evaluateBrowserCentering(measurement, { profileId: profile.value, side: side.value });
-    if (!evaluations.length) {
-      thresholdList.append(node("p", "muted-copy", profile.value === "neutral" ? "Neutral mode reports measurements without third-party grade mapping." : "No published threshold from this reference profile is encoded for the selected side."));
-    } else {
-      for (const evaluation of evaluations) {
-        const row = node("div", `grading-threshold ${evaluation.passes ? "pass" : "miss"}`);
-        row.append(node("span", "", evaluation.label), node("strong", "", evaluation.passes ? "meets centering threshold" : "does not meet centering threshold"));
-        thresholdList.append(row);
-      }
+    if (!evaluations.length) thresholdList.append(node("p", "muted-copy", profile.value === "neutral" ? "Neutral mode reports measurements without third-party grade mapping." : "No published threshold from this reference profile is encoded for the selected side."));
+    else for (const evaluation of evaluations) {
+      const row = node("div", `grading-threshold ${evaluation.passes ? "pass" : "miss"}`);
+      row.append(node("span", "", evaluation.label), node("strong", "", evaluation.passes ? "meets centering threshold" : "does not meet centering threshold"));
+      thresholdList.append(row);
     }
   }
 
   function renderQuality(result, geometry) {
-    const geometryPasses = geometry?.detected && geometry.usableForCentering;
-    const combinedPass = result.automaticChecksPass && geometryPasses;
-    qualitySummary.textContent = combinedPass
-      ? "Photo quality and card geometry pass the current automatic checks"
-      : `${captureQualityLabel(result)}${geometry?.detected ? " • card geometry review needed" : " • card edge detection unavailable"}`;
+    const combinedPass = result.automaticChecksPass && geometry?.detected && geometry.usableForCentering;
+    qualitySummary.textContent = combinedPass ? "Photo quality and card geometry pass the current automatic checks" : `${captureQualityLabel(result)}${geometry?.detected ? " • card geometry review needed" : " • card edge detection unavailable"}`;
     qualitySummary.className = `grading-quality-summary ${combinedPass ? "pass" : "miss"}`;
     const rows = [
       metricRow("Resolution", `${result.sourceWidth} × ${result.sourceHeight} • ${result.megapixels} MP`, result.resolutionAdequate ? "pass" : "miss"),
@@ -228,8 +297,7 @@ export function createVaultGradingUi() {
       detectedBoundary.hidden = true;
     }
     qualityMetrics.replaceChildren(...rows);
-    const warnings = [...result.warnings, ...(geometry?.warnings ?? []), ...(geometry?.detected ? [] : [geometry?.reason].filter(Boolean))];
-    qualityWarnings.replaceChildren(...warnings.map((warning) => node("li", "", warning)));
+    qualityWarnings.replaceChildren(...[...result.warnings, ...(geometry?.warnings ?? []), ...(geometry?.detected ? [] : [geometry?.reason].filter(Boolean))].map((warning) => node("li", "", warning)));
   }
 
   function renderContour(result) {
@@ -251,40 +319,78 @@ export function createVaultGradingUi() {
       contourSummary.className = "grading-quality-summary miss";
       for (const signal of result.signals) {
         const card = node("article", "grading-contour-signal");
-        card.append(
-          node("strong", "", `${signalLabel(signal)} • ${signal.region}`),
-          node("span", "", `severity ${Math.round(signal.severity * 100)}% • confidence ${Math.round(signal.confidence * 100)}%`),
-          node("p", "muted-copy", signal.note)
-        );
+        card.append(node("strong", "", `${signalLabel(signal)} • ${signal.region}`), node("span", "", `severity ${Math.round(signal.severity * 100)}% • confidence ${Math.round(signal.confidence * 100)}%`), node("p", "muted-copy", signal.note));
         contourSignals.append(card);
       }
     }
     contourLimitations.replaceChildren(...result.limitations.map((limitation) => node("li", "", limitation)));
   }
 
-  async function analyzeLoadedImage() {
-    const maxSampleSide = 420;
-    const scale = Math.min(1, maxSampleSide / Math.max(image.naturalWidth, image.naturalHeight));
-    const sampleWidth = Math.max(16, Math.round(image.naturalWidth * scale));
-    const sampleHeight = Math.max(16, Math.round(image.naturalHeight * scale));
-    const canvas = document.createElement("canvas");
-    canvas.width = sampleWidth;
-    canvas.height = sampleHeight;
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    if (!context) throw new Error("This browser cannot create the pixel-analysis canvas.");
-    context.drawImage(image, 0, 0, sampleWidth, sampleHeight);
-    const pixels = context.getImageData(0, 0, sampleWidth, sampleHeight);
-    const quality = analyzeBrowserCapturePixels({ width: pixels.width, height: pixels.height, data: pixels.data, sourceWidth: image.naturalWidth, sourceHeight: image.naturalHeight });
+  function renderSurface(result) {
+    surfaceSignals.replaceChildren();
+    surfaceLimitations.replaceChildren();
+    surfaceOverlay.replaceChildren();
+    if (!result) {
+      surfaceSummary.textContent = "Add an opposite raking-light capture to compare surface reflectance.";
+      surfaceSummary.className = "grading-quality-summary";
+      return;
+    }
+    if (!result.signals.length) {
+      surfaceSummary.textContent = "No strong localized/linear reflectance anomalies were isolated between the paired captures.";
+      surfaceSummary.className = "grading-quality-summary pass";
+    } else {
+      surfaceSummary.textContent = `${result.signals.length} possible surface reflectance anomal${result.signals.length === 1 ? "y" : "ies"} need magnified review.`;
+      surfaceSummary.className = "grading-quality-summary miss";
+      for (const signal of result.signals) {
+        const card = node("article", "grading-contour-signal");
+        card.append(node("strong", "", `Possible ${signal.shape} surface anomaly`), node("span", "", `severity ${Math.round(signal.severity * 100)}% • confidence ${Math.round(signal.confidence * 100)}%`), node("p", "muted-copy", signal.note));
+        surfaceSignals.append(card);
+        if (mainGeometry?.detected) {
+          const box = node("span", "grading-surface-box");
+          const bounds = mainGeometry.normalizedBounds;
+          box.style.left = `${(bounds.x + signal.boundingBox.x * bounds.width) * 100}%`;
+          box.style.top = `${(bounds.y + signal.boundingBox.y * bounds.height) * 100}%`;
+          box.style.width = `${signal.boundingBox.width * bounds.width * 100}%`;
+          box.style.height = `${signal.boundingBox.height * bounds.height * 100}%`;
+          surfaceOverlay.append(box);
+        }
+      }
+    }
+    surfaceLimitations.replaceChildren(...result.limitations.map((limitation) => node("li", "", limitation)));
+  }
+
+  async function analyzeSurfacePair() {
+    renderSurface(null);
+    if (!companionImage || !mainGeometry?.usableForCentering) return;
     const sizeProfile = BROWSER_CARD_SIZE_PROFILES[size.value];
-    const geometry = sizeProfile?.widthMm && sizeProfile?.heightMm
-      ? detectCardGeometry({ width: pixels.width, height: pixels.height, data: pixels.data, expectedWidthMm: sizeProfile.widthMm, expectedHeightMm: sizeProfile.heightMm })
-      : null;
-    const contour = geometry?.detected ? analyzeCardContourCondition({ width: pixels.width, height: pixels.height, data: pixels.data, geometry }) : null;
-    renderQuality(quality, geometry);
+    if (!sizeProfile?.widthMm || !sizeProfile?.heightMm) return;
+    const companionSample = sampleImage(companionImage);
+    const companionGeometry = detectCardGeometry({ width: companionSample.width, height: companionSample.height, data: companionSample.data, expectedWidthMm: sizeProfile.widthMm, expectedHeightMm: sizeProfile.heightMm });
+    if (!companionGeometry.usableForCentering) {
+      surfaceSummary.textContent = "The companion raking-light image does not have reliable whole-card geometry. Retake it straight-on on the same contrasting background.";
+      surfaceSummary.className = "grading-quality-summary miss";
+      return;
+    }
+    const mainCrop = normalizedCardCrop(image, mainGeometry, sizeProfile);
+    const companionCrop = normalizedCardCrop(companionImage, companionGeometry, sizeProfile);
+    if (mainCrop.width !== companionCrop.width || mainCrop.height !== companionCrop.height) {
+      surfaceSummary.textContent = "Primary and companion card orientation do not match. Retake both captures without rotating the card/camera.";
+      surfaceSummary.className = "grading-quality-summary miss";
+      return;
+    }
+    renderSurface(compareRakingLightCaptures({ width: mainCrop.width, height: mainCrop.height, dataA: mainCrop.data, dataB: companionCrop.data }));
+  }
+
+  async function analyzeLoadedImage() {
+    mainSamplePixels = sampleImage(image);
+    const quality = analyzeBrowserCapturePixels({ width: mainSamplePixels.width, height: mainSamplePixels.height, data: mainSamplePixels.data, sourceWidth: image.naturalWidth, sourceHeight: image.naturalHeight });
+    const sizeProfile = BROWSER_CARD_SIZE_PROFILES[size.value];
+    mainGeometry = sizeProfile?.widthMm && sizeProfile?.heightMm ? detectCardGeometry({ width: mainSamplePixels.width, height: mainSamplePixels.height, data: mainSamplePixels.data, expectedWidthMm: sizeProfile.widthMm, expectedHeightMm: sizeProfile.heightMm }) : null;
+    const contour = mainGeometry?.detected ? analyzeCardContourCondition({ width: mainSamplePixels.width, height: mainSamplePixels.height, data: mainSamplePixels.data, geometry: mainGeometry }) : null;
+    renderQuality(quality, mainGeometry);
     renderContour(contour);
-    imageStatus.textContent = geometry?.detected
-      ? `${image.naturalWidth} × ${image.naturalHeight} analyzed locally. Card edge method: ${geometry.method}. ${geometry.usableForCentering ? "Geometry is usable for centering review." : "Retake or correct the capture before trusting centering."}`
-      : `${image.naturalWidth} × ${image.naturalHeight} analyzed locally. ${quality.readinessReason}`;
+    imageStatus.textContent = mainGeometry?.detected ? `${image.naturalWidth} × ${image.naturalHeight} analyzed locally. ${mainGeometry.usableForCentering ? "Geometry is usable for centering and contour review." : "Retake or correct the capture before trusting measurements."}` : `${image.naturalWidth} × ${image.naturalHeight} analyzed locally. ${quality.readinessReason}`;
+    await analyzeSurfacePair();
   }
 
   for (const input of [left.input, right.input, top.input, bottom.input, profile, side]) input.addEventListener("input", () => {
@@ -293,6 +399,7 @@ export function createVaultGradingUi() {
   size.addEventListener("change", () => {
     if (!image.hidden && image.complete) analyzeLoadedImage().catch((error) => { imageStatus.textContent = error.message; });
   });
+
   file.addEventListener("change", () => {
     const selected = file.files?.[0];
     if (!selected) return;
@@ -305,10 +412,32 @@ export function createVaultGradingUi() {
     image.onload = async () => {
       empty.hidden = true;
       image.hidden = false;
+      preview.style.aspectRatio = `${image.naturalWidth} / ${image.naturalHeight}`;
+      preview.style.minHeight = "0";
       try { await analyzeLoadedImage(); }
       catch (error) { imageStatus.textContent = `Image loaded, but local analysis failed: ${error.message}`; }
     };
     image.src = objectUrl;
+  });
+
+  companionFile.addEventListener("change", async () => {
+    const selected = companionFile.files?.[0];
+    if (!selected) return;
+    if (!selected.type.startsWith("image/")) {
+      surfaceSummary.textContent = "Choose a supported image for the raking-light companion capture.";
+      surfaceSummary.className = "grading-quality-summary miss";
+      return;
+    }
+    if (companionUrl) URL.revokeObjectURL(companionUrl);
+    try {
+      const loaded = await loadLocalImage(selected);
+      companionImage = loaded.image;
+      companionUrl = loaded.url;
+      await analyzeSurfacePair();
+    } catch (error) {
+      surfaceSummary.textContent = error.message;
+      surfaceSummary.className = "grading-quality-summary miss";
+    }
   });
 
   renderCentering();
