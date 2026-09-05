@@ -28,7 +28,25 @@ function compactTreasure(treasure, attributes = []) {
   };
 }
 
-export function createVaultIntelligence({ vaultService, searchService = null, attributeService = null } = {}) {
+function compactSetSummary(set) {
+  return {
+    name: set.name,
+    category: set.category ?? null,
+    series: set.series ?? null,
+    completionPercent: Number(set.completionPercent ?? 0),
+    completeEntryCount: Number(set.completeEntryCount ?? 0),
+    expectedEntryCount: Number(set.expectedEntryCount ?? 0),
+    missingEntryCount: Number(set.missingEntryCount ?? 0),
+    missingUnitCount: Number(set.missingUnitCount ?? 0)
+  };
+}
+
+export function createVaultIntelligence({
+  vaultService,
+  searchService = null,
+  attributeService = null,
+  setSummaryService = null
+} = {}) {
   if (!vaultService) throw new TypeError("Vault intelligence requires the Vault service.");
 
   function details(identity, treasureId) {
@@ -56,16 +74,24 @@ export function createVaultIntelligence({ vaultService, searchService = null, at
       });
     }
 
+    const incompleteSets = setSummaryService?.list
+      ? setSummaryService.list(identity, { incompleteOnly: true, limit: 6 }).slice(0, 6).map(compactSetSummary)
+      : [];
+
     return {
       summary: base.summary,
       recentTreasures,
       queryMatches,
+      incompleteSets,
       contextPolicy: {
         maximumRecentTreasures: 8,
         maximumQueryMatches: 8,
         maximumDetailsPerTreasure: 12,
+        maximumIncompleteSets: 6,
         verificationReferencesIncluded: false,
-        note: "Only collector-authorized Vault records are included. Collector-entered estimates and verification claims remain labeled by source/status."
+        setEntryGraphsIncluded: false,
+        setSourceReferencesIncluded: false,
+        note: "Only collector-authorized Vault records are included. Collector-entered estimates and verification claims remain labeled by source/status. Set context is limited to derived completion summaries; checklist entries, linked treasure graphs, notes, and source references are excluded by default."
       }
     };
   }
