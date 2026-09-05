@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS vault_treasures (
   external_identifiers_json TEXT NOT NULL,
   attributes_json TEXT NOT NULL,
   notes TEXT,
+  search_text TEXT NOT NULL,
   identifier_fingerprint TEXT,
   content_fingerprint TEXT NOT NULL,
   created_at TEXT NOT NULL,
@@ -100,6 +101,47 @@ function parseJson(value, fallback) {
   } catch {
     return fallback;
   }
+}
+
+function normalizeSearchText(value) {
+  return String(value ?? "")
+    .normalize("NFKD")
+    .replace(/\p{M}+/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function searchTextForTreasure(treasure) {
+  return normalizeSearchText([
+    treasure.title,
+    treasure.category,
+    treasure.description,
+    treasure.manufacturer,
+    treasure.series,
+    treasure.variant,
+    treasure.condition,
+    treasure.conditionNotes,
+    treasure.notes,
+    JSON.stringify(treasure.externalIdentifiers ?? {}),
+    JSON.stringify(treasure.attributes ?? {})
+  ].filter(Boolean).join(" "));
+}
+
+function searchTextForRow(row) {
+  return normalizeSearchText([
+    row.title,
+    row.category,
+    row.description,
+    row.manufacturer,
+    row.series,
+    row.variant,
+    row.condition_label,
+    row.condition_notes,
+    row.notes,
+    row.external_identifiers_json,
+    row.attributes_json
+  ].filter(Boolean).join(" "));
 }
 
 function mapCollection(row) {
@@ -171,6 +213,32 @@ export class SqliteVaultStore {
     this.database.exec("PRAGMA journal_mode = WAL;");
     this.database.exec("PRAGMA busy_timeout = 5000;");
     this.database.exec(SCHEMA);
+    this.#ensureSearchText();
+  }
+
+  #ensureSearchText() {
+    const columns = this.database.prepare("PRAGMA table_info(vault_treasures)").all();
+    if (!columns.some((column) => column.name === "search_text")) {
+      this.database.exec("ALTER TABLE vault_treasures ADD COLUMN search_text TEXT NOT NULL DEFAULT ''; ");
+    }
+
+    const rows = this.database.prepare(`
+      SELECT id,title,category,description,manufacturer,series,variant,condition_label,condition_notes,notes,
+             external_identifiers_json,attributes_json,search_text
+      FROM vault_treasures
+      WHERE search_text = ''
+    `).all();
+    if (!rows.length) return;
+
+    const update = this.database.prepare("UPDATE vault_treasures SET search_text = ? WHERE id = ?");
+    this.database.exec("BEGIN IMMEDIATE;");
+    try {
+      for (const row of rows) update.run(searchTextForRow(row), row.id);
+      this.database.exec("COMMIT;");
+    } catch (error) {
+      this.database.exec("ROLLBACK;");
+      throw error;
+    }
   }
 
   createCollection(collection) {
@@ -244,9 +312,9 @@ export class SqliteVaultStore {
       INSERT INTO vault_treasures (
         id,owner_account_id,collection_id,location_id,title,category,description,manufacturer,series,variant,
         condition_label,condition_notes,quantity,acquisition_date,purchase_price_cents,currency,
-        external_identifiers_json,attributes_json,notes,identifier_fingerprint,content_fingerprint,
+        external_identifiers_json,attributes_json,notes,search_text,identifier_fingerprint,content_fingerprint,
         created_at,updated_at,archived_at
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(
       treasure.id,
       treasure.ownerAccountId,
@@ -267,6 +335,7 @@ export class SqliteVaultStore {
       JSON.stringify(treasure.externalIdentifiers ?? {}),
       JSON.stringify(treasure.attributes ?? {}),
       treasure.notes ?? null,
+      searchTextForTreasure(treasure),
       treasure.identifierFingerprint ?? null,
       treasure.contentFingerprint,
       treasure.createdAt,
@@ -286,7 +355,7 @@ export class SqliteVaultStore {
       UPDATE vault_treasures SET
         collection_id = ?, location_id = ?, title = ?, category = ?, description = ?, manufacturer = ?, series = ?, variant = ?,
         condition_label = ?, condition_notes = ?, quantity = ?, acquisition_date = ?, purchase_price_cents = ?, currency = ?,
-        external_identifiers_json = ?, attributes_json = ?, notes = ?, identifier_fingerprint = ?, content_fingerprint = ?, updated_at = ?
+        external_identifiers_json = ?, attributes_json = ?, notes = ?, search_text = ?, identifier_fingerprint = ?, content_fingerprint = ?, updated_at = ?
       WHERE owner_account_id = ? AND id = ? AND archived_at IS NULL
     `).run(
       treasure.collectionId ?? null,
@@ -306,6 +375,7 @@ export class SqliteVaultStore {
       JSON.stringify(treasure.externalIdentifiers ?? {}),
       JSON.stringify(treasure.attributes ?? {}),
       treasure.notes ?? null,
+      searchTextForTreasure(treasure),
       treasure.identifierFingerprint ?? null,
       treasure.contentFingerprint,
       treasure.updatedAt,
@@ -348,13 +418,11 @@ export class SqliteVaultStore {
       values.push(filters.condition);
     }
     if (filters.query) {
-      const pattern = `%${filters.query}%`;
-      where.push(`(
-        title LIKE ? COLLATE NOCASE OR manufacturer LIKE ? COLLATE NOCASE OR series LIKE ? COLLATE NOCASE OR
-        variant LIKE ? COLLATE NOCASE OR description LIKE ? COLLATE NOCASE OR notes LIKE ? COLLATE NOCASE OR
-        external_identifiers_json LIKE ? COLLATE NOCASE OR attributes_json LIKE ? COLLATE NOCASE
-      )`);
-      values.push(pattern, pattern, pattern, pattern, pattern, pattern, pattern, pattern);
+      const tokens = normalizeSearchText(filters.query).split(/\s+/).filter(Boolean);
+      for (const token of tokens) {
+        where.push("search_text LIKE ?");
+        values.push(`%${token}%`);
+      }
     }
 
     const sortColumns = {
