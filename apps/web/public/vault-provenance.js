@@ -1,3 +1,5 @@
+import { createCollectibleDetailsSection } from "./vault-details.js";
+
 const EVENT_LABELS = Object.freeze({
   acquired: "Acquired",
   inherited: "Inherited",
@@ -51,6 +53,10 @@ function eventSummary(event) {
 }
 
 export async function createProvenanceSection(treasureId) {
+  const wrapper = element("div", "detail-extended-sections");
+  const collectibleDetails = await createCollectibleDetailsSection(treasureId);
+  wrapper.append(collectibleDetails);
+
   const section = element("section", "detail-history provenance-history");
   section.dataset.treasureId = treasureId;
   const headingRow = element("div", "provenance-heading");
@@ -171,5 +177,6 @@ export async function createProvenanceSection(treasureId) {
   });
 
   await load();
-  return section;
+  wrapper.append(section);
+  return wrapper;
 }
