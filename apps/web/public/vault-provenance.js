@@ -2,6 +2,7 @@ import { createCollectibleDetailsSection } from "./vault-details.js";
 import { createEvidenceSection } from "./vault-evidence.js";
 import { createFavoriteControl } from "./vault-favorites.js";
 import { createMarketplacePreparationSection } from "./vault-marketplace-readiness.js";
+import { createTagRecommendationSection } from "./vault-tag-recommendations.js";
 import "./vault-categories.js";
 
 const EVENT_LABELS = Object.freeze({
@@ -58,13 +59,14 @@ function eventSummary(event) {
 
 export async function createProvenanceSection(treasureId) {
   const wrapper = element("div", "detail-extended-sections");
-  const [favorite, collectibleDetails, evidence, marketplacePreparation] = await Promise.all([
+  const [favorite, collectibleDetails, tagRecommendations, evidence, marketplacePreparation] = await Promise.all([
     createFavoriteControl(treasureId),
     createCollectibleDetailsSection(treasureId),
+    createTagRecommendationSection(treasureId),
     createEvidenceSection(treasureId),
     createMarketplacePreparationSection(treasureId)
   ]);
-  wrapper.append(favorite, collectibleDetails, evidence, marketplacePreparation);
+  wrapper.append(favorite, collectibleDetails, tagRecommendations, evidence, marketplacePreparation);
 
   const section = element("section", "detail-history provenance-history");
   section.dataset.treasureId = treasureId;
