@@ -59,6 +59,7 @@ const required = [
   "dist/packages/vault/src/performance-indexes.mjs",
   "dist/packages/vault/src/recommendations.mjs",
   "dist/packages/vault/src/recommendations-http.mjs",
+  "dist/packages/vault/src/duplicate-summaries.mjs",
   "dist/packages/vault/src/http.mjs",
   "dist/packages/vault/src/ownership.mjs",
   "dist/packages/vault/src/portable.mjs",
@@ -81,4 +82,4 @@ for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
 if (manifest.phase !== "IMP-005-VAULT-PHASE-1") throw new Error("Unexpected build phase in manifest.");
 if (manifest.entrypoint !== "apps/web/server-runtime.mjs") throw new Error("Production manifest does not point to the composed Kingdom runtime.");
-console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 output, including automated accessibility semantics, byte-validated image intake, verified recovery snapshots, account-scoped collection-view indexes, grounded collector-only Royal Curator tag recommendations with visible treasure-detail guidance, portable intake, provenance, category intelligence, dirty-tracked scalable search, saved Vault views, protected evidence documents, explicit collection-set completion with aggregate progress summaries and checklist UI, transparent Marketplace handoff readiness and preparation UI, Grid/List/Binder/Gallery presentation assets, authoritative recent/favorite/incomplete-set/Marketplace-ready/duplicate system views, live enrichment UI assets, and bounded Royal Curator context.");
+console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 output, including automated accessibility semantics, byte-validated image intake, verified recovery snapshots, account-scoped collection-view indexes, grounded collector-only Royal Curator tag recommendations with visible treasure-detail guidance, bounded possible-duplicate summaries with collector-controlled resolution, portable intake, provenance, category intelligence, dirty-tracked scalable search, saved Vault views, protected evidence documents, explicit collection-set completion with aggregate progress summaries and checklist UI, transparent Marketplace handoff readiness and preparation UI, Grid/List/Binder/Gallery presentation assets, authoritative recent/favorite/incomplete-set/Marketplace-ready/duplicate system views, live enrichment UI assets, and bounded Royal Curator context.");
