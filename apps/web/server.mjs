@@ -250,14 +250,25 @@ function vaultTreasureRoute(pathname) {
   }
 }
 
-async function handleVaultRoute({ request, response, requestUrl, identityService, vaultService }) {
+async function handleVaultRoute({ request, response, requestUrl, identityService, vaultService, vaultMediaService }) {
   if (!vaultService) throw new HttpError(503, "vault_unavailable", "The Royal Vault service is unavailable.");
   const method = request.method ?? "GET";
   const identity = requireIdentity(identityService, request);
   const pathname = requestUrl.pathname;
 
   if (pathname === "/api/vault" && method === "GET") {
-    return sendJson(response, 200, vaultService.snapshot(identity), method);
+    const snapshot = vaultService.snapshot(identity);
+    if (!vaultMediaService) return sendJson(response, 200, snapshot, method);
+    return sendJson(response, 200, {
+      ...snapshot,
+      media: {
+        ...snapshot.media,
+        uploadsAvailable: true,
+        privateRetrievalAvailable: true,
+        usage: vaultMediaService.usage(identity),
+        message: "Private treasure images and PDF documents are stored outside the public webroot and served only through authenticated owner-scoped Vault routes."
+      }
+    }, method);
   }
 
   if (pathname === "/api/vault/collections") {
@@ -415,7 +426,8 @@ export function createKingdomServer({
           response,
           requestUrl,
           identityService,
-          vaultService
+          vaultService,
+          vaultMediaService
         });
         if (handled !== false) return;
         return sendJson(response, 405, { error: "method_not_allowed" }, method);
