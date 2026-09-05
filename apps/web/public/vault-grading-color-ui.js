@@ -74,13 +74,13 @@ export function createVaultGradingColorUi() {
   const labelWrapper = node("label", "");
   labelWrapper.append(node("span", "", "Reference label"));
   const referenceLabel = document.createElement("input");
-  referenceLabel.id = "grading-color-reference-label"; referenceLabel.maxLength = 240; referenceLabel.placeholder = "Same-printing scan, collector reference copy…";
+  referenceLabel.id = "grading-color-reference-label"; referenceLabel.maxLength = 240;
   labelWrapper.append(referenceLabel);
 
   const sourceWrapper = node("label", "");
   sourceWrapper.append(node("span", "", "Reference source URL (optional, HTTPS)"));
   const sourceUrl = document.createElement("input");
-  sourceUrl.id = "grading-color-reference-url"; sourceUrl.type = "url"; sourceUrl.placeholder = "https://…";
+  sourceUrl.id = "grading-color-reference-url"; sourceUrl.type = "url";
   sourceWrapper.append(sourceUrl);
 
   const compare = node("button", "dark-button", "Compare color to reference");
