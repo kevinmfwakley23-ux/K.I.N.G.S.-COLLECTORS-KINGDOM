@@ -192,6 +192,93 @@
   color: #5d584e;
 }
 
+.catalog-candidate-results {
+  display: grid;
+  gap: 9px;
+  margin-top: 12px;
+}
+
+.catalog-evidence-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: rgba(24,24,22,.045);
+}
+
+.catalog-evidence-header small {
+  color: #746e62;
+}
+
+.catalog-candidate-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 13px;
+  border: 1px solid rgba(177,138,48,.24);
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(255,255,255,.96), rgba(247,244,235,.93));
+}
+
+.catalog-candidate-copy {
+  min-width: 0;
+}
+
+.catalog-candidate-copy h4 {
+  margin: 3px 0 4px;
+  font-size: 1.05rem;
+}
+
+.catalog-candidate-copy p {
+  margin: 4px 0 0;
+}
+
+.catalog-provider {
+  color: #76591b;
+  font-size: .68rem;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.catalog-match-reason {
+  color: #665f53;
+  font-size: .82rem;
+  line-height: 1.45;
+}
+
+.catalog-candidate-actions {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+  min-width: 185px;
+}
+
+.catalog-candidate-actions .text-link {
+  font-size: .78rem;
+}
+
+.catalog-no-match,
+.catalog-error {
+  margin: 0;
+  padding: 10px 11px;
+  border-radius: 10px;
+  line-height: 1.45;
+}
+
+.catalog-no-match {
+  background: rgba(32,92,57,.07);
+  color: #315944;
+}
+
+.catalog-error {
+  background: rgba(133,51,42,.08);
+  color: #743b34;
+}
+
 @media (max-width: 1180px) {
   .intake-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -210,7 +297,8 @@
   .intake-heading,
   .intake-card-top,
   .intake-form,
-  .intake-stats {
+  .intake-stats,
+  .catalog-candidate-card {
     grid-template-columns: 1fr;
   }
 
@@ -228,5 +316,14 @@
 
   .intake-card-actions {
     justify-content: start;
+  }
+
+  .catalog-evidence-header {
+    display: grid;
+  }
+
+  .catalog-candidate-actions {
+    justify-items: start;
+    min-width: 0;
   }
 }
