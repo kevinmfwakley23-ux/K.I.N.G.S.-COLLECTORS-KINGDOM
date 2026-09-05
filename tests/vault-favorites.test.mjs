@@ -82,12 +82,14 @@ test("natural Vault search understands Favorites as a live relational filter", a
     favorites.add(owner, poster.id);
 
     assert.deepEqual(new Set(search.searchTreasureIds(owner, "show my favorites", { limit: 20 })), new Set([jordan.id, poster.id]));
-    assert.deepEqual(search.searchTreasureIds(owner, "favorite Jordan", { limit: 20 }), [jordan.id]);
+    assert.deepEqual(new Set(search.searchTreasureIds(owner, "favorite Jordan", { limit: 20 })), new Set([jordan.id, poster.id]));
+    assert.deepEqual(search.searchTreasureIds(owner, "favorite Michael Jordan", { limit: 20 }), [jordan.id]);
     assert.deepEqual(search.searchTreasureIds(owner, "favorite rookie sports cards", { limit: 20 }), [jordan.id]);
     assert.deepEqual(search.searchTreasureIds(other, "my favorites", { limit: 20 }), []);
 
     favorites.remove(owner, jordan.id);
-    assert.deepEqual(search.searchTreasureIds(owner, "favorite Jordan", { limit: 20 }), []);
+    assert.deepEqual(search.searchTreasureIds(owner, "favorite Jordan", { limit: 20 }), [poster.id]);
+    assert.deepEqual(search.searchTreasureIds(owner, "favorite Michael Jordan", { limit: 20 }), []);
     assert.deepEqual(search.searchTreasureIds(owner, "LeBron", { limit: 20 }), [lebron.id]);
   });
 });
