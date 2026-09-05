@@ -45,6 +45,11 @@ function intParam(searchParams, name, fallback) {
   return value;
 }
 
+function headerText(request, name) {
+  const value = String(request.headers[name] ?? "").trim();
+  return value || null;
+}
+
 function json(status, payload, headers = {}) {
   return { kind: "json", status, payload, headers };
 }
@@ -65,7 +70,8 @@ export async function handleVaultRequest({
   vaultService,
   ownershipService = null,
   attributeService = null,
-  searchService = null
+  searchService = null,
+  evidenceService = null
 } = {}) {
   if (!vaultService) throw new VaultError("vault_unavailable", "The Royal Vault service is unavailable.", 503);
   const method = request.method ?? "GET";
@@ -159,6 +165,54 @@ export async function handleVaultRequest({
     return json(200, collectibleDetails.remove(identity, decodeURIComponent(attributeMatch[1]), decodeURIComponent(attributeMatch[2])));
   }
 
+  const evidenceListMatch = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/evidence$/);
+  if (evidenceListMatch) {
+    if (!evidenceService) throw new VaultError("evidence_unavailable", "Vault supporting evidence is unavailable.", 503);
+    const treasureId = decodeURIComponent(evidenceListMatch[1]);
+    if (method === "GET") return json(200, {
+      evidence: evidenceService.list(identity, treasureId),
+      kinds: evidenceService.kinds,
+      maximumBytes: evidenceService.maximumBytes,
+      acceptedContentTypes: evidenceService.acceptedContentTypes
+    });
+    if (method === "POST") {
+      const body = await readBody(request, evidenceService.maximumBytes);
+      return json(201, { evidence: await evidenceService.upload(identity, treasureId, {
+        kind: headerText(request, "x-evidence-kind"),
+        title: headerText(request, "x-evidence-title"),
+        sourceLabel: headerText(request, "x-evidence-source"),
+        documentDate: headerText(request, "x-evidence-date"),
+        originalName: headerText(request, "x-file-name"),
+        contentType: request.headers["content-type"],
+        bytes: body
+      }) });
+    }
+    return null;
+  }
+
+  const evidenceFileMatch = pathname.match(/^\/api\/vault\/evidence\/([^/]+)\/file$/);
+  if (evidenceFileMatch && method === "GET") {
+    if (!evidenceService) throw new VaultError("evidence_unavailable", "Vault supporting evidence is unavailable.", 503);
+    const item = await evidenceService.file(identity, decodeURIComponent(evidenceFileMatch[1]));
+    const filename = (item.originalName ?? `${item.kind}-${item.id}`).replace(/["\\\r\n]/g, "_");
+    return bytes(200, item.bytes, item.contentType, {
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "X-Content-SHA256": item.sha256,
+      "X-Evidence-Source-Type": item.sourceType,
+      "X-Evidence-Verification-Status": item.verificationStatus
+    });
+  }
+
+  const evidenceMatch = pathname.match(/^\/api\/vault\/evidence\/([^/]+)$/);
+  if (evidenceMatch) {
+    if (!evidenceService) throw new VaultError("evidence_unavailable", "Vault supporting evidence is unavailable.", 503);
+    const id = decodeURIComponent(evidenceMatch[1]);
+    if (method === "GET") return json(200, { evidence: evidenceService.get(identity, id) });
+    if (method === "PATCH") return json(200, { evidence: evidenceService.update(identity, id, await readJson(request)) });
+    if (method === "DELETE") return json(200, await evidenceService.remove(identity, id));
+    return null;
+  }
+
   const imageMatch = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/images$/);
   if (imageMatch && method === "POST") {
     const contentType = String(request.headers["content-type"] ?? "");
@@ -172,7 +226,11 @@ export async function handleVaultRequest({
     const id = decodeURIComponent(treasureMatch[1]);
     if (method === "GET") return json(200, { treasure: vaultService.getTreasure(identity, id) });
     if (method === "PATCH") return json(200, { treasure: vaultService.updateTreasure(identity, id, await readJson(request)) });
-    if (method === "DELETE") return json(200, await vaultService.deleteTreasure(identity, id));
+    if (method === "DELETE") {
+      const result = await vaultService.deleteTreasure(identity, id);
+      if (evidenceService) await evidenceService.sweepCleanup();
+      return json(200, result);
+    }
     return null;
   }
 
