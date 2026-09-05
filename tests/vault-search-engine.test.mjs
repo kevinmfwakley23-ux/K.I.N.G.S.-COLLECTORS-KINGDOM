@@ -70,11 +70,11 @@ test("one treasure edit refreshes one search record and deletion removes it with
       vault.updateTreasure(collector, treasure.id, { title: "Pearl Jam Concert Poster" });
 
       assert.deepEqual(search.searchTreasureIds(collector, "Pearl Jam", { limit: 8 }), [treasure.id]);
-      assert.deepEqual(search.searchTreasureIds(collector, "Original Concert", { limit: 8 }), []);
       const edited = search.diagnostics(collector);
       assert.equal(edited.lastSynchronization.mode, "incremental");
       assert.equal(edited.lastSynchronization.inspectedTreasureCount, 1);
       assert.equal(edited.metrics.fullRebuilds, 1);
+      assert.deepEqual(search.searchTreasureIds(collector, "Original Concert", { limit: 8 }), []);
 
       await vault.deleteTreasure(collector, treasure.id);
       assert.deepEqual(search.searchTreasureIds(collector, "Pearl Jam", { limit: 8 }), []);
@@ -107,11 +107,11 @@ test("optional Marketplace preparation installed after search startup becomes se
       });
 
       assert.deepEqual(search.searchTreasureIds(collector, "championship serial parallel", { limit: 8 }), [treasure.id]);
-      assert.deepEqual(search.searchTreasureIds(collector, "edge whitening", { limit: 8 }), [treasure.id]);
       const diagnostics = search.diagnostics(collector);
       assert.equal(diagnostics.lastSynchronization.mode, "incremental");
       assert.equal(diagnostics.lastSynchronization.inspectedTreasureCount, 1);
       assert.equal(diagnostics.metrics.fullRebuilds, 1);
+      assert.deepEqual(search.searchTreasureIds(collector, "edge whitening", { limit: 8 }), [treasure.id]);
     } finally {
       marketplace?.close();
       search.close();
