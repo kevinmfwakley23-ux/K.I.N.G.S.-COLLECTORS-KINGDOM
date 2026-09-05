@@ -23,6 +23,9 @@ const required = [
   "dist/apps/web/public/vault-details.css",
   "dist/apps/web/public/vault-saved-views.js",
   "dist/apps/web/public/vault-saved-views.css",
+  "dist/apps/web/public/vault-evidence.js",
+  "dist/apps/web/public/vault-evidence.css",
+  "dist/apps/web/public/vault-ui-styles.js",
   "dist/apps/web/public/styles.css",
   "dist/apps/web/public/world.css",
   "dist/apps/web/public/assets/keeper.svg",
@@ -45,6 +48,7 @@ const required = [
   "dist/packages/vault/src/attributes.mjs",
   "dist/packages/vault/src/search.mjs",
   "dist/packages/vault/src/saved-searches.mjs",
+  "dist/packages/vault/src/evidence.mjs",
   "dist/packages/vault/src/intelligence.mjs",
   "dist/build-manifest.json"
 ];
@@ -52,4 +56,4 @@ const required = [
 for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
 if (manifest.phase !== "IMP-005-VAULT-PHASE-1") throw new Error("Unexpected build phase in manifest.");
-console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 output, including portable intake, provenance, category intelligence, extended search, saved Vault views, and bounded Royal Curator context.");
+console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 output, including portable intake, provenance, category intelligence, extended search, saved Vault views, protected evidence documents, live enrichment UI assets, and bounded Royal Curator context.");
