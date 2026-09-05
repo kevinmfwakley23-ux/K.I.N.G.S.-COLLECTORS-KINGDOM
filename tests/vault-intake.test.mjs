@@ -90,8 +90,8 @@ test("Royal Intake Queue surfaces exact existing Vault identifier candidates wit
       category: "Video Game",
       manufacturer: "Nintendo",
       externalIdentifiers: {
-        upc: "045496630584",
-        "provider-reference": "NINTENDO-SMB3-US"
+        "provider-reference": "NINTENDO-SMB3-US",
+        upc: "045496630584"
       }
     });
 
@@ -104,6 +104,26 @@ test("Royal Intake Queue surfaces exact existing Vault identifier candidates wit
     assert.equal(captured.existingVaultCandidates[0].id, treasure.id);
     assert.equal(captured.existingVaultCandidates[0].title, "Super Mario Bros. 3");
     assert.equal(captured.existingVaultCandidates[0].matchedIdentifierType, "upc");
+  });
+});
+
+test("Royal Intake Queue safely ignores arbitrary provider-specific external identifier keys", async () => {
+  await withIntake(async ({ vaultService, intakeService }) => {
+    vaultService.createTreasure(collectorA, {
+      title: "Provider-specific catalog record",
+      category: "Other",
+      externalIdentifiers: {
+        "future-provider-object-key": "opaque-provider-value",
+        "custom-platform-ref": "opaque-secondary-value"
+      }
+    });
+
+    const captured = intakeService.capture(collectorA, {
+      identifierType: "catalog",
+      identifierValue: "CAT-100"
+    }).item;
+
+    assert.deepEqual(captured.existingVaultCandidates, []);
   });
 });
 
