@@ -1,4 +1,5 @@
 import { BROWSER_CARD_SIZE_PROFILES, BROWSER_CENTERING_PROFILES, evaluateBrowserCentering, guidePercent, measureBrowserCentering } from "./vault-grading-core.js";
+import { detectCardGeometry } from "./vault-grading-geometry-core.js";
 import { analyzeBrowserCapturePixels, captureQualityLabel } from "./vault-grading-image-core.js";
 
 function node(tag, className, text) {
@@ -68,7 +69,7 @@ export function createVaultGradingUi() {
   copy.append(
     node("p", "eyebrow", "AI Pre-Grade Lab"),
     node("h2", "", "Measure first. Estimate second. Never fake an official grade."),
-    node("p", "muted-copy", "Load a straight-on card photo, align the four inner-border guides, and compare measured centering against published reference thresholds. The image is also inspected locally for resolution, focus, glare, exposure and contrast before later defect detectors are allowed to trust it.")
+    node("p", "muted-copy", "Load a straight-on card photo, align the four inner-border guides, and compare measured centering against published reference thresholds. The Kingdom also checks image quality and can detect the outer card rectangle on a solid contrasting background to assess crop, aspect ratio and perspective before trusting the photo.")
   );
   copy.querySelector("h2").id = "ai-pregrade-title";
   heading.append(copy, node("span", "grading-advisory-badge", "Advisory • not an official grade"));
@@ -103,19 +104,21 @@ export function createVaultGradingUi() {
   const workspace = node("div", "grading-workspace");
   const previewColumn = node("div", "grading-preview-column");
   const preview = node("div", "grading-image-stage");
-  const empty = node("div", "grading-image-empty", "Choose a straight-on card photo. Keep the full card edge visible, avoid sleeves/toploaders when possible, use diffuse light, and minimize perspective.");
+  const empty = node("div", "grading-image-empty", "Choose a straight-on card photo. Put the unsleeved card on a solid contrasting matte background, keep all four card edges visible, use diffuse light, and minimize perspective.");
   const image = document.createElement("img");
   image.alt = "Card preview for centering measurement";
   image.hidden = true;
+  const detectedBoundary = node("span", "grading-card-boundary");
+  detectedBoundary.hidden = true;
   const guideLeft = node("span", "grading-guide grading-guide-vertical guide-left");
   const guideRight = node("span", "grading-guide grading-guide-vertical guide-right");
   const guideTop = node("span", "grading-guide grading-guide-horizontal guide-top");
   const guideBottom = node("span", "grading-guide grading-guide-horizontal guide-bottom");
-  preview.append(empty, image, guideLeft, guideRight, guideTop, guideBottom);
+  preview.append(empty, image, detectedBoundary, guideLeft, guideRight, guideTop, guideBottom);
   const imageStatus = node("p", "muted-copy grading-image-status", "No image loaded. Centering measurements still work as a manual calculator.");
 
   const qualityPanel = node("section", "grading-quality-panel");
-  qualityPanel.append(node("h3", "", "Capture-quality analysis"));
+  qualityPanel.append(node("h3", "", "Capture-quality & card-geometry analysis"));
   const qualitySummary = node("p", "grading-quality-summary", "Not analyzed");
   const qualityMetrics = node("div", "grading-quality-metrics");
   const qualityWarnings = node("ul", "grading-quality-warnings");
@@ -123,7 +126,7 @@ export function createVaultGradingUi() {
   previewColumn.append(preview, imageStatus, qualityPanel);
 
   const controls = node("div", "grading-controls");
-  controls.append(node("h3", "", "Inner-border guide distances"), node("p", "muted-copy", "Enter each visible border as a percentage of the card image width/height. The red guides mark the printed inner frame/art boundary. For borderless or asymmetric cards, use an issue-specific reference before interpreting centering."));
+  controls.append(node("h3", "", "Inner-border guide distances"), node("p", "muted-copy", "Enter each visible border as a percentage of the card image width/height. The red guides mark the printed inner frame/art boundary; the gold rectangle is the automatically detected outer card edge when detection succeeds. Borderless/asymmetric cards require issue-specific references."));
   const left = makeBorderInput("grading-border-left", "Left %", 8);
   const right = makeBorderInput("grading-border-right", "Right %", 8);
   const top = makeBorderInput("grading-border-top", "Top %", 8);
@@ -149,13 +152,13 @@ export function createVaultGradingUi() {
   capture.append(node("h3", "", "Full AI pre-grade capture pack"));
   const list = document.createElement("ul");
   for (const item of [
-    "Straight-on front and back for dimensions, centering, color and print registration.",
+    "Straight-on front and back on a contrasting matte background for card geometry, centering, color and print registration.",
     "Four high-resolution corner views for whitening, rounding, dings, bends and layering.",
     "Edge/macro views for chipping, notches, roughness and possible trimming signals.",
     "Raking-light surface views from multiple directions for scratches, scuffs, dents, print lines, gloss loss and creases.",
     "Autograph close-up when present; signature comparison must retain sourced reference exemplars and cannot claim professional authentication."
   ]) list.append(node("li", "", item));
-  capture.append(list, node("p", "muted-copy", "Capture-quality analysis is live. Corner/edge/surface/color/autograph evidence contracts are live. Automatic defect localization, perspective/card-edge detection, color-reference comparison and sourced autograph retrieval remain separate detectors and are not represented as completed here."));
+  capture.append(list, node("p", "muted-copy", "Capture-quality analysis and contrast-background card-edge/crop/perspective detection are live. Corner/edge/surface/color/autograph evidence contracts are live. Automatic defect localization, color-reference comparison and sourced autograph retrieval remain separate detectors and are not represented as completed here."));
   panel.append(capture);
 
   importPanel.before(panel);
@@ -182,18 +185,41 @@ export function createVaultGradingUi() {
     }
   }
 
-  function renderQuality(result) {
-    qualitySummary.textContent = captureQualityLabel(result);
-    qualitySummary.className = `grading-quality-summary ${result.automaticChecksPass ? "pass" : "miss"}`;
-    qualityMetrics.replaceChildren(
+  function renderQuality(result, geometry) {
+    const geometryPasses = geometry?.detected && geometry.usableForCentering;
+    const combinedPass = result.automaticChecksPass && geometryPasses;
+    qualitySummary.textContent = combinedPass
+      ? "Photo quality and card geometry pass the current automatic checks"
+      : `${captureQualityLabel(result)}${geometry?.detected ? " • card geometry review needed" : " • card edge detection unavailable"}`;
+    qualitySummary.className = `grading-quality-summary ${combinedPass ? "pass" : "miss"}`;
+
+    const rows = [
       metricRow("Resolution", `${result.sourceWidth} × ${result.sourceHeight} • ${result.megapixels} MP`, result.resolutionAdequate ? "pass" : "miss"),
       metricRow("Sharpness", `gradient ${result.meanGradient}`, result.focusAdequate ? "pass" : "miss"),
       metricRow("Glare/clipping risk", formatPercent(result.glareRiskFraction), result.glareAcceptable ? "pass" : "miss"),
       metricRow("Exposure", `mean ${result.meanLuminance}`, result.exposureAcceptable ? "pass" : "miss"),
-      metricRow("Contrast", `σ ${result.contrastStdDev}`, result.contrastAdequate ? "pass" : "miss"),
-      metricRow("Crop / perspective", "manual confirmation required", "pending")
-    );
-    qualityWarnings.replaceChildren(...result.warnings.map((warning) => node("li", "", warning)));
+      metricRow("Contrast", `σ ${result.contrastStdDev}`, result.contrastAdequate ? "pass" : "miss")
+    ];
+
+    if (geometry?.detected) {
+      rows.push(
+        metricRow("Card-edge detection", `confidence ${Math.round(geometry.confidence * 100)}%`, geometry.confidence >= 0.65 ? "pass" : "miss"),
+        metricRow("Whole-card crop", geometry.cropComplete ? "all four edges inside frame" : "incomplete / too close to frame", geometry.cropComplete ? "pass" : "miss"),
+        metricRow("Perspective", geometry.perspectiveAcceptable ? `within tolerance • width Δ ${formatPercent(geometry.widthVariation)}` : `retake straight-on • width Δ ${formatPercent(geometry.widthVariation)}`, geometry.perspectiveAcceptable ? "pass" : "miss"),
+        metricRow("Card aspect ratio", geometry.aspectRatioAcceptable ? `matches selected profile • deviation ${formatPercent(geometry.aspectRatioDeviation)}` : `profile mismatch • deviation ${formatPercent(geometry.aspectRatioDeviation)}`, geometry.aspectRatioAcceptable ? "pass" : "miss")
+      );
+      detectedBoundary.hidden = false;
+      detectedBoundary.style.left = `${geometry.normalizedBounds.x * 100}%`;
+      detectedBoundary.style.top = `${geometry.normalizedBounds.y * 100}%`;
+      detectedBoundary.style.width = `${geometry.normalizedBounds.width * 100}%`;
+      detectedBoundary.style.height = `${geometry.normalizedBounds.height * 100}%`;
+    } else {
+      rows.push(metricRow("Card geometry", geometry?.reason ?? "Select a standard/Japanese card-size profile to enable automatic geometry validation.", "pending"));
+      detectedBoundary.hidden = true;
+    }
+    qualityMetrics.replaceChildren(...rows);
+    const warnings = [...result.warnings, ...(geometry?.warnings ?? []), ...(geometry?.detected ? [] : [geometry?.reason].filter(Boolean))];
+    qualityWarnings.replaceChildren(...warnings.map((warning) => node("li", "", warning)));
   }
 
   async function analyzeLoadedImage() {
@@ -208,19 +234,22 @@ export function createVaultGradingUi() {
     if (!context) throw new Error("This browser cannot create the pixel-analysis canvas.");
     context.drawImage(image, 0, 0, sampleWidth, sampleHeight);
     const pixels = context.getImageData(0, 0, sampleWidth, sampleHeight);
-    const quality = analyzeBrowserCapturePixels({
-      width: pixels.width,
-      height: pixels.height,
-      data: pixels.data,
-      sourceWidth: image.naturalWidth,
-      sourceHeight: image.naturalHeight
-    });
-    renderQuality(quality);
-    imageStatus.textContent = `${image.naturalWidth} × ${image.naturalHeight} local image analyzed. ${quality.readinessReason}`;
+    const quality = analyzeBrowserCapturePixels({ width: pixels.width, height: pixels.height, data: pixels.data, sourceWidth: image.naturalWidth, sourceHeight: image.naturalHeight });
+    const sizeProfile = BROWSER_CARD_SIZE_PROFILES[size.value];
+    const geometry = sizeProfile?.widthMm && sizeProfile?.heightMm
+      ? detectCardGeometry({ width: pixels.width, height: pixels.height, data: pixels.data, expectedWidthMm: sizeProfile.widthMm, expectedHeightMm: sizeProfile.heightMm })
+      : null;
+    renderQuality(quality, geometry);
+    imageStatus.textContent = geometry?.detected
+      ? `${image.naturalWidth} × ${image.naturalHeight} analyzed locally. Card edge method: ${geometry.method}. ${geometry.usableForCentering ? "Geometry is usable for centering review." : "Retake or correct the capture before trusting centering."}`
+      : `${image.naturalWidth} × ${image.naturalHeight} analyzed locally. ${quality.readinessReason}`;
   }
 
   for (const input of [left.input, right.input, top.input, bottom.input, profile, side]) input.addEventListener("input", () => {
     try { renderCentering(); } catch (error) { imageStatus.textContent = error.message; }
+  });
+  size.addEventListener("change", () => {
+    if (!image.hidden && image.complete) analyzeLoadedImage().catch((error) => { imageStatus.textContent = error.message; });
   });
 
   file.addEventListener("change", () => {
@@ -238,7 +267,7 @@ export function createVaultGradingUi() {
       try {
         await analyzeLoadedImage();
       } catch (error) {
-        imageStatus.textContent = `Image loaded, but local quality analysis failed: ${error.message}`;
+        imageStatus.textContent = `Image loaded, but local analysis failed: ${error.message}`;
       }
     };
     image.src = objectUrl;
