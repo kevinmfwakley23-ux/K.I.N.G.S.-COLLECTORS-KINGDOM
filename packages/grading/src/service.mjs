@@ -83,6 +83,7 @@ function normalizeCentering(input, profileId) {
 
 function referencedMediaIds(input = {}) {
   const ids = [];
+  for (const calibration of Array.isArray(input.calibrationEvidence) ? input.calibrationEvidence : []) if (calibration?.sourceMediaId) ids.push(calibration.sourceMediaId);
   for (const capture of Array.isArray(input.captureQuality) ? input.captureQuality : []) if (capture?.sourceMediaId) ids.push(capture.sourceMediaId);
   for (const coverage of Array.isArray(input.detectorCoverage) ? input.detectorCoverage : []) {
     for (const mediaId of Array.isArray(coverage?.sourceMediaIds) ? coverage.sourceMediaIds : []) if (mediaId) ids.push(mediaId);
@@ -95,9 +96,10 @@ function referencedMediaIds(input = {}) {
   return ids;
 }
 
-function derivedConfidence({ centering, captureQuality, defects, autographComparison }) {
+function derivedConfidence({ centering, captureQuality, calibrationEvidence, defects, autographComparison }) {
   const values = [];
   if (centering?.measurement && Number.isFinite(centering.measurement.confidence)) values.push(centering.measurement.confidence);
+  for (const calibration of Array.isArray(calibrationEvidence) ? calibrationEvidence : []) if (Number.isFinite(calibration?.confidence)) values.push(Number(calibration.confidence));
   for (const capture of Array.isArray(captureQuality) ? captureQuality : []) if (Number.isFinite(capture?.analyzerConfidence)) values.push(Number(capture.analyzerConfidence));
   for (const defect of Array.isArray(defects) ? defects : []) if (Number.isFinite(defect?.confidence)) values.push(Number(defect.confidence));
   if (Number.isFinite(autographComparison?.confidence)) values.push(Number(autographComparison.confidence));
@@ -178,7 +180,7 @@ export function createPregradeAnalysisService({ vaultStore, mediaRepository, ana
     const sourceMediaSet = new Set(sourceMediaIds);
     for (const mediaId of referencedMediaIds(input)) {
       const cleaned = cleanIdentifier(mediaId, "evidence_source_media_id", { required: true });
-      if (!sourceMediaSet.has(cleaned)) throw new VaultError("pregrade_evidence_media_not_linked", "Capture, detector coverage, defect and autograph evidence may reference only sourceMediaIds explicitly linked to this analysis.");
+      if (!sourceMediaSet.has(cleaned)) throw new VaultError("pregrade_evidence_media_not_linked", "Capture, calibration, detector coverage, defect and autograph evidence may reference only sourceMediaIds explicitly linked to this analysis.");
     }
 
     const centering = normalizeCentering(input.centering, profile.id);
@@ -187,6 +189,7 @@ export function createPregradeAnalysisService({ vaultStore, mediaRepository, ana
     const confidence = derivedConfidence({
       centering,
       captureQuality: input.captureQuality,
+      calibrationEvidence: input.calibrationEvidence,
       defects: input.defects,
       autographComparison: input.autographComparison
     });
@@ -200,6 +203,7 @@ export function createPregradeAnalysisService({ vaultStore, mediaRepository, ana
         cardSizeProfile: cardSize.id,
         centering,
         captureQuality: input.captureQuality ?? [],
+        calibrationEvidence: input.calibrationEvidence ?? [],
         detectorCoverage: input.detectorCoverage ?? [],
         defects: input.defects ?? [],
         autographComparison: input.autographComparison ?? null,
@@ -243,6 +247,8 @@ export function createPregradeAnalysisService({ vaultStore, mediaRepository, ana
         profileVersion: profile.profileVersion,
         cardSizeProfile: cardSize.id,
         sourceMediaCount: sourceMediaIds.length,
+        calibrationEvidenceCount: analysis.calibrationEvidence.length,
+        independentPhysicalMeasurementAvailable: analysis.calibrationEvidence.some((entry) => entry.valid === true),
         analysisSha256,
         officialGrade: false,
         physicalAuthentication: false
@@ -271,6 +277,7 @@ export function createPregradeAnalysisService({ vaultStore, mediaRepository, ana
       estimate: estimateAdvisoryGradeRange(records),
       sourceAnalysisCount: records.length,
       computationAuthority: "server-aggregated-from-stored-client-computed-advisory-evidence",
+      physicalMeasurementRequiresIndependentCalibration: true,
       independentlyVerifiedPixels: false,
       advisoryOnly: true,
       officialGrade: false,
