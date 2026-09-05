@@ -1,0 +1,16 @@
+.tag-recommendation-section { margin-top: 1rem; }
+.tag-recommendation-heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+.tag-recommendation-heading h3 { margin: 0; font-size: 1rem; }
+.tag-recommendation-heading .empty-copy { max-width: 72ch; }
+.tag-recommendation-list { margin: .75rem 0 0; padding: 0; list-style: none; display: grid; gap: .55rem; }
+.tag-recommendation-item { padding: .75rem .85rem; border: 1px solid var(--line); background: rgba(255,255,255,.72); }
+.tag-recommendation-topline { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
+.tag-recommendation-tag { color: var(--gold-deep); font: 800 .86rem/1.2 system-ui, sans-serif; }
+.tag-recommendation-tag::before { content: "#"; }
+.tag-recommendation-strength { border: 1px solid var(--line); padding: .25rem .42rem; font: 700 .64rem/1.2 system-ui, sans-serif; text-transform: uppercase; letter-spacing: .05em; }
+.tag-recommendation-item p { margin: .45rem 0 0; color: var(--ink-soft); font: .76rem/1.5 system-ui, sans-serif; }
+.tag-recommendation-empty { color: var(--ink-soft); font: .78rem/1.55 system-ui, sans-serif; }
+@media (max-width: 640px) {
+  .tag-recommendation-item { padding: .7rem; }
+  .tag-recommendation-topline { align-items: flex-start; flex-direction: column; gap: .4rem; }
+}
