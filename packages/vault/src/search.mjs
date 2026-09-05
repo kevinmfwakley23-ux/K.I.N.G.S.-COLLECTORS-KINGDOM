@@ -88,13 +88,20 @@ function ensureSearchMetaColumns(database) {
 }
 
 function versionRows(database, accountId) {
+  const attributeUpdated = tableExists(database, "vault_treasure_attributes")
+    ? `COALESCE((SELECT MAX(a.updated_at) FROM vault_treasure_attributes a
+        WHERE a.account_id = t.account_id AND a.treasure_id = t.id), '')`
+    : "''";
+  const ownershipUpdated = tableExists(database, "vault_ownership_history")
+    ? `COALESCE((SELECT MAX(o.created_at) FROM vault_ownership_history o
+        WHERE o.account_id = t.account_id AND o.treasure_id = t.id), '')`
+    : "''";
+
   return database.prepare(`SELECT
       t.id AS treasure_id,
       t.updated_at AS core_updated_at,
-      COALESCE((SELECT MAX(a.updated_at) FROM vault_treasure_attributes a
-        WHERE a.account_id = t.account_id AND a.treasure_id = t.id), '') AS attribute_updated_at,
-      COALESCE((SELECT MAX(o.created_at) FROM vault_ownership_history o
-        WHERE o.account_id = t.account_id AND o.treasure_id = t.id), '') AS ownership_updated_at,
+      ${attributeUpdated} AS attribute_updated_at,
+      ${ownershipUpdated} AS ownership_updated_at,
       CAST((SELECT COUNT(*) FROM vault_audit va
         WHERE va.account_id = t.account_id AND va.treasure_id = t.id
         AND va.event_type IN ('vault.evidence_added','vault.evidence_updated','vault.evidence_removed')) AS TEXT) AS evidence_revision,
@@ -107,6 +114,17 @@ function versionRows(database, accountId) {
 }
 
 function contentExpression(database) {
+  const attributeContent = tableExists(database, "vault_treasure_attributes")
+    ? `COALESCE((SELECT GROUP_CONCAT(
+      a.field_label || ' ' || a.value_json || ' ' || a.source_type || ' ' || a.verification_status || ' ' ||
+      COALESCE(a.verification_provider, '') || ' ' || COALESCE(a.verification_reference, ''), ' ')
+      FROM vault_treasure_attributes a WHERE a.account_id = t.account_id AND a.treasure_id = t.id), '')`
+    : "''";
+  const ownershipContent = tableExists(database, "vault_ownership_history")
+    ? `COALESCE((SELECT GROUP_CONCAT(
+      o.event_type || ' ' || COALESCE(o.occurred_on, '') || ' ' || COALESCE(o.counterparty, '') || ' ' || COALESCE(o.notes, ''), ' ')
+      FROM vault_ownership_history o WHERE o.account_id = t.account_id AND o.treasure_id = t.id), '')`
+    : "''";
   const evidenceContent = tableExists(database, "vault_evidence_documents")
     ? `COALESCE((SELECT GROUP_CONCAT(
       e.kind || ' ' || e.title || ' ' || COALESCE(e.source_label, '') || ' ' || COALESCE(e.document_date, '') || ' ' ||
@@ -119,13 +137,8 @@ function contentExpression(database) {
     COALESCE(t.notes, '') || ' ' || COALESCE(t.valuation_source, '') || ' ' || COALESCE(t.purchase_date, '') || ' ' ||
     COALESCE(f.name, '') || ' ' || COALESCE(l.name, '') || ' ' ||
     COALESCE((SELECT GROUP_CONCAT(tg.tag, ' ') FROM vault_tags tg WHERE tg.treasure_id = t.id), '') || ' ' ||
-    COALESCE((SELECT GROUP_CONCAT(
-      a.field_label || ' ' || a.value_json || ' ' || a.source_type || ' ' || a.verification_status || ' ' ||
-      COALESCE(a.verification_provider, '') || ' ' || COALESCE(a.verification_reference, ''), ' ')
-      FROM vault_treasure_attributes a WHERE a.account_id = t.account_id AND a.treasure_id = t.id), '') || ' ' ||
-    COALESCE((SELECT GROUP_CONCAT(
-      o.event_type || ' ' || COALESCE(o.occurred_on, '') || ' ' || COALESCE(o.counterparty, '') || ' ' || COALESCE(o.notes, ''), ' ')
-      FROM vault_ownership_history o WHERE o.account_id = t.account_id AND o.treasure_id = t.id), '') || ' ' ||
+    ${attributeContent} || ' ' ||
+    ${ownershipContent} || ' ' ||
     ${evidenceContent}
   )`;
 }
