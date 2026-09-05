@@ -6,13 +6,15 @@ K.I.N.G.S. Collector's Kingdom is being built as a collector-first environment f
 
 Active milestone: **IMP-005 — Royal Vault, Phase 1**.
 
-**Latest verified checkpoint:** the Royal Vault now includes permanent owner-scoped treasure records, hierarchical storage, secure private media, voice/talk-to-text, transactional JSON/CSV migration, a cross-device **Royal Intake Queue**, progressive camera barcode scanning, real review-only ISBN and UPC/EAN/GTIN catalog candidates, and an append-only **Provenance & Ownership Ledger** attached to permanent treasure UUIDs.
+**Latest verified checkpoint:** the Royal Vault now includes permanent owner-scoped treasure records, hierarchical storage, secure private media, voice/talk-to-text, transactional JSON/CSV migration, a cross-device **Royal Intake Queue**, progressive camera barcode scanning, real review-only ISBN and UPC/EAN/GTIN catalog candidates, an append-only **Provenance & Ownership Ledger**, and a verified browser bootstrap that actually loads the transactional import, Intake Queue, scanner, and provenance enhancement modules on the Vault page.
 
-Latest verified code gate: **Kingdom Quality Gates #416** — run `33961966066` — **PASS** on commit `cc3e6dd7e25f15e3aece341bc30cd44b238b69b7`.
+Latest verified code gate: **Kingdom Quality Gates #425** — run `33963495455` — **PASS** on commit `34ca527c4f608d07290d43fa32fddacedc5df0f0`.
 
-The provenance ledger supports collector-recorded acquisition, ownership notes, supporting documentation, loans/custody, sale/gift/trade, loss/stolen/recovery, and linked correction events. Ordinary PATCH/DELETE history mutation is deliberately unavailable. Every public entry remains labeled `collector-recorded` and `independentlyVerified: false`; storage does not magically authenticate a provenance claim.
+A connection-interrupted build had left several already-tested Vault enhancement files packaged but not actually loaded by the live Vault page. That gap is now closed through an ordered `vault-extras.js` loader. The loader brings up transactional import first, then Intake Queue, then scanner, then provenance; it stops on the first failed module instead of pretending later enhancements loaded.
 
-The next engineering target is **Vault Reorganization & Bulk Stewardship**: owner-scoped collection rename/edit, safe nested-location rename/reparenting with cycle prevention, then previewed atomic movement of selected treasures between collection groups and physical locations without replacing permanent treasure IDs.
+The reorganization foundation has also advanced: **Quality Gates #422** passed the owner-scoped collection/location repository and cycle-safe service tests. Collection rename preserves membership and permanent treasure IDs; nested location branch moves preserve descendants and treasure references while recalculating paths; self/descendant/cross-owner parent moves are rejected. This reorganization logic is not yet exposed through live PATCH routes or browser edit controls.
+
+The next engineering target is therefore a deliberately small production slice: **authenticated PATCH APIs for collection and location reorganization**, followed by responsive individual edit controls. Previewed atomic bulk treasure movement remains after those single-structure controls are proven.
 
 Evidence-backed current valuation, image recognition, broad category-specific catalog coverage, and Marketplace ownership transfers remain separate future milestones and are not represented as live.
 
@@ -86,6 +88,17 @@ On secure browsers exposing native `BarcodeDetector`, the Vault adds explicit St
 
 Camera permission is least-privilege: `/vault.html` receives `camera=(self)`, while ordinary Kingdom rooms and JSON APIs continue to receive `camera=()`.
 
+### Verified Vault enhancement bootstrap
+
+The live Vault page now schedules one dependency-safe enhancement loader after the core Vault and Keeper code initializes. It loads:
+
+1. transactional import UI;
+2. Royal Intake Queue UI;
+3. progressive scanner UI;
+4. provenance timeline UI.
+
+The loader is regression-tested to preserve that order and stop immediately on a failed dependency rather than leaving later tools in a misleading half-loaded state.
+
 ### Review-only external catalog evidence
 
 The provider-neutral catalog boundary supports:
@@ -99,7 +112,7 @@ UPCitemdb provider prices, offers, merchant links/domains, and images are delibe
 
 ### Provenance & Ownership Ledger
 
-Saved treasures now expose an append-only provenance timeline backed by `vault_provenance_events`.
+Saved treasures expose an append-only provenance timeline backed by `vault_provenance_events`.
 
 Verified behavior includes:
 
@@ -115,12 +128,28 @@ Verified behavior includes:
 - responsive saved-treasure entry/timeline UI;
 - explicit `collector-recorded` / `independentlyVerified: false` truthfulness policy.
 
+### Reorganization foundation
+
+The current green domain foundation supports:
+
+- owner-scoped collection name/description updates;
+- owner-scoped location parent/name/type/notes updates;
+- unique collection-name enforcement;
+- server-authoritative rejection of location self-parenting and descendant cycles;
+- cross-owner parent/reference rejection;
+- moving an entire location branch while preserving descendant IDs;
+- recalculating nested location paths after a branch move;
+- preserving permanent treasure UUIDs and treasure collection/location references;
+- structure-level audit events rather than inventing treasure-change events for a container rename.
+
+This domain/service layer passed Quality Gates #422 but is **not yet represented as a live collector feature** until authenticated PATCH routes and browser controls are added and verified.
+
 ## Truthfulness boundary
 
 Market values remain absent until a real evidence-backed valuation service is implemented. A barcode, image, title match, external provider result, AI suggestion, ISBN match, catalog ID, receipt, certificate number, or collector-entered provenance statement is not automatically authoritative. Provider identifiers and supporting records may contribute evidence, but the permanent Kingdom treasure UUID remains the authoritative item identity.
 
 ## Current next target
 
-**Vault Reorganization & Bulk Stewardship.**
+**Vault Reorganization — authenticated PATCH API slice.**
 
-The next Vault slice will let collectors safely rename collection groups, rename/reparent nested physical locations without cycles, preserve descendant paths and permanent treasure references, and then reorganize selected treasures through a previewed atomic bulk movement workflow. The first bulk slice will be non-destructive; mass archive/delete will remain a separately reviewed capability.
+The next short build will expose the already-green collection/location stewardship service through owner-authenticated PATCH routes, prove owner isolation and cycle errors at the HTTP boundary, and only then add responsive individual edit controls. Previewed atomic bulk treasure movement remains the following slice; destructive mass archive/delete remains separately gated.
