@@ -1,10 +1,11 @@
 const CACHE_PREFIX = "kings-kingdom-static-";
-const CACHE_NAME = `${CACHE_PREFIX}v1`;
+const CACHE_NAME = `${CACHE_PREFIX}v2`;
 const CORE_STATIC = Object.freeze([
   "/assets/kingdom-official-logo.svg",
   "/styles.css",
+  "/brand.css",
   "/world.css",
-  "/manifest.webmanifest"
+  "/manifest.json"
 ]);
 
 self.addEventListener("install", (event) => {
@@ -29,7 +30,7 @@ function isCacheableStatic(request, url) {
   if (request.method !== "GET" || url.origin !== self.location.origin) return false;
   if (url.pathname.startsWith("/api/")) return false;
   if (request.destination === "document") return false;
-  return /\.(?:css|js|svg|webmanifest)$/.test(url.pathname);
+  return /\.(?:css|js|svg|json)$/.test(url.pathname);
 }
 
 self.addEventListener("fetch", (event) => {
