@@ -14,6 +14,7 @@ const required = [
   "dist/packages/identity/src/tokens.mjs",
   "dist/packages/identity/src/sqlite-store.mjs",
   "dist/packages/identity/src/service.mjs",
+  "dist/packages/kings-ai/src/client.mjs",
   "dist/build-manifest.json"
 ];
 
