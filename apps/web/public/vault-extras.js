@@ -8,7 +8,8 @@ export const VAULT_EXTRA_MODULES = Object.freeze([
   "./vault-saved-views-ui.js",
   "./vault-grading-ui.js",
   "./vault-grading-color-ui.js",
-  "./vault-grading-autograph-ui.js"
+  "./vault-grading-autograph-ui.js",
+  "./vault-grading-persistence-ui.js"
 ]);
 
 export async function loadVaultExtras(loadModule = (specifier) => import(specifier)) {
