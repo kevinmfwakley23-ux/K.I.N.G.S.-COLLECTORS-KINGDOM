@@ -1,4 +1,5 @@
 import { BROWSER_CARD_SIZE_PROFILES, BROWSER_CENTERING_PROFILES, evaluateBrowserCentering, guidePercent, measureBrowserCentering } from "./vault-grading-core.js";
+import { analyzeCardContourCondition } from "./vault-grading-contour-core.js";
 import { detectCardGeometry } from "./vault-grading-geometry-core.js";
 import { analyzeBrowserCapturePixels, captureQualityLabel } from "./vault-grading-image-core.js";
 
@@ -54,6 +55,10 @@ function formatPercent(value) {
   return `${Math.round(Number(value) * 1000) / 10}%`;
 }
 
+function signalLabel(signal) {
+  return signal.type === "corner-contour-asymmetry" ? "Possible corner contour damage" : "Possible edge contour roughness";
+}
+
 export function createVaultGradingUi() {
   const mainColumn = document.querySelector(".vault-main-column");
   const importPanel = document.querySelector(".import-panel");
@@ -69,7 +74,7 @@ export function createVaultGradingUi() {
   copy.append(
     node("p", "eyebrow", "AI Pre-Grade Lab"),
     node("h2", "", "Measure first. Estimate second. Never fake an official grade."),
-    node("p", "muted-copy", "Load a straight-on card photo, align the four inner-border guides, and compare measured centering against published reference thresholds. The Kingdom also checks image quality and can detect the outer card rectangle on a solid contrasting background to assess crop, aspect ratio and perspective before trusting the photo.")
+    node("p", "muted-copy", "Load a straight-on card photo, align the four inner-border guides, and compare measured centering against published reference thresholds. The Kingdom checks image quality, outer-card geometry, and the detected physical silhouette for possible corner/edge contour damage before trusting the photo.")
   );
   copy.querySelector("h2").id = "ai-pregrade-title";
   heading.append(copy, node("span", "grading-advisory-badge", "Advisory • not an official grade"));
@@ -123,7 +128,14 @@ export function createVaultGradingUi() {
   const qualityMetrics = node("div", "grading-quality-metrics");
   const qualityWarnings = node("ul", "grading-quality-warnings");
   qualityPanel.append(qualitySummary, qualityMetrics, qualityWarnings);
-  previewColumn.append(preview, imageStatus, qualityPanel);
+
+  const contourPanel = node("section", "grading-quality-panel grading-contour-panel");
+  contourPanel.append(node("h3", "", "Corner & edge silhouette signals"));
+  const contourSummary = node("p", "grading-quality-summary", "Not analyzed");
+  const contourSignals = node("div", "grading-contour-signals");
+  const contourLimitations = node("ul", "grading-quality-warnings");
+  contourPanel.append(contourSummary, contourSignals, contourLimitations);
+  previewColumn.append(preview, imageStatus, qualityPanel, contourPanel);
 
   const controls = node("div", "grading-controls");
   controls.append(node("h3", "", "Inner-border guide distances"), node("p", "muted-copy", "Enter each visible border as a percentage of the card image width/height. The red guides mark the printed inner frame/art boundary; the gold rectangle is the automatically detected outer card edge when detection succeeds. Borderless/asymmetric cards require issue-specific references."));
@@ -158,7 +170,7 @@ export function createVaultGradingUi() {
     "Raking-light surface views from multiple directions for scratches, scuffs, dents, print lines, gloss loss and creases.",
     "Autograph close-up when present; signature comparison must retain sourced reference exemplars and cannot claim professional authentication."
   ]) list.append(node("li", "", item));
-  capture.append(list, node("p", "muted-copy", "Capture-quality analysis and contrast-background card-edge/crop/perspective detection are live. Corner/edge/surface/color/autograph evidence contracts are live. Automatic defect localization, color-reference comparison and sourced autograph retrieval remain separate detectors and are not represented as completed here."));
+  capture.append(list, node("p", "muted-copy", "Capture-quality, card-edge/crop/perspective, and physical silhouette corner/edge contour analysis are live. Contour signals do not detect printed whitening or microscopic surface damage. Surface/color/autograph evidence contracts are live; automatic surface localization, color-reference comparison and sourced autograph retrieval remain separate detectors and are not represented as completed here."));
   panel.append(capture);
 
   importPanel.before(panel);
@@ -192,7 +204,6 @@ export function createVaultGradingUi() {
       ? "Photo quality and card geometry pass the current automatic checks"
       : `${captureQualityLabel(result)}${geometry?.detected ? " • card geometry review needed" : " • card edge detection unavailable"}`;
     qualitySummary.className = `grading-quality-summary ${combinedPass ? "pass" : "miss"}`;
-
     const rows = [
       metricRow("Resolution", `${result.sourceWidth} × ${result.sourceHeight} • ${result.megapixels} MP`, result.resolutionAdequate ? "pass" : "miss"),
       metricRow("Sharpness", `gradient ${result.meanGradient}`, result.focusAdequate ? "pass" : "miss"),
@@ -200,7 +211,6 @@ export function createVaultGradingUi() {
       metricRow("Exposure", `mean ${result.meanLuminance}`, result.exposureAcceptable ? "pass" : "miss"),
       metricRow("Contrast", `σ ${result.contrastStdDev}`, result.contrastAdequate ? "pass" : "miss")
     ];
-
     if (geometry?.detected) {
       rows.push(
         metricRow("Card-edge detection", `confidence ${Math.round(geometry.confidence * 100)}%`, geometry.confidence >= 0.65 ? "pass" : "miss"),
@@ -222,6 +232,36 @@ export function createVaultGradingUi() {
     qualityWarnings.replaceChildren(...warnings.map((warning) => node("li", "", warning)));
   }
 
+  function renderContour(result) {
+    contourSignals.replaceChildren();
+    contourLimitations.replaceChildren();
+    if (!result?.analyzed) {
+      contourSummary.textContent = result?.reason ?? "Card contour not analyzed.";
+      contourSummary.className = "grading-quality-summary miss";
+      return;
+    }
+    if (!result.usable) {
+      contourSummary.textContent = "Contour produced, but capture geometry is not reliable enough for condition conclusions.";
+      contourSummary.className = "grading-quality-summary miss";
+    } else if (!result.signals.length) {
+      contourSummary.textContent = "No asymmetric physical-corner or edge-roughness signals detected at this resolution.";
+      contourSummary.className = "grading-quality-summary pass";
+    } else {
+      contourSummary.textContent = `${result.signals.length} possible physical contour issue${result.signals.length === 1 ? "" : "s"} need closer review.`;
+      contourSummary.className = "grading-quality-summary miss";
+      for (const signal of result.signals) {
+        const card = node("article", "grading-contour-signal");
+        card.append(
+          node("strong", "", `${signalLabel(signal)} • ${signal.region}`),
+          node("span", "", `severity ${Math.round(signal.severity * 100)}% • confidence ${Math.round(signal.confidence * 100)}%`),
+          node("p", "muted-copy", signal.note)
+        );
+        contourSignals.append(card);
+      }
+    }
+    contourLimitations.replaceChildren(...result.limitations.map((limitation) => node("li", "", limitation)));
+  }
+
   async function analyzeLoadedImage() {
     const maxSampleSide = 420;
     const scale = Math.min(1, maxSampleSide / Math.max(image.naturalWidth, image.naturalHeight));
@@ -239,7 +279,9 @@ export function createVaultGradingUi() {
     const geometry = sizeProfile?.widthMm && sizeProfile?.heightMm
       ? detectCardGeometry({ width: pixels.width, height: pixels.height, data: pixels.data, expectedWidthMm: sizeProfile.widthMm, expectedHeightMm: sizeProfile.heightMm })
       : null;
+    const contour = geometry?.detected ? analyzeCardContourCondition({ width: pixels.width, height: pixels.height, data: pixels.data, geometry }) : null;
     renderQuality(quality, geometry);
+    renderContour(contour);
     imageStatus.textContent = geometry?.detected
       ? `${image.naturalWidth} × ${image.naturalHeight} analyzed locally. Card edge method: ${geometry.method}. ${geometry.usableForCentering ? "Geometry is usable for centering review." : "Retake or correct the capture before trusting centering."}`
       : `${image.naturalWidth} × ${image.naturalHeight} analyzed locally. ${quality.readinessReason}`;
@@ -251,7 +293,6 @@ export function createVaultGradingUi() {
   size.addEventListener("change", () => {
     if (!image.hidden && image.complete) analyzeLoadedImage().catch((error) => { imageStatus.textContent = error.message; });
   });
-
   file.addEventListener("change", () => {
     const selected = file.files?.[0];
     if (!selected) return;
@@ -264,11 +305,8 @@ export function createVaultGradingUi() {
     image.onload = async () => {
       empty.hidden = true;
       image.hidden = false;
-      try {
-        await analyzeLoadedImage();
-      } catch (error) {
-        imageStatus.textContent = `Image loaded, but local analysis failed: ${error.message}`;
-      }
+      try { await analyzeLoadedImage(); }
+      catch (error) { imageStatus.textContent = `Image loaded, but local analysis failed: ${error.message}`; }
     };
     image.src = objectUrl;
   });
