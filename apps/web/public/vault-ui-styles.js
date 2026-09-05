@@ -2,7 +2,8 @@ const ENRICHMENT_STYLES = Object.freeze([
   "/vault-import.css",
   "/vault-details.css",
   "/vault-saved-views.css",
-  "/vault-evidence.css"
+  "/vault-evidence.css",
+  "/vault-view-modes.css"
 ]);
 
 for (const href of ENRICHMENT_STYLES) {
