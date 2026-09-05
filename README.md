@@ -6,17 +6,17 @@ K.I.N.G.S. Collector's Kingdom is being built as a collector-first environment f
 
 Active milestone: **IMP-005 — Royal Vault, Phase 1**.
 
-**Latest verified implementation checkpoint:** **AI-assisted card pre-grading foundation with SHA-linked evidence persistence and a read-only Kingdom advisory grade-range engine**, alongside the already verified Royal Vault, Intake, scanner, provenance, saved-view/paging, bulk-reorganization, Pokémon, Magic/Scryfall, PSA certification-evidence and exact sports-card catalog slices.
+**Latest verified implementation checkpoint:** **Explainable AI Card Grading Report + Dimension Evidence**, on top of the verified SHA-linked pre-grading foundation, Royal Vault, Intake, scanner, provenance, saved-view/paging, bulk-reorganization, Pokémon, Magic/Scryfall, PSA certification-evidence and exact sports-card catalog slices.
 
-**Latest verified gate:** **Kingdom Quality Gates #598** — run `33982767676` — **PASS** on implementation commit `bbe7bad9e4282fe987274e3d42403782e0c96bef`.
+**Latest verified implementation gate:** **Kingdom Quality Gates #619** — run `33983841225` — **PASS** on implementation commit `9a5dee7e17dc1dd022a360c192415272f4ad6995`.
 
-The verified grading foundation now includes card-size/grader reference profiles, centering math, browser capture-quality analysis, card geometry/crop/perspective detection, contour-based corner/edge review signals, paired raking-light surface analysis, same-printing color/fade comparison, web-backed autograph similarity review, append-only hashed pre-grade persistence, SHA-256 linkage to exact private Vault media, detector-completion coverage records, and a conservative server-computed advisory range.
+#619 passed lint, type contracts, **239/239 tests**, production build/artifact verification and the production dependency audit with **0 vulnerabilities**.
 
 A Kingdom pre-grade remains **advisory evidence**. It is not an official PSA/BGS/CGC/SGC grade, does not authenticate a physical card or autograph, and cannot silently overwrite the treasure's condition, grade, authenticity, provenance, ownership or value.
 
-### AI card pre-grading — verified foundation
+## AI card pre-grading — verified capability
 
-The Kingdom includes a real AI-assisted card pre-grading/condition-analysis foundation rather than a fake official-grade generator.
+The Kingdom includes a real AI-assisted card pre-grading/condition-analysis system rather than a fake official-grade generator.
 
 Verified capability includes:
 
@@ -37,9 +37,31 @@ Verified capability includes:
 - a deterministic server-side advisory grade range that fails closed on insufficient evidence and deliberately widens when front/back/surface coverage is incomplete;
 - explicit non-mutation flags for official grade, condition, authenticity and value.
 
-The current rubric does **not** reverse-engineer any third-party grader's proprietary overall score. Published grader material is used only as reference evidence. The Kingdom range is its own versioned advisory condition rubric.
+The rubric does **not** reverse-engineer any third-party grader's proprietary overall score. Published grader material is used only as reference evidence. The Kingdom range is its own versioned advisory condition rubric.
 
 Research record: `docs/research/2026-09-05-IMP-005-AI-CARD-PREGRADING.md`.
+
+## Explainable grading report — verified capability
+
+The current verified report makes the grading evidence inspectable instead of hiding it behind a single number.
+
+It includes:
+
+- eight explicit condition dimensions: front/back centering, corners, edges and surface;
+- per-dimension availability, advisory range, confidence and completeness;
+- explicit `needs more evidence` guidance when a dimension is not sufficiently captured;
+- deterministic SHA-256 finding identities bound to the immutable source analysis;
+- normalized defect bounding-area and span metrics without fabricating physical millimeters;
+- append-only collector review decisions: `accepted`, `rejected`, `uncertain`;
+- review decisions change interpretation only; raw detector findings are never deleted or rewritten;
+- full visible append-only review history with timestamps, source analysis and notes;
+- review-aware dimension interpretation;
+- a separately labeled **overall raw-evidence advisory range** that intentionally does not pretend collector review has recalculated it yet;
+- authenticated, owner-scoped, private/no-store report and finding-review HTTP routes;
+- no PATCH/DELETE path for finding reviews;
+- no authoritative grade, condition, authenticity or value mutation.
+
+Current research supporting this direction is recorded in `docs/research/2026-09-05-IMP-005-GRADING-EXPLAINABILITY.md`.
 
 ## Durable engineering records
 
@@ -81,7 +103,7 @@ Current verified Vault capability includes:
 - structured condition/variant/quantity/acquisition/cost/identifier/custom attributes;
 - duplicate-review warnings and normalized search/filter/sort;
 - append-only audit/provenance history;
-- append-only hashed pre-grade analysis history;
+- append-only hashed pre-grade analysis and finding-review history;
 - real statistics and currency-separated purchase totals;
 - portable versioned JSON export;
 - transactional review-first JSON/CSV migration;
@@ -133,19 +155,21 @@ Likewise, a Kingdom AI pre-grade is an **estimated condition analysis** based on
 
 ## Current next target
 
-**IMP-005 — Explainable Grading Report + Dimension Evidence.**
+**IMP-005 — Calibrated Physical Measurement + Capture Scale.**
 
-Current research shows the best direction is not a more mysterious single score. Professional and technology-assisted grading workflows increasingly expose condition dimensions, annotations and measurable defect evidence. The next verified slice will adapt those ideas into Kingdom-owned transparent reporting:
+The next measurement slice must not infer millimeters merely because a card-size profile is known. Absolute physical measurements require an independent known-size reference in the capture.
 
-1. add separate front/back evidence summaries for centering, corners, edges and surface;
-2. compute dimension-level advisory scores/ranges only when that dimension has sufficient evidence;
-3. add measured defect metadata such as affected normalized area/length where the detector can support it;
-4. distinguish likely manufacturing artifacts from handling/wear evidence when enough evidence exists, without pretending certainty;
-5. expose annotated review candidates and collector accept/reject/uncertain decisions without deleting the original detector evidence;
-6. keep human-review decisions append-only and attributable;
-7. add report completeness and `needs more capture` guidance per dimension;
-8. keep third-party grader standards as versioned references rather than proprietary-score emulation;
-9. pass full Kingdom Quality Gates;
-10. update README and mission-progress ledger before merge.
+Build next in this order:
 
-Later separate milestones remain: lawful evidence-backed market valuation/value history, image-based collectible identification, insurance/reporting expansion, additional official grader integrations, Marketplace ownership transfer/settlement, and destructive bulk archive/delete flows.
+1. research and define an independent calibration-reference format suitable for phone/desktop capture;
+2. version the calibration geometry and fail closed when the scale reference is absent, cropped, distorted or ambiguous;
+3. compute pixel-to-millimeter calibration only from the independent reference;
+4. add perspective-aware card width/height estimates with explicit confidence/uncertainty;
+5. compare measured card dimensions against the selected card-size profile as advisory evidence, never authenticity proof;
+6. convert normalized detector bounding spans to approximate millimeter spans only when calibration quality is sufficient;
+7. retain normalized metrics when physical calibration is unavailable;
+8. expose calibration status, source image, profile, confidence and limitations in the explainable report;
+9. add responsive capture guidance and calibration validation;
+10. pass full Kingdom Quality Gates and update the durable records before merge.
+
+Later separate milestones remain: reliable manufacturing-vs-handling origin assessment, lawful evidence-backed market valuation/value history, image-based collectible identification, alternate-light/UV/spectral analysis, additional official grader integrations, insurance/reporting expansion, Marketplace ownership transfer/settlement, and destructive bulk archive/delete flows.
