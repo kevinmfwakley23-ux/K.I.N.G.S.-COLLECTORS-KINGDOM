@@ -94,7 +94,7 @@ test("pre-grade service refuses client-manufactured overall grades and owner-cro
   });
 });
 
-test("capture, defect and paired detector evidence may reference only private media explicitly linked to the same treasure", async () => {
+test("capture, detector coverage, defect and paired evidence may reference only private media explicitly linked to the same treasure", async () => {
   await withRuntime(async ({ vaultService, mediaRepository, service }) => {
     const identity = { id: "owner-a" };
     const treasure = vaultService.createTreasure(identity, { title: "Media-linked Card", category: "Trading Card" });
@@ -148,6 +148,26 @@ test("capture, defect and paired detector evidence may reference only private me
         analyzerConfidence: 0.92,
         warnings: []
       }],
+      detectorCoverage: [
+        {
+          detector: "contour",
+          side: "front",
+          sourceMediaIds: [media.id],
+          completed: true,
+          usableForConditionInference: true,
+          reviewCandidateCount: 1,
+          method: "contrast-silhouette-contour-v1"
+        },
+        {
+          detector: "paired-raking-light",
+          side: "front",
+          sourceMediaIds: [media.id, companion.id],
+          completed: true,
+          usableForConditionInference: true,
+          reviewCandidateCount: 1,
+          method: "paired-raking-light-difference-v1"
+        }
+      ],
       defects: [
         {
           type: "corner-contour-anomaly",
@@ -171,8 +191,24 @@ test("capture, defect and paired detector evidence may reference only private me
     });
     assert.deepEqual(created.sourceMediaIds, [media.id, companion.id]);
     assert.equal(created.analysis.captureQuality[0].sourceMediaId, media.id);
+    assert.equal(created.analysis.detectorCoverage[1].sourceMediaIds[1], companion.id);
     assert.equal(created.analysis.defects[1].comparisonMediaId, companion.id);
 
+    assert.throws(
+      () => service.append(identity, treasure.id, {
+        sourceMediaIds: [media.id],
+        detectorCoverage: [{
+          detector: "paired-raking-light",
+          side: "front",
+          sourceMediaIds: [media.id, companion.id],
+          completed: true,
+          usableForConditionInference: true,
+          reviewCandidateCount: 0,
+          method: "paired-raking-light-difference-v1"
+        }]
+      }),
+      (error) => error instanceof VaultError && error.code === "pregrade_evidence_media_not_linked"
+    );
     assert.throws(
       () => service.append(identity, treasure.id, {
         sourceMediaIds: [media.id],
