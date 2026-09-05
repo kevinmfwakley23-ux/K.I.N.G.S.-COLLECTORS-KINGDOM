@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { extname, resolve, sep } from "node:path";
+import { vaultImageBytesMatchType } from "./media-security.mjs";
 
 const LOCATION_KINDS = new Set([
   "room", "safe", "cabinet", "display-case", "shelf", "binder", "page", "pocket", "box", "row", "divider", "container", "other"
@@ -396,6 +397,11 @@ export function createVaultService({ store, mediaRoot, now = () => new Date() } 
     if (!extension) throw new VaultError("unsupported_image_type", "Vault images must be JPEG, PNG, WebP, HEIC, or HEIF.", 415);
     if (!Buffer.isBuffer(bytes) || bytes.length === 0) throw new VaultError("empty_image", "Image data is required.");
     if (bytes.length > MAX_IMAGE_BYTES) throw new VaultError("image_too_large", "Vault images must be 15 MB or smaller.", 413);
+    const inspection = vaultImageBytesMatchType(bytes, normalizedType);
+    if (!inspection.matches) {
+      const detected = inspection.detectedContentType ? ` Detected ${inspection.detectedContentType}.` : "";
+      throw new VaultError("image_content_mismatch", `Uploaded bytes do not match the declared image type.${detected}`, 415);
+    }
 
     const mediaId = randomUUID();
     const relative = `${collector.id}/${treasure.id}/${mediaId}${extension}`;
