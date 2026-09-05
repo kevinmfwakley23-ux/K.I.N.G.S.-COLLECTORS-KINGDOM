@@ -29,6 +29,20 @@ async function keeperApi(path, options = {}) {
   return body;
 }
 
+function scheduleVaultEnhancements() {
+  if (!document.body?.classList.contains("vault-page")) return;
+  globalThis.setTimeout(async () => {
+    try {
+      const { loadVaultExtras } = await import("./vault-extras.js");
+      await loadVaultExtras();
+    } catch (error) {
+      console.error("Vault enhancement bootstrap failed", error);
+      const status = document.querySelector("#treasure-status");
+      if (status) status.textContent = "Some advanced Vault tools could not load. Core Vault records remain available.";
+    }
+  }, 0);
+}
+
 export function createKeeperController({ roomId = "great-hall" } = {}) {
   const panel = document.querySelector("#keeper-panel");
   const backdrop = document.querySelector("#keeper-backdrop");
@@ -115,4 +129,5 @@ export function createKeeperController({ roomId = "great-hall" } = {}) {
   return Object.freeze({ open, close, send, setRoom });
 }
 
+scheduleVaultEnhancements();
 window.KingdomKeeper = Object.freeze({ createKeeperController });
