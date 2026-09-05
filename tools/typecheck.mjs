@@ -10,6 +10,7 @@ const contractFiles = [
   "packages/identity/src/tokens.mjs",
   "packages/identity/src/sqlite-store.mjs",
   "packages/identity/src/service.mjs",
+  "packages/kings-ai/src/client.mjs",
   "apps/web/server.mjs"
 ];
 
@@ -23,4 +24,4 @@ for (const relative of contractFiles) {
 const entries = await readdir(resolve(root, "packages"), { withFileTypes: true });
 if (!entries.some((entry) => entry.isDirectory())) throw new Error("No package boundaries found.");
 
-console.log("Type contract check passed for the JavaScript foundation and identity core.");
+console.log("Type contract check passed for the JavaScript foundation, identity core, and KINGS AI client boundary.");
