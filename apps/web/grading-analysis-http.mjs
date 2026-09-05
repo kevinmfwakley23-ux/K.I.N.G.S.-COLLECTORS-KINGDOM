@@ -87,6 +87,7 @@ export async function handleGradingAnalysisRoute({
       sourceMediaIds: body.sourceMediaIds,
       centering: body.centering,
       captureQuality: body.captureQuality,
+      detectorCoverage: body.detectorCoverage,
       defects: body.defects,
       autographComparison: body.autographComparison,
       estimatedGradeRange: body.estimatedGradeRange,
