@@ -1,6 +1,7 @@
 import { createKeeperController } from "./keeper.js";
+import { createVoiceController } from "./voice.js";
 
-createKeeperController({ roomId: "vault" });
+const keeper = createKeeperController({ roomId: "vault" });
 
 const state = {
   snapshot: null,
@@ -56,6 +57,11 @@ const elements = {
   treasureNotes: document.querySelector("#treasure-notes"),
   treasureStatus: document.querySelector("#treasure-status"),
   archiveTreasure: document.querySelector("#archive-treasure"),
+  mediaSection: document.querySelector("#treasure-media-section"),
+  mediaFile: document.querySelector("#treasure-media-file"),
+  mediaUpload: document.querySelector("#upload-treasure-media"),
+  mediaStatus: document.querySelector("#treasure-media-status"),
+  mediaList: document.querySelector("#treasure-media-list"),
   importForm: document.querySelector("#import-preview-form"),
   importJson: document.querySelector("#import-json"),
   importResult: document.querySelector("#import-preview-result")
@@ -83,6 +89,43 @@ async function api(path, options = {}) {
   }
   if (!response.ok) throw new Error(body.message ?? "The Royal Vault could not complete that request.");
   return body;
+}
+
+async function uploadMedia(treasureId, file) {
+  const typeByExtension = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+    gif: "image/gif",
+    avif: "image/avif",
+    pdf: "application/pdf"
+  };
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const contentType = file.type || typeByExtension[extension];
+  if (!contentType) throw new Error("The selected file type is not supported by the Royal Vault.");
+
+  const response = await fetch(`/api/vault/treasures/${encodeURIComponent(treasureId)}/media?filename=${encodeURIComponent(file.name)}`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": contentType
+    },
+    body: file
+  });
+  let body = {};
+  try {
+    body = await response.json();
+  } catch {
+    body = {};
+  }
+  if (response.status === 401) {
+    window.location.assign("/auth.html");
+    throw new Error("Authentication is required.");
+  }
+  if (!response.ok) throw new Error(body.message ?? "The Royal Vault could not store that media file.");
+  return body.media;
 }
 
 function node(tag, className, text) {
@@ -121,7 +164,6 @@ function purchaseCostSummary(stats) {
   if (Array.isArray(stats.purchaseTotals) && stats.purchaseTotals.length) {
     return stats.purchaseTotals.map((entry) => formatMoney(entry.totalCents, entry.currency)).join(" • ");
   }
-  if (Number.isInteger(stats.purchaseTotalCents)) return formatMoney(stats.purchaseTotalCents, "USD");
   return "None recorded";
 }
 
@@ -281,6 +323,64 @@ function resetEditor() {
   elements.treasureStatus.textContent = "";
   elements.archiveTreasure.hidden = true;
   elements.editorTitle.textContent = "Add a treasure";
+  elements.mediaSection.hidden = true;
+  elements.mediaFile.value = "";
+  elements.mediaStatus.textContent = "Save the treasure record before adding private media.";
+  elements.mediaList.replaceChildren();
+}
+
+function renderMedia(media) {
+  elements.mediaList.replaceChildren();
+  if (!media.length) {
+    elements.mediaList.append(node("p", "empty-note", "No images or documents are stored for this treasure yet."));
+    return;
+  }
+
+  for (const item of media) {
+    const card = node("article", "vault-media-card");
+    if (item.mediaKind === "image") {
+      const image = document.createElement("img");
+      image.src = item.url;
+      image.alt = `Vault image: ${item.originalName}`;
+      image.loading = "lazy";
+      card.append(image);
+    } else {
+      card.append(node("div", "vault-media-document", "PDF"));
+    }
+
+    const copy = node("div", "vault-media-copy");
+    copy.append(node("strong", "", item.originalName), node("small", "", `${item.contentType} • ${Math.max(1, Math.ceil(item.sizeBytes / 1024))} KiB`));
+    const actions = node("div", "vault-media-actions");
+    const open = node("a", "quiet-button", item.mediaKind === "image" ? "Open" : "Download");
+    open.href = item.url;
+    if (item.mediaKind === "image") open.target = "_blank";
+    const remove = node("button", "danger-button", "Remove");
+    remove.type = "button";
+    remove.addEventListener("click", async () => {
+      if (!window.confirm(`Remove ${item.originalName} from this treasure's private media?`)) return;
+      elements.mediaStatus.textContent = "Removing private media…";
+      try {
+        await api(item.url, { method: "DELETE" });
+        await loadTreasureMedia(item.treasureId);
+        elements.mediaStatus.textContent = "Media removed.";
+      } catch (error) {
+        elements.mediaStatus.textContent = error.message;
+      }
+    });
+    actions.append(open, remove);
+    copy.append(actions);
+    card.append(copy);
+    elements.mediaList.append(card);
+  }
+}
+
+async function loadTreasureMedia(treasureId) {
+  if (!treasureId) {
+    renderMedia([]);
+    return;
+  }
+  const result = await api(`/api/vault/treasures/${encodeURIComponent(treasureId)}/media`);
+  renderMedia(result.media);
 }
 
 function openEditor(treasure = null) {
@@ -307,6 +407,9 @@ function openEditor(treasure = null) {
     elements.treasureAttributes.value = Object.keys(treasure.attributes ?? {}).length ? JSON.stringify(treasure.attributes, null, 2) : "";
     elements.treasureNotes.value = treasure.notes ?? "";
     elements.archiveTreasure.hidden = false;
+    elements.mediaSection.hidden = false;
+    elements.mediaStatus.textContent = "Private media is owner-scoped and served only through authenticated Vault routes.";
+    loadTreasureMedia(treasure.id).catch((error) => { elements.mediaStatus.textContent = error.message; });
   }
   elements.editor.hidden = false;
   elements.editor.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -381,6 +484,15 @@ function toggleForm(form) {
   if (!form.hidden) form.querySelector("input, select, textarea")?.focus();
 }
 
+createVoiceController({
+  keeper,
+  onSearch: async (query) => {
+    elements.search.value = query;
+    await loadTreasures();
+  },
+  onAddTreasure: () => openEditor()
+});
+
 document.querySelector("#new-treasure-button").addEventListener("click", () => openEditor());
 document.querySelector("#inventory-add").addEventListener("click", () => openEditor());
 document.querySelector("#close-editor").addEventListener("click", closeEditor);
@@ -449,14 +561,40 @@ elements.treasureForm.addEventListener("submit", async (event) => {
   elements.treasureStatus.textContent = "Saving authoritative record…";
   try {
     const id = elements.treasureId.value;
-    await api(id ? `/api/vault/treasures/${encodeURIComponent(id)}` : "/api/vault/treasures", {
+    const result = await api(id ? `/api/vault/treasures/${encodeURIComponent(id)}` : "/api/vault/treasures", {
       method: id ? "PATCH" : "POST",
       body: JSON.stringify(treasurePayload())
     });
-    closeEditor();
     await refreshAll();
+    openEditor(result.treasure);
+    elements.treasureStatus.textContent = "Treasure saved. Private images and documents can now be attached to this permanent record.";
   } catch (error) {
     elements.treasureStatus.textContent = error.message;
+  }
+});
+
+elements.mediaUpload.addEventListener("click", async () => {
+  const treasureId = elements.treasureId.value;
+  const file = elements.mediaFile.files?.[0];
+  if (!treasureId) {
+    elements.mediaStatus.textContent = "Save the treasure record before adding media.";
+    return;
+  }
+  if (!file) {
+    elements.mediaStatus.textContent = "Choose an image or PDF first.";
+    return;
+  }
+  elements.mediaStatus.textContent = "Validating and securing private media…";
+  elements.mediaUpload.disabled = true;
+  try {
+    await uploadMedia(treasureId, file);
+    elements.mediaFile.value = "";
+    await loadTreasureMedia(treasureId);
+    elements.mediaStatus.textContent = "Media securely attached to this treasure.";
+  } catch (error) {
+    elements.mediaStatus.textContent = error.message;
+  } finally {
+    elements.mediaUpload.disabled = false;
   }
 });
 
