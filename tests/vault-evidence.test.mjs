@@ -48,7 +48,10 @@ test("evidence documents preserve bytes, integrity metadata, and collector-enter
     assert.match(uploaded.sha256, /^[a-f0-9]{64}$/);
     assert.equal(uploaded.byteSize, PDF.length);
     assert.equal(evidence.list(owner, treasure.id).length, 1);
-    assert.equal(evidence.list(other, treasure.id).length, 0);
+    assert.throws(
+      () => evidence.list(other, treasure.id),
+      (error) => error instanceof VaultError && error.code === "treasure_not_found"
+    );
 
     const stored = await evidence.file(owner, uploaded.id);
     assert.deepEqual(stored.bytes, PDF);
