@@ -27,19 +27,20 @@ async function json(baseUrl, path, options = {}) {
   return { response, body: await response.json() };
 }
 
-async function registerAndSignIn(baseUrl) {
+async function registerAndSignIn(baseUrl, suffix = "pregrade-owner") {
   const password = "Correct Horse Battery Staple!";
+  const email = `${suffix}@example.com`;
   const registration = await json(baseUrl, "/api/auth/register", {
     method: "POST",
-    body: JSON.stringify({ email: "pregrade-owner@example.com", password, displayName: "Pregrade Collector" })
+    body: JSON.stringify({ email, password, displayName: `${suffix} Collector` })
   });
   assert.equal(registration.response.status, 201);
   const signIn = await json(baseUrl, "/api/auth/sign-in", {
     method: "POST",
-    body: JSON.stringify({ email: "pregrade-owner@example.com", password })
+    body: JSON.stringify({ email, password })
   });
   assert.equal(signIn.response.status, 200);
-  return signIn.response.headers.get("set-cookie");
+  return Object.freeze({ cookie: signIn.response.headers.get("set-cookie"), accountId: registration.body.identity.id });
 }
 
 async function withServer(run) {
@@ -61,8 +62,9 @@ async function withServer(run) {
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   const { port } = server.address();
-  try { await run(`http://127.0.0.1:${port}`); }
-  finally {
+  try {
+    await run(`http://127.0.0.1:${port}`, { vaultStore, vaultService, mediaRepository, gradingAnalysisService });
+  } finally {
     server.close();
     await once(server, "close");
     identityStore.close();
@@ -71,9 +73,24 @@ async function withServer(run) {
   }
 }
 
+function createImageMedia(mediaRepository, { ownerAccountId, treasureId, id }) {
+  return mediaRepository.create({
+    id,
+    ownerAccountId,
+    treasureId,
+    mediaKind: "image",
+    storageKey: `test/${id}.png`,
+    originalName: `${id}.png`,
+    contentType: "image/png",
+    sizeBytes: 2048,
+    sha256: id.padEnd(64, "0").slice(0, 64).replace(/[^a-f0-9]/gi, "a").toLowerCase(),
+    createdAt: "2026-09-05T17:00:00.000Z"
+  });
+}
+
 test("stored pre-grade HTTP records are authenticated, append-only, advisory and do not mutate treasure fields", async () => {
   await withServer(async (baseUrl) => {
-    const cookie = await registerAndSignIn(baseUrl);
+    const { cookie } = await registerAndSignIn(baseUrl);
     const createdTreasure = await json(baseUrl, "/api/vault/treasures", {
       method: "POST",
       headers: { cookie },
@@ -136,7 +153,7 @@ test("stored pre-grade HTTP records are authenticated, append-only, advisory and
 
 test("stored pre-grade HTTP boundary rejects browser-manufactured overall grade estimates", async () => {
   await withServer(async (baseUrl) => {
-    const cookie = await registerAndSignIn(baseUrl);
+    const { cookie } = await registerAndSignIn(baseUrl);
     const createdTreasure = await json(baseUrl, "/api/vault/treasures", {
       method: "POST",
       headers: { cookie },
@@ -150,5 +167,99 @@ test("stored pre-grade HTTP boundary rejects browser-manufactured overall grade 
     });
     assert.equal(response.response.status, 400);
     assert.equal(response.body.error, "pregrade_estimated_grade_not_supported");
+  });
+});
+
+test("advisory estimate HTTP route is read-only, owner-isolated, fail-closed and becomes available only after minimum stored evidence", async () => {
+  await withServer(async (baseUrl, { mediaRepository }) => {
+    const owner = await registerAndSignIn(baseUrl, "estimate-owner");
+    const outsider = await registerAndSignIn(baseUrl, "estimate-outsider");
+    const createdTreasure = await json(baseUrl, "/api/vault/treasures", {
+      method: "POST",
+      headers: { cookie: owner.cookie },
+      body: JSON.stringify({ title: "Estimate Evidence Card", category: "Trading Card", condition: "Excellent", attributes: { grade: "ungraded" } })
+    });
+    assert.equal(createdTreasure.response.status, 201);
+    const treasureId = createdTreasure.body.treasure.id;
+    const analysisRoute = `/api/grading/treasures/${encodeURIComponent(treasureId)}/pregrade-analyses`;
+    const estimateRoute = `/api/grading/treasures/${encodeURIComponent(treasureId)}/pregrade-estimate`;
+
+    const denied = await json(baseUrl, estimateRoute);
+    assert.equal(denied.response.status, 401);
+
+    const outsiderRead = await json(baseUrl, estimateRoute, { headers: { cookie: outsider.cookie } });
+    assert.equal(outsiderRead.response.status, 404);
+    assert.equal(outsiderRead.body.error, "treasure_not_found");
+
+    const before = await json(baseUrl, `/api/vault/treasures/${encodeURIComponent(treasureId)}`, { headers: { cookie: owner.cookie } });
+    const emptyEstimate = await json(baseUrl, estimateRoute, { headers: { cookie: owner.cookie } });
+    assert.equal(emptyEstimate.response.status, 200);
+    assert.equal(emptyEstimate.body.estimate.available, false);
+    assert.equal(emptyEstimate.body.estimate.range, null);
+    assert.equal(emptyEstimate.body.sourceAnalysisCount, 0);
+    assert.equal(emptyEstimate.body.officialGrade, false);
+    assert.equal(emptyEstimate.body.physicalAuthentication, false);
+    assert.equal(emptyEstimate.body.mutatesAuthoritativeGrade, false);
+    assert.equal(emptyEstimate.body.mutatesValue, false);
+
+    const frontMedia = createImageMedia(mediaRepository, { ownerAccountId: owner.accountId, treasureId, id: "front-primary" });
+    const saved = await json(baseUrl, analysisRoute, {
+      method: "POST",
+      headers: { cookie: owner.cookie },
+      body: JSON.stringify({
+        standardProfile: "neutral",
+        cardSizeProfile: "standard-western",
+        sourceMediaIds: [frontMedia.id],
+        centering: { side: "front", left: 50, right: 50, top: 50, bottom: 50, method: "manual-anchor", confidence: 0.9 },
+        captureQuality: [{
+          sourceMediaId: frontMedia.id,
+          view: "front-straight-on",
+          cropComplete: true,
+          resolutionAdequate: true,
+          focusAdequate: true,
+          glareAcceptable: true,
+          perspectiveAcceptable: true,
+          analyzerConfidence: 0.9,
+          warnings: []
+        }],
+        detectorCoverage: [{
+          detector: "contour",
+          side: "front",
+          sourceMediaIds: [frontMedia.id],
+          completed: true,
+          usableForConditionInference: true,
+          reviewCandidateCount: 0,
+          method: "contrast-silhouette-contour-v1",
+          note: "Detector ran with no isolated review candidates."
+        }]
+      })
+    });
+    assert.equal(saved.response.status, 201);
+
+    const partial = await json(baseUrl, estimateRoute, { headers: { cookie: owner.cookie } });
+    assert.equal(partial.response.status, 200);
+    assert.equal(partial.response.headers.get("cache-control"), "private, no-store, max-age=0");
+    assert.equal(partial.body.estimate.available, true);
+    assert.equal(partial.body.estimate.evidenceLevel, "partial");
+    assert.deepEqual(partial.body.estimate.range, { min: 7, max: 10 });
+    assert.equal(partial.body.estimate.officialGrade, false);
+    assert.equal(partial.body.estimate.affiliatedGraderEstimate, false);
+    assert.equal(partial.body.estimate.mutatesTreasure, false);
+    assert.match(partial.body.estimate.disclaimer, /not a PSA, BGS, CGC/i);
+    assert.equal(partial.body.computationAuthority, "server-aggregated-from-stored-client-computed-advisory-evidence");
+    assert.equal(partial.body.independentlyVerifiedPixels, false);
+
+    const after = await json(baseUrl, `/api/vault/treasures/${encodeURIComponent(treasureId)}`, { headers: { cookie: owner.cookie } });
+    assert.equal(after.body.treasure.condition, before.body.treasure.condition);
+    assert.deepEqual(after.body.treasure.attributes, before.body.treasure.attributes);
+    assert.equal(after.body.treasure.purchasePriceCents, before.body.treasure.purchasePriceCents);
+    assert.equal(after.body.treasure.updatedAt, before.body.treasure.updatedAt);
+
+    const post = await json(baseUrl, estimateRoute, { method: "POST", headers: { cookie: owner.cookie }, body: JSON.stringify({}) });
+    assert.equal(post.response.status, 405);
+    const patch = await json(baseUrl, estimateRoute, { method: "PATCH", headers: { cookie: owner.cookie }, body: JSON.stringify({}) });
+    assert.equal(patch.response.status, 405);
+    const removal = await fetch(`${baseUrl}${estimateRoute}`, { method: "DELETE", headers: { cookie: owner.cookie } });
+    assert.equal(removal.status, 405);
   });
 });
