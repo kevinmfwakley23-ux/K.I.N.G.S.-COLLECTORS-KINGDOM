@@ -14,7 +14,13 @@ test("runtime configuration applies secure local defaults", () => {
     cookieSecure: false,
     kingsAiBaseUrl: "http://127.0.0.1:8790",
     kingsAiToken: null,
-    kingsAiTimeoutMs: 70000
+    kingsAiTimeoutMs: 70000,
+    openLibraryBaseUrl: "https://openlibrary.org",
+    catalogContactEmail: null,
+    catalogTimeoutMs: 5000,
+    catalogCacheTtlMs: 21600000,
+    catalogCacheEntries: 500,
+    catalogMinIntervalMs: 1100
   });
 });
 
