@@ -1,0 +1,27 @@
+.system-view-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: .45rem;
+  margin-top: .65rem;
+}
+
+.system-view-button {
+  min-height: 42px;
+  padding: .58rem .62rem;
+  border: 1px solid rgba(118,88,22,.28);
+  background: rgba(255,255,255,.76);
+  color: var(--ink);
+  text-align: left;
+  font: 700 .7rem/1.25 system-ui,sans-serif;
+  cursor: pointer;
+}
+
+.system-view-button:hover,
+.system-view-button:focus-visible {
+  border-color: rgba(118,88,22,.58);
+  background: rgba(248,242,221,.9);
+}
+
+@media (max-width: 640px) {
+  .system-view-list { grid-template-columns: 1fr; }
+}
