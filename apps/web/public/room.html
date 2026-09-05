@@ -17,10 +17,12 @@
         <span><strong>K.I.N.G.S.</strong><small>Collector's Kingdom</small></span>
       </a>
       <div class="topbar-actions">
+        <button class="quiet-button voice-command-button" type="button" data-voice-command aria-label="Use a Kingdom voice command">Voice command</button>
         <button class="quiet-button" type="button" data-keeper-open>Call The Keeper</button>
         <a class="text-link" href="/great-hall.html">← Return to Great Hall</a>
       </div>
     </header>
+    <p id="voice-status" class="voice-status" role="status" aria-live="polite"></p>
 
     <main id="room-main" class="room-layout">
       <section id="room-hero" class="room-hero marble-panel" aria-labelledby="room-title">
@@ -61,7 +63,10 @@
       </div>
       <form id="keeper-form" class="keeper-form">
         <label class="sr-only" for="keeper-input">Message The Keeper</label>
-        <textarea id="keeper-input" maxlength="4000" rows="3" placeholder="Ask The Keeper…" required></textarea>
+        <div class="voice-field-row">
+          <textarea id="keeper-input" maxlength="4000" rows="3" placeholder="Ask The Keeper…" required></textarea>
+          <button class="voice-dictation-button" type="button" data-voice-target="#keeper-input" aria-label="Dictate a message to The Keeper">Mic</button>
+        </div>
         <div class="keeper-form-row">
           <span id="keeper-status" class="form-status" role="status" aria-live="polite"></span>
           <button class="gold-button" type="submit">Send</button>
