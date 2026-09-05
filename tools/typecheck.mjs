@@ -21,6 +21,7 @@ const contractFiles = [
   "packages/vault/src/attributes.mjs",
   "packages/vault/src/search.mjs",
   "packages/vault/src/saved-searches.mjs",
+  "packages/vault/src/evidence.mjs",
   "packages/vault/src/intelligence.mjs",
   "apps/web/server.mjs"
 ];
@@ -35,4 +36,4 @@ for (const relative of contractFiles) {
 const entries = await readdir(resolve(root, "packages"), { withFileTypes: true });
 if (!entries.some((entry) => entry.isDirectory())) throw new Error("No package boundaries found.");
 
-console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, and Royal Vault boundaries, including portable intake, provenance, category intelligence, extended collector search, saved Vault views, and bounded Royal Curator context.");
+console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, and Royal Vault boundaries, including portable intake, provenance, category intelligence, extended collector search, saved Vault views, protected evidence documents, and bounded Royal Curator context.");
