@@ -11,7 +11,11 @@ const required = [
   "dist/apps/web/public/great-hall.js",
   "dist/apps/web/public/room.html",
   "dist/apps/web/public/room.js",
+  "dist/apps/web/public/keeper.js",
   "dist/apps/web/public/styles.css",
+  "dist/apps/web/public/world.css",
+  "dist/apps/web/public/assets/keeper.svg",
+  "dist/apps/web/public/assets/marketplace.svg",
   "dist/config/runtime.mjs",
   "dist/packages/core/src/health.mjs",
   "dist/packages/observability/src/logger.mjs",
@@ -27,4 +31,4 @@ const required = [
 for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
 if (manifest.phase !== "IMP-004-GREAT-HALL") throw new Error("Unexpected build phase in manifest.");
-console.log("Production artifact verification passed for IMP-004 Great Hall build output.");
+console.log("Production artifact verification passed for IMP-004 Great Hall, Keeper, castle, and grounds output.");
