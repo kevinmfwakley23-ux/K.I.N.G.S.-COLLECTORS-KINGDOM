@@ -40,6 +40,76 @@
   filter: drop-shadow(0 5px 6px rgba(0,0,0,.12));
 }
 
+.voice-status {
+  width: min(1540px, calc(100% - 32px));
+  margin: .45rem auto 0;
+  min-height: 1.35rem;
+  color: #6d624d;
+  font-size: .82rem;
+  text-align: right;
+}
+
+.voice-command-button,
+.voice-dictation-button {
+  position: relative;
+}
+
+.voice-command-button::before,
+.voice-dictation-button::before {
+  content: "";
+  display: inline-block;
+  width: .55rem;
+  height: .75rem;
+  margin-right: .42rem;
+  border: 2px solid currentColor;
+  border-radius: .4rem;
+  vertical-align: -.08rem;
+}
+
+.voice-command-button::after,
+.voice-dictation-button::after {
+  content: "";
+  position: absolute;
+  width: .55rem;
+  height: .28rem;
+  border: 2px solid currentColor;
+  border-top: 0;
+  border-radius: 0 0 .5rem .5rem;
+  transform: translate(-1.02rem, .68rem);
+  pointer-events: none;
+}
+
+.voice-dictation-button {
+  align-self: stretch;
+  border: 1px solid rgba(31,30,28,.16);
+  border-radius: 10px;
+  background: rgba(255,255,255,.86);
+  color: #493a18;
+  padding: .55rem .75rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.voice-command-button.voice-listening,
+.voice-dictation-button.voice-listening {
+  outline: 3px solid rgba(177,138,48,.36);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 7px rgba(177,138,48,.1);
+}
+
+.voice-field-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .55rem;
+  align-items: stretch;
+}
+
+.voice-field-row > input,
+.voice-field-row > textarea {
+  min-width: 0;
+}
+
 .grounds-panel {
   margin: 1.25rem 0;
   padding: clamp(1.4rem, 3vw, 2.5rem);
@@ -239,9 +309,14 @@
   .keeper-welcome-copy { padding-bottom: .5rem; }
   .location-visual { min-height: 210px; }
   .vault-door { width: min(250px, 78vw); }
+  .voice-status { width: calc(100% - 18px); text-align: left; }
+  .voice-field-row { grid-template-columns: 1fr; }
+  .voice-dictation-button { justify-self: start; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .keeper-character,
   .marketplace-entrance-art { filter: none; }
+  .voice-command-button.voice-listening,
+  .voice-dictation-button.voice-listening { box-shadow: none; }
 }
