@@ -1,0 +1,33 @@
+.file-button:focus-within {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.treasure-card:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+  border-color: var(--gold-deep);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .treasure-card,
+  .kingdom-dialog,
+  .marble-panel,
+  .marble-card {
+    border-color: CanvasText;
+  }
+  .file-button:focus-within,
+  .treasure-card:focus-visible {
+    outline-color: Highlight;
+  }
+}
