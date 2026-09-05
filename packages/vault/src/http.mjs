@@ -77,10 +77,17 @@ export async function handleVaultRequest({
   const method = request.method ?? "GET";
   const portable = createVaultPortableService({ vaultService });
   const collectibleDetails = attributeService ?? ownershipService?.attributeService ?? null;
+  const favorites = searchService?.favorites ?? null;
   const savedViews = searchService?.savedViews ?? null;
 
   if (pathname === "/api/vault/categories") {
     if (method === "GET") return json(200, { categories: listVaultCategoryProfiles(), customCategoriesAllowed: true });
+    return null;
+  }
+
+  if (pathname === "/api/vault/favorites") {
+    if (!favorites) throw new VaultError("favorites_unavailable", "Vault Favorites are unavailable.", 503);
+    if (method === "GET") return json(200, { count: favorites.count(identity) });
     return null;
   }
 
@@ -121,12 +128,23 @@ export async function handleVaultRequest({
           offset: result.offset,
           hasMore: result.hasMore,
           searchApplied: result.searchApplied,
-          queryTokens: result.queryTokens
+          queryTokens: result.queryTokens,
+          favoriteFilterApplied: result.favoriteFilterApplied === true
         });
       }
       return json(200, vaultService.listTreasures(identity, { query, ...options }));
     }
     if (method === "POST") return json(201, { treasure: vaultService.createTreasure(identity, await readJson(request)) });
+    return null;
+  }
+
+  const favoriteMatch = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/favorite$/);
+  if (favoriteMatch) {
+    if (!favorites) throw new VaultError("favorites_unavailable", "Vault Favorites are unavailable.", 503);
+    const treasureId = decodeURIComponent(favoriteMatch[1]);
+    if (method === "GET") return json(200, { favorite: favorites.get(identity, treasureId) });
+    if (method === "PUT") return json(200, { favorite: favorites.add(identity, treasureId) });
+    if (method === "DELETE") return json(200, { favorite: favorites.remove(identity, treasureId) });
     return null;
   }
 
