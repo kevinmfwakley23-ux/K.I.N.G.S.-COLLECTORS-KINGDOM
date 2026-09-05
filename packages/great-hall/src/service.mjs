@@ -198,7 +198,7 @@ export function createGreatHallService({ identityService, vaultService = null, n
             available: true,
             itemCount: vault.stats.treasureCount,
             unitCount: vault.stats.unitCount,
-            purchaseTotalCents: vault.stats.purchaseTotalCents,
+            purchaseTotals: vault.stats.purchaseTotals,
             estimatedValue: null,
             message: `${vault.stats.treasureCount} treasure records representing ${vault.stats.unitCount} physical units are secured in your Royal Vault. Market value remains unavailable until evidence-backed valuation services are connected.`
           })
@@ -206,7 +206,7 @@ export function createGreatHallService({ identityService, vaultService = null, n
             available: false,
             itemCount: null,
             unitCount: null,
-            purchaseTotalCents: null,
+            purchaseTotals: [],
             estimatedValue: null,
             message: "Collection totals become authoritative when the Vault opens in IMP-005. No estimated collection data is manufactured before that service exists."
           }),
