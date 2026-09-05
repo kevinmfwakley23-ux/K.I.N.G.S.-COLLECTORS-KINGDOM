@@ -12,6 +12,15 @@ function assertPositiveInteger(value, name) {
   if (!Number.isInteger(value) || value < 1) throw new TypeError(`${name} must be a positive integer.`);
 }
 
+function requireText(value, name) {
+  if (typeof value !== "string" || !value.trim()) throw new TypeError(`${name} is required.`);
+  return value.trim();
+}
+
+function isObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 export class KingsAiClientError extends Error {
   constructor(code, message, { statusCode = null, retryable = false, details = null } = {}) {
     super(message);
@@ -136,5 +145,77 @@ export function createKingsAiClient({
     return payload;
   }
 
-  return Object.freeze({ health, listModels, route });
+  async function selectMemory({
+    taskId,
+    missionId,
+    query,
+    memories,
+    inputReferences,
+    expectedOutputs,
+    limit,
+    requestId
+  } = {}) {
+    requireText(taskId, "KINGS AI memory taskId");
+    requireText(missionId, "KINGS AI memory missionId");
+    requireText(query, "KINGS AI memory query");
+    if (!Array.isArray(memories)) throw new TypeError("KINGS AI memory candidates must be an array.");
+    if (limit !== undefined) assertPositiveInteger(limit, "KINGS AI memory limit");
+    const result = await request("/v1/brain/memory/select", {
+      method: "POST",
+      body: {
+        appId,
+        taskId,
+        missionId,
+        query,
+        memories,
+        ...(inputReferences === undefined ? {} : { inputReferences }),
+        ...(expectedOutputs === undefined ? {} : { expectedOutputs }),
+        ...(limit === undefined ? {} : { limit }),
+        ...(requestId === undefined ? {} : { requestId })
+      }
+    });
+    const payload = requireOk(result, "memory_selection_failed");
+    if (!isObject(payload) ||
+        typeof payload.requestId !== "string" ||
+        typeof payload.appId !== "string" ||
+        typeof payload.taskId !== "string" ||
+        typeof payload.missionId !== "string" ||
+        !Number.isInteger(payload.inspectedCount) ||
+        payload.inspectedCount < 0 ||
+        !Array.isArray(payload.selected)) {
+      throw new KingsAiClientError("invalid_memory_response", "KINGS AI memory-selection response is invalid.");
+    }
+    return payload;
+  }
+
+  async function retrieveResearch({ taskId, question, urls, maxSources, requestId } = {}) {
+    requireText(taskId, "KINGS AI research taskId");
+    requireText(question, "KINGS AI research question");
+    if (!Array.isArray(urls) || urls.length === 0) throw new TypeError("KINGS AI research URLs are required.");
+    if (maxSources !== undefined) assertPositiveInteger(maxSources, "KINGS AI research maxSources");
+    const result = await request("/v1/brain/research/retrieve", {
+      method: "POST",
+      body: {
+        appId,
+        taskId,
+        question,
+        urls,
+        ...(maxSources === undefined ? {} : { maxSources }),
+        ...(requestId === undefined ? {} : { requestId })
+      }
+    });
+    const payload = requireOk(result, "research_retrieval_failed");
+    if (!isObject(payload) ||
+        typeof payload.requestId !== "string" ||
+        typeof payload.appId !== "string" ||
+        typeof payload.researchId !== "string" ||
+        typeof payload.taskId !== "string" ||
+        !Array.isArray(payload.sources) ||
+        !Array.isArray(payload.findings)) {
+      throw new KingsAiClientError("invalid_research_response", "KINGS AI research response is invalid.");
+    }
+    return payload;
+  }
+
+  return Object.freeze({ health, listModels, route, selectMemory, retrieveResearch });
 }
