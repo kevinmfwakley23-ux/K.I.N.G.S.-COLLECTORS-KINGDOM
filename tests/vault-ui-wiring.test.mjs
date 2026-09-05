@@ -9,33 +9,47 @@ async function source(relative) {
   return readFile(resolve(root, relative), "utf8");
 }
 
-test("Vault browser entry points reach category guidance, collectible details, provenance, import UI, and saved views", async () => {
-  const [html, vault, provenance, categories, details, savedViews] = await Promise.all([
+test("Vault browser entry points reach category guidance, collectible details, provenance, evidence, import UI, and saved views", async () => {
+  const [html, vault, provenance, categories, details, evidence, savedViews, styles] = await Promise.all([
     source("apps/web/public/vault.html"),
     source("apps/web/public/vault.js"),
     source("apps/web/public/vault-provenance.js"),
     source("apps/web/public/vault-categories.js"),
     source("apps/web/public/vault-details.js"),
-    source("apps/web/public/vault-saved-views.js")
+    source("apps/web/public/vault-evidence.js"),
+    source("apps/web/public/vault-saved-views.js"),
+    source("apps/web/public/vault-ui-styles.js")
   ]);
 
   assert.match(html, /src="\/vault\.js"/);
   assert.match(html, /src="\/vault-import\.js"/);
   assert.match(vault, /from "\.\/vault-provenance\.js"/);
   assert.match(provenance, /from "\.\/vault-details\.js"/);
+  assert.match(provenance, /from "\.\/vault-evidence\.js"/);
   assert.match(provenance, /import "\.\/vault-categories\.js"/);
   assert.match(categories, /import "\.\/vault-saved-views\.js"/);
+  assert.match(categories, /import "\.\/vault-ui-styles\.js"/);
   assert.match(details, /\/api\/vault\/categories/);
   assert.match(details, /\/attributes/);
+  assert.match(evidence, /\/evidence/);
+  assert.match(evidence, /Not independently checked/);
   assert.match(savedViews, /\/api\/vault\/saved-views/);
+  assert.match(styles, /\/vault-import\.css/);
+  assert.match(styles, /\/vault-details\.css/);
+  assert.match(styles, /\/vault-saved-views\.css/);
+  assert.match(styles, /\/vault-evidence\.css/);
 });
 
-test("Vault production UI does not leave enrichment or saved-view intelligence as unreachable packaged assets", async () => {
-  const [provenance, categories] = await Promise.all([
+test("Vault production UI does not leave enrichment, evidence, saved-view intelligence, or their styles as unreachable packaged assets", async () => {
+  const [provenance, categories, styles] = await Promise.all([
     source("apps/web/public/vault-provenance.js"),
-    source("apps/web/public/vault-categories.js")
+    source("apps/web/public/vault-categories.js"),
+    source("apps/web/public/vault-ui-styles.js")
   ]);
   assert.ok(provenance.includes("./vault-categories.js"));
   assert.ok(provenance.includes("createCollectibleDetailsSection"));
+  assert.ok(provenance.includes("createEvidenceSection"));
   assert.ok(categories.includes("./vault-saved-views.js"));
+  assert.ok(categories.includes("./vault-ui-styles.js"));
+  assert.ok(styles.includes("/vault-evidence.css"));
 });
