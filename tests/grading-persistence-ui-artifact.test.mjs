@@ -14,7 +14,8 @@ test("pre-grade persistence UI searches the paged Vault and appends advisory cen
   assert.match(source, /measureBrowserCentering/);
   assert.match(source, /sourceMediaIds: \[\]/);
   assert.match(source, /does not contain an overall grade estimate/i);
-  assert.match(source, /does not change the treasure's authoritative condition, grade, authenticity or value/i);
+  assert.match(source, /never overwrite the treasure's condition, grade, authenticity or value/i);
+  assert.match(source, /Saving will append evidence only; no treasure field will be overwritten/i);
   assert.doesNotMatch(source, /estimatedGradeRange\s*:/);
   assert.doesNotMatch(source, /officialGrade\s*:\s*true|physicalAuthentication\s*:\s*true|mayMutateValue\s*:\s*true/);
 });
