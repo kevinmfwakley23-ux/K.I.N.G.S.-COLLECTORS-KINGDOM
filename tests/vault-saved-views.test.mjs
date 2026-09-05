@@ -51,11 +51,15 @@ test("saved Vault views persist natural query, organization, sort, and display m
   });
 });
 
-test("saved Vault views reject duplicate names and foreign organization references", async () => {
+test("saved Vault views reject duplicate names, missing names, and foreign organization references", async () => {
   await withVault(async ({ vault, search }) => {
     const foreignFolder = vault.createFolder(other, { name: "Private Other Folder" });
     search.savedViews.create(owner, { name: "Favorites", query: "favorite" });
 
+    assert.throws(
+      () => search.savedViews.create(owner, {}),
+      (error) => error instanceof VaultError && error.code === "invalid_saved_view_name"
+    );
     assert.throws(
       () => search.savedViews.create(owner, { name: "favorites", query: "another query" }),
       (error) => error instanceof VaultError && error.code === "saved_view_name_exists"
@@ -64,6 +68,29 @@ test("saved Vault views reject duplicate names and foreign organization referenc
       () => search.savedViews.create(owner, { name: "Foreign", folderId: foreignFolder.id }),
       (error) => error instanceof VaultError && error.code === "folder_not_found"
     );
+  });
+});
+
+test("saved Vault view updates preserve omitted fields and clear explicitly null fields", async () => {
+  await withVault(async ({ search }) => {
+    const saved = search.savedViews.create(owner, {
+      name: "Tagged Comics",
+      query: "Spider-Man",
+      category: "Comics",
+      tag: "favorite",
+      sort: "updated-desc",
+      view: "grid"
+    });
+
+    const preserved = search.savedViews.update(owner, saved.id, { sort: "year-desc" });
+    assert.equal(preserved.query, "Spider-Man");
+    assert.equal(preserved.category, "Comics");
+    assert.equal(preserved.tag, "favorite");
+
+    const cleared = search.savedViews.update(owner, saved.id, { tag: null, query: null });
+    assert.equal(cleared.tag, null);
+    assert.equal(cleared.query, null);
+    assert.equal(cleared.category, "Comics");
   });
 });
 
