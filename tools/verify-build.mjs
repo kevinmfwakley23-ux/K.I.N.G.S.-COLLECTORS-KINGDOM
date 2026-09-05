@@ -84,6 +84,7 @@ const required = [
   "dist/packages/grading/src/profiles.mjs",
   "dist/packages/grading/src/centering.mjs",
   "dist/packages/grading/src/evidence.mjs",
+  "dist/packages/grading/src/aggregate.mjs",
   "dist/packages/grading/src/commons-autograph-provider.mjs",
   "dist/packages/grading/src/repository.mjs",
   "dist/packages/grading/src/service.mjs",
@@ -108,4 +109,4 @@ const required = [
 for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
 if (manifest.phase !== "IMP-005-ROYAL-VAULT-PHASE-1") throw new Error("Unexpected build phase in manifest.");
-console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 including AI card pre-grading profiles, centering, capture-quality/card-geometry/contour/paired-raking-light surface/color analysis, web-backed autograph visual similarity with authenticated Commons search/proxy, append-only hashed pre-grade persistence API/UI, responsive Pre-Grade Lab UI, catalog/cert evidence, provenance, saved views, bulk reorganization, transactional import, Royal Intake, scanner, secure media and Kingdom voice output.");
+console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 including AI card pre-grading profiles, centering, capture-quality/card-geometry/contour/paired-raking-light surface/color analysis, web-backed autograph visual similarity with authenticated Commons search/proxy, SHA-linked detector coverage, append-only hashed pre-grade persistence, read-only server-derived Kingdom advisory evidence range API/UI, responsive Pre-Grade Lab UI, catalog/cert evidence, provenance, saved views, bulk reorganization, transactional import, Royal Intake, scanner, secure media and Kingdom voice output.");
