@@ -4,6 +4,9 @@ import { createServer } from "node:http";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { loadRuntimeConfig } from "../../config/runtime.mjs";
+import { MemoryCatalogCache } from "../../packages/catalog/src/cache.mjs";
+import { createOpenLibraryCatalogProvider } from "../../packages/catalog/src/open-library-provider.mjs";
+import { createCatalogService } from "../../packages/catalog/src/service.mjs";
 import { createHealthSnapshot, createReadinessSnapshot } from "../../packages/core/src/health.mjs";
 import { createGreatHallService } from "../../packages/great-hall/src/service.mjs";
 import { createIdentityService, IdentityError } from "../../packages/identity/src/service.mjs";
@@ -20,6 +23,7 @@ import { createVaultMediaService } from "../../packages/vault/src/media-service.
 import { LocalVaultMediaStorage } from "../../packages/vault/src/media-storage.mjs";
 import { createVaultService, VaultError } from "../../packages/vault/src/service.mjs";
 import { SqliteVaultStore } from "../../packages/vault/src/sqlite-store.mjs";
+import { handleCatalogRoute } from "./catalog-http.mjs";
 import { handleVaultImportRoute } from "./vault-import-http.mjs";
 import { handleVaultIntakeRoute } from "./vault-intake-http.mjs";
 import { handleVaultMediaRoute } from "./vault-media-http.mjs";
@@ -384,6 +388,7 @@ export function createKingdomServer({
   identityService = null,
   greatHallService = null,
   kingsAiClient = null,
+  catalogService = null,
   vaultService = null,
   vaultMediaService = null,
   vaultImportService = null,
@@ -444,6 +449,21 @@ export function createKingdomServer({
         });
         if (handled !== false) return;
         return sendJson(response, 405, { error: "method_not_allowed" }, method);
+      }
+
+      if (requestUrl.pathname === "/api/catalog/candidates") {
+        const handled = await handleCatalogRoute({
+          request,
+          response,
+          requestUrl,
+          identityService,
+          catalogService,
+          securityHeaders: SECURITY_HEADERS
+        });
+        if (handled !== null) {
+          if (handled !== false) return;
+          return sendJson(response, 405, { error: "method_not_allowed" }, method);
+        }
       }
 
       if (requestUrl.pathname === "/api/vault" || requestUrl.pathname.startsWith("/api/vault/")) {
@@ -553,6 +573,21 @@ async function run() {
     mediaRepository: vaultMediaRepository,
     storage: vaultMediaStorage
   });
+  const catalogCache = new MemoryCatalogCache({
+    ttlMs: config.catalogCacheTtlMs,
+    maxEntries: config.catalogCacheEntries
+  });
+  const openLibraryProvider = createOpenLibraryCatalogProvider({
+    baseUrl: config.openLibraryBaseUrl,
+    timeoutMs: config.catalogTimeoutMs,
+    minIntervalMs: config.catalogMinIntervalMs,
+    version: config.version,
+    contactEmail: config.catalogContactEmail
+  });
+  const catalogService = createCatalogService({
+    providers: [openLibraryProvider],
+    cache: catalogCache
+  });
   const greatHallService = createGreatHallService({ identityService, vaultService });
   const kingsAiClient = createKingsAiClient({
     baseUrl: config.kingsAiBaseUrl,
@@ -565,6 +600,7 @@ async function run() {
     identityService,
     greatHallService,
     kingsAiClient,
+    catalogService,
     vaultService,
     vaultMediaService,
     vaultImportService,
