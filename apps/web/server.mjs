@@ -11,6 +11,7 @@ import { SqliteIdentityStore } from "../../packages/identity/src/sqlite-store.mj
 import { clearSessionCookie, parseCookies, sessionCookie } from "../../packages/identity/src/tokens.mjs";
 import { createKingsAiClient, KingsAiClientError } from "../../packages/kings-ai/src/client.mjs";
 import { createLogger } from "../../packages/observability/src/logger.mjs";
+import { createVaultEvidenceService } from "../../packages/vault/src/evidence.mjs";
 import { handleVaultRequest } from "../../packages/vault/src/http.mjs";
 import { createVaultIntelligence } from "../../packages/vault/src/intelligence.mjs";
 import { createVaultOwnershipService } from "../../packages/vault/src/ownership.mjs";
@@ -247,7 +248,8 @@ export function createKingdomServer({
   kingsAiClient = null,
   vaultService = null,
   vaultOwnershipService = null,
-  vaultSearchService = null
+  vaultSearchService = null,
+  vaultEvidenceService = null
 } = {}) {
   return createServer(async (request, response) => {
     const requestStartedAt = performance.now();
@@ -319,7 +321,8 @@ export function createKingdomServer({
           identity,
           vaultService,
           ownershipService: vaultOwnershipService,
-          searchService: vaultSearchService
+          searchService: vaultSearchService,
+          evidenceService: vaultEvidenceService
         });
         if (result === null) return sendJson(response, 405, { error: "method_not_allowed" }, method);
         if (result === false) return sendJson(response, 404, { error: "not_found" }, method);
@@ -354,6 +357,7 @@ async function run() {
   const logger = createLogger({ level: config.logLevel });
   const identityStore = new SqliteIdentityStore(resolve(config.dataDir, "identity.sqlite"));
   const vaultDatabasePath = resolve(config.dataDir, "vault.sqlite");
+  const vaultMediaRoot = resolve(config.dataDir, "media", "vault");
   const vaultStore = new SqliteVaultStore(vaultDatabasePath);
   const vaultOwnershipService = createVaultOwnershipService({ filename: vaultDatabasePath });
   const vaultSearchService = createVaultSearchService({ filename: vaultDatabasePath });
@@ -361,7 +365,13 @@ async function run() {
     store: identityStore,
     sessionTtlMs: config.sessionTtlHours * 60 * 60 * 1000
   });
-  const vaultService = createVaultService({ store: vaultStore, mediaRoot: resolve(config.dataDir, "media", "vault") });
+  const vaultService = createVaultService({ store: vaultStore, mediaRoot: vaultMediaRoot });
+  const vaultEvidenceService = createVaultEvidenceService({
+    filename: vaultDatabasePath,
+    storageRoot: vaultMediaRoot,
+    vaultService
+  });
+  await vaultEvidenceService.sweepCleanup();
   const vaultIntelligence = createVaultIntelligence({
     vaultService,
     searchService: vaultSearchService,
@@ -381,7 +391,8 @@ async function run() {
     kingsAiClient,
     vaultService,
     vaultOwnershipService,
-    vaultSearchService
+    vaultSearchService,
+    vaultEvidenceService
   });
 
   server.on("error", (error) => {
@@ -401,6 +412,7 @@ async function run() {
         process.exitCode = 1;
       }
       identityStore.close();
+      vaultEvidenceService.close();
       vaultSearchService.close();
       vaultOwnershipService.close();
       vaultStore.close();
