@@ -7,6 +7,11 @@ const required = [
   "dist/apps/web/public/index.html",
   "dist/apps/web/public/auth.html",
   "dist/apps/web/public/auth.js",
+  "dist/apps/web/public/great-hall.html",
+  "dist/apps/web/public/great-hall.js",
+  "dist/apps/web/public/room.html",
+  "dist/apps/web/public/room.js",
+  "dist/apps/web/public/styles.css",
   "dist/config/runtime.mjs",
   "dist/packages/core/src/health.mjs",
   "dist/packages/observability/src/logger.mjs",
@@ -15,10 +20,11 @@ const required = [
   "dist/packages/identity/src/sqlite-store.mjs",
   "dist/packages/identity/src/service.mjs",
   "dist/packages/kings-ai/src/client.mjs",
+  "dist/packages/great-hall/src/service.mjs",
   "dist/build-manifest.json"
 ];
 
 for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
-if (manifest.phase !== "IMP-003-IDENTITY-CORE") throw new Error("Unexpected build phase in manifest.");
-console.log("Production artifact verification passed.");
+if (manifest.phase !== "IMP-004-GREAT-HALL") throw new Error("Unexpected build phase in manifest.");
+console.log("Production artifact verification passed for IMP-004 Great Hall build output.");

@@ -136,6 +136,15 @@ export function createIdentityService({ store, now = () => new Date(), sessionTt
     return store.listActiveSessions(identity.id, now().toISOString());
   }
 
+  function listRecentActivity(identity, { limit = 8 } = {}) {
+    if (!identity?.id) throw new IdentityError("unauthorized", "Authentication is required.", 401);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw new IdentityError("invalid_limit", "Activity limit must be between 1 and 50.");
+    return store.listAuditEvents(identity.id)
+      .slice(-limit)
+      .reverse()
+      .map(({ eventType, createdAt }) => ({ eventType, createdAt }));
+  }
+
   function updateProfile(identity, { displayName }, requestMeta) {
     if (!identity?.id) throw new IdentityError("unauthorized", "Authentication is required.", 401);
     const safeDisplayName = normalizeDisplayName(displayName);
@@ -152,5 +161,5 @@ export function createIdentityService({ store, now = () => new Date(), sessionTt
     return identity;
   }
 
-  return Object.freeze({ register, signIn, signOut, authenticate, listSessions, updateProfile, requireRole });
+  return Object.freeze({ register, signIn, signOut, authenticate, listSessions, listRecentActivity, updateProfile, requireRole });
 }

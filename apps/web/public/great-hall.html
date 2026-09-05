@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="The Great Hall of K.I.N.G.S. Collector's Kingdom" />
+    <title>Great Hall • K.I.N.G.S.</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/great-hall.js" defer></script>
+  </head>
+  <body class="kingdom-page">
+    <a class="skip-link" href="#hall-main">Skip to Great Hall content</a>
+    <header class="kingdom-topbar">
+      <a class="royal-brand" href="/great-hall.html" aria-label="K.I.N.G.S. Great Hall home">
+        <span class="crown-mark" aria-hidden="true">♛</span>
+        <span><strong>K.I.N.G.S.</strong><small>Collector's Kingdom</small></span>
+      </a>
+      <div class="topbar-actions">
+        <span id="collector-chip" class="collector-chip">Securing your welcome…</span>
+        <a class="text-link" href="/auth.html#account-panel">Royal Gate</a>
+        <button id="signout-button" class="quiet-button" type="button">Sign out</button>
+      </div>
+    </header>
+
+    <main id="hall-main" class="hall-layout">
+      <section class="hall-hero marble-panel" aria-labelledby="hall-title">
+        <div>
+          <p class="eyebrow">The Great Hall • Royal Entry</p>
+          <h1 id="hall-title">Welcome to your Kingdom.</h1>
+          <p id="hall-greeting" class="hall-greeting" aria-live="polite">Preparing your Great Hall…</p>
+          <p class="hall-intro">A single place to understand what needs your attention, move through the castle, and call on The Keeper without losing your place.</p>
+        </div>
+        <div class="keeper-welcome" aria-label="The Keeper, Royal Host">
+          <div class="keeper-avatar" aria-hidden="true"><span>🦁</span><i></i></div>
+          <div>
+            <p class="eyebrow">The Keeper</p>
+            <h2>Royal Host</h2>
+            <p>At your service throughout the Great Hall.</p>
+            <button class="gold-button" type="button" data-action="keeper">Speak with The Keeper</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="search-band" aria-labelledby="search-title">
+        <div>
+          <p class="eyebrow">Universal Search Entry</p>
+          <h2 id="search-title">Find your way through the Kingdom.</h2>
+        </div>
+        <form id="kingdom-search-form" class="kingdom-search" role="search">
+          <label class="sr-only" for="kingdom-search">Search the Kingdom</label>
+          <input id="kingdom-search" name="query" type="search" maxlength="500" placeholder="Ask about a room, activity, collectible, or next step…" autocomplete="off" />
+          <button class="dark-button" type="submit">Ask The Keeper</button>
+        </form>
+        <p class="search-note">The conversational entry point is live now. Collection-wide indexing expands when the Vault and Universal Search services are built.</p>
+      </section>
+
+      <section class="hall-dashboard" aria-label="Kingdom overview">
+        <article class="summary-card marble-card">
+          <p class="eyebrow">Collection Overview</p>
+          <h2>Vault</h2>
+          <p id="collection-summary" class="summary-copy">Loading authoritative collection status…</p>
+          <a class="card-link" href="/room.html?room=vault">Visit the Vault entrance</a>
+        </article>
+        <article class="summary-card marble-card">
+          <p class="eyebrow">Marketplace</p>
+          <h2>Royal Market</h2>
+          <p id="market-summary" class="summary-copy">Loading marketplace status…</p>
+          <a class="card-link" href="/room.html?room=marketplace">Visit the Marketplace entrance</a>
+        </article>
+        <article class="summary-card marble-card">
+          <p class="eyebrow">Notifications</p>
+          <h2>What needs attention</h2>
+          <p id="notification-summary" class="summary-copy">Loading notification status…</p>
+        </article>
+      </section>
+
+      <section class="hall-section marble-panel" aria-labelledby="rooms-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Castle Navigation</p>
+            <h2 id="rooms-title">The rooms of your Kingdom</h2>
+          </div>
+          <p>Every entrance stays visible. Rooms not yet built are marked clearly instead of showing simulated features.</p>
+        </div>
+        <nav id="room-grid" class="room-grid" aria-label="Kingdom rooms"></nav>
+      </section>
+
+      <section class="hall-columns">
+        <article class="hall-section marble-panel" aria-labelledby="activity-title">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">Verified Activity</p>
+              <h2 id="activity-title">Recently in your Kingdom</h2>
+            </div>
+          </div>
+          <ol id="activity-list" class="activity-list"></ol>
+        </article>
+
+        <article class="hall-section marble-panel" aria-labelledby="actions-title">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">Quick Actions</p>
+              <h2 id="actions-title">Continue without hunting</h2>
+            </div>
+          </div>
+          <div id="quick-actions" class="quick-actions"></div>
+          <aside id="announcement" class="announcement" aria-live="polite"></aside>
+        </article>
+      </section>
+    </main>
+
+    <aside id="keeper-panel" class="keeper-panel" aria-labelledby="keeper-title" hidden>
+      <div class="keeper-panel-head">
+        <div class="keeper-heading">
+          <div class="keeper-avatar small" aria-hidden="true"><span>🦁</span><i></i></div>
+          <div><p class="eyebrow">Royal Host</p><h2 id="keeper-title">The Keeper</h2></div>
+        </div>
+        <button id="keeper-close" class="icon-button" type="button" aria-label="Close The Keeper panel">×</button>
+      </div>
+      <div id="keeper-messages" class="keeper-messages" role="log" aria-live="polite" aria-relevant="additions">
+        <p class="keeper-message assistant">Welcome. I am The Keeper. Ask me where to go, what changed in your Kingdom, or what a room is for.</p>
+      </div>
+      <form id="keeper-form" class="keeper-form">
+        <label class="sr-only" for="keeper-input">Message The Keeper</label>
+        <textarea id="keeper-input" maxlength="4000" rows="3" placeholder="Ask The Keeper…" required></textarea>
+        <div class="keeper-form-row">
+          <span id="keeper-status" class="form-status" role="status" aria-live="polite"></span>
+          <button class="gold-button" type="submit">Send</button>
+        </div>
+      </form>
+    </aside>
+    <div id="keeper-backdrop" class="keeper-backdrop" hidden></div>
+  </body>
+</html>

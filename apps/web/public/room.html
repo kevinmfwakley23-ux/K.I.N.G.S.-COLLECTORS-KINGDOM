@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="A room in K.I.N.G.S. Collector's Kingdom" />
+    <title>Kingdom Room • K.I.N.G.S.</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/room.js" defer></script>
+  </head>
+  <body class="kingdom-page room-page">
+    <a class="skip-link" href="#room-main">Skip to room information</a>
+    <header class="kingdom-topbar">
+      <a class="royal-brand" href="/great-hall.html">
+        <span class="crown-mark" aria-hidden="true">♛</span>
+        <span><strong>K.I.N.G.S.</strong><small>Collector's Kingdom</small></span>
+      </a>
+      <a class="text-link" href="/great-hall.html">← Return to Great Hall</a>
+    </header>
+
+    <main id="room-main" class="room-layout">
+      <section class="room-hero marble-panel" aria-labelledby="room-title">
+        <p id="room-role" class="eyebrow">Kingdom Room</p>
+        <h1 id="room-title">Preparing the room entrance…</h1>
+        <p id="room-description" class="hall-intro"></p>
+        <div id="room-status-panel" class="construction-notice" role="status" aria-live="polite"></div>
+        <div class="room-actions">
+          <a class="gold-button" href="/great-hall.html">Return to Great Hall</a>
+          <a class="dark-button" href="/great-hall.html">Find The Keeper in the Great Hall</a>
+        </div>
+      </section>
+
+      <section class="hall-section marble-panel" aria-labelledby="navigation-title">
+        <div class="section-heading compact">
+          <div>
+            <p class="eyebrow">Castle Navigation</p>
+            <h2 id="navigation-title">Move to another room</h2>
+          </div>
+        </div>
+        <nav id="room-grid" class="room-grid compact-grid" aria-label="Kingdom rooms"></nav>
+      </section>
+    </main>
+  </body>
+</html>
