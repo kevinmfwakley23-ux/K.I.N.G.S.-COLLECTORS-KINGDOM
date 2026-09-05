@@ -11,12 +11,17 @@ test("runtime configuration applies secure local defaults", () => {
     version: "0.2.0",
     dataDir: resolve("./data"),
     sessionTtlHours: 168,
-    cookieSecure: false
+    cookieSecure: false,
+    kingsAiBaseUrl: "http://127.0.0.1:8790",
+    kingsAiToken: null,
+    kingsAiTimeoutMs: 70000
   });
 });
 
-test("runtime configuration rejects invalid ports and session settings", () => {
+test("runtime configuration rejects invalid ports, sessions, cookies, and KINGS AI settings", () => {
   assert.throws(() => loadRuntimeConfig({ KINGDOM_PORT: "70000" }), /KINGDOM_PORT/);
   assert.throws(() => loadRuntimeConfig({ KINGDOM_SESSION_TTL_HOURS: "0" }), /SESSION_TTL/);
   assert.throws(() => loadRuntimeConfig({ KINGDOM_COOKIE_SECURE: "yes" }), /COOKIE_SECURE/);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_KINGS_AI_BASE_URL: "file:///tmp/router" }), /KINGS_AI_BASE_URL/);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_KINGS_AI_TIMEOUT_MS: "0" }), /KINGS_AI_TIMEOUT_MS/);
 });
