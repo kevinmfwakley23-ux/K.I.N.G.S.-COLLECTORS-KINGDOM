@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { createVaultAttributeService } from "./attributes.mjs";
 import { VaultError } from "./service.mjs";
 
 const EVENT_TYPES = new Set(["acquired", "inherited", "gifted-in", "transferred-in", "sold", "gifted-out", "transferred-out", "other"]);
@@ -61,6 +62,7 @@ export function createVaultOwnershipService({ filename, now = () => new Date() }
   database.exec("PRAGMA journal_mode = WAL;");
   database.exec("PRAGMA busy_timeout = 5000;");
   database.exec(SCHEMA);
+  const attributeService = createVaultAttributeService({ filename, now });
 
   function requireTreasure(accountId, treasureId) {
     const row = database.prepare("SELECT id FROM vault_treasures WHERE account_id = ? AND id = ?").get(accountId, treasureId);
@@ -104,8 +106,16 @@ export function createVaultOwnershipService({ filename, now = () => new Date() }
   }
 
   function close() {
+    attributeService.close();
     database.close();
   }
 
-  return Object.freeze({ list, add, remove, close, eventTypes: Object.freeze([...EVENT_TYPES]) });
+  return Object.freeze({
+    list,
+    add,
+    remove,
+    close,
+    attributeService,
+    eventTypes: Object.freeze([...EVENT_TYPES])
+  });
 }
