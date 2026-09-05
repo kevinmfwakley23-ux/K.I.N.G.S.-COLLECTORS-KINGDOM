@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="The Royal Vault of K.I.N.G.S. Collector's Kingdom" />
+    <title>Royal Vault • K.I.N.G.S.</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/world.css" />
+    <link rel="stylesheet" href="/vault.css" />
+    <script type="module" src="/vault.js"></script>
+  </head>
+  <body class="kingdom-page vault-page">
+    <a class="skip-link" href="#vault-main">Skip to Vault content</a>
+    <header class="kingdom-topbar">
+      <a class="royal-brand" href="/great-hall.html" aria-label="Return to the Great Hall">
+        <span class="crown-mark" aria-hidden="true">♛</span>
+        <span><strong>K.I.N.G.S.</strong><small>Royal Vault</small></span>
+      </a>
+      <div class="topbar-actions">
+        <span id="vault-collector-chip" class="collector-chip">Opening your Vault…</span>
+        <button class="quiet-button" type="button" data-keeper-open>Call The Keeper</button>
+        <a class="text-link" href="/great-hall.html">Great Hall</a>
+      </div>
+    </header>
+
+    <main id="vault-main" class="vault-shell">
+      <section class="vault-hero marble-panel" aria-labelledby="vault-title">
+        <div class="vault-hero-copy">
+          <p class="eyebrow">Royal Vault • Permanent Collection Home</p>
+          <h1 id="vault-title">Your treasures. Protected, organized, remembered.</h1>
+          <p class="hall-intro">The Vault is the authoritative home of what you own. Search naturally, record where each treasure physically lives, preserve its history, and prepare it for future Kingdom services without re-entering the same information.</p>
+          <div class="vault-hero-actions">
+            <button class="gold-button" type="button" data-open-treasure-form>Add a treasure</button>
+            <button class="quiet-button" type="button" data-open-location-manager>Organize locations</button>
+            <a class="quiet-button" href="/api/vault/export.csv">Export my Vault</a>
+          </div>
+        </div>
+        <div class="vault-hero-door" aria-hidden="true">
+          <div class="vault-door vault-door-large">
+            <div class="vault-wheel"><span class="vault-hub"></span><span class="vault-spoke" style="--spoke:0"></span><span class="vault-spoke" style="--spoke:1"></span><span class="vault-spoke" style="--spoke:2"></span><span class="vault-spoke" style="--spoke:3"></span><span class="vault-spoke" style="--spoke:4"></span><span class="vault-spoke" style="--spoke:5"></span></div>
+            <span class="vault-lock-label">ROYAL VAULT</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="vault-stat-grid" aria-label="Vault collection statistics">
+        <article class="vault-stat marble-card"><span class="vault-stat-label">Treasures</span><strong id="stat-treasures">—</strong><small id="stat-units">Loading units…</small></article>
+        <article class="vault-stat marble-card"><span class="vault-stat-label">Categories</span><strong id="stat-categories">—</strong><small>Distinct collection categories</small></article>
+        <article class="vault-stat marble-card"><span class="vault-stat-label">Possible Duplicates</span><strong id="stat-duplicates">—</strong><button id="show-duplicates" class="inline-button" type="button">Review groups</button></article>
+        <article class="vault-stat marble-card"><span class="vault-stat-label">Recorded USD Estimate</span><strong id="stat-value">—</strong><small>Recorded estimates, not guaranteed sale value</small></article>
+      </section>
+
+      <section class="vault-command marble-panel" aria-labelledby="vault-search-title">
+        <div class="vault-command-title">
+          <p class="eyebrow">Locate & Explore</p>
+          <h2 id="vault-search-title">Find a treasure without hunting through boxes.</h2>
+        </div>
+        <form id="vault-search-form" class="vault-search-form" role="search">
+          <label class="vault-search-field">
+            <span class="sr-only">Search treasures</span>
+            <input id="vault-search" type="search" placeholder="Title, category, series, maker, notes, or tag…" autocomplete="off" />
+          </label>
+          <label><span>Category</span><select id="filter-category"><option value="">All categories</option></select></label>
+          <label><span>Folder</span><select id="filter-folder"><option value="">All folders</option></select></label>
+          <label><span>Physical location</span><select id="filter-location"><option value="">All locations</option></select></label>
+          <label><span>Sort</span><select id="sort-treasures"><option value="updated-desc">Recently updated</option><option value="created-desc">Recently added</option><option value="title-asc">Title A–Z</option><option value="title-desc">Title Z–A</option><option value="value-desc">Highest recorded estimate</option><option value="year-desc">Newest year</option></select></label>
+          <button class="dark-button" type="submit">Search Vault</button>
+        </form>
+        <div class="vault-command-footer">
+          <div class="view-toggle" role="group" aria-label="Treasure view">
+            <button id="grid-view-button" class="view-button active" type="button" aria-pressed="true">Grid</button>
+            <button id="list-view-button" class="view-button" type="button" aria-pressed="false">List</button>
+          </div>
+          <p id="vault-result-status" class="form-status" role="status" aria-live="polite">Loading your Vault…</p>
+        </div>
+      </section>
+
+      <section class="vault-workspace">
+        <aside class="vault-sidebar marble-panel" aria-labelledby="organization-title">
+          <div class="sidebar-heading">
+            <p class="eyebrow">Organization</p>
+            <h2 id="organization-title">Where treasures belong</h2>
+          </div>
+          <section class="sidebar-section">
+            <div class="sidebar-section-head"><h3>Collection folders</h3><button class="icon-text-button" type="button" data-open-folder-manager>Manage</button></div>
+            <div id="folder-tree" class="organization-tree"><p class="empty-copy">Loading folders…</p></div>
+          </section>
+          <section class="sidebar-section">
+            <div class="sidebar-section-head"><h3>Physical storage</h3><button class="icon-text-button" type="button" data-open-location-manager>Manage</button></div>
+            <div id="location-tree" class="organization-tree"><p class="empty-copy">Loading locations…</p></div>
+          </section>
+          <section class="sidebar-section keeper-sidebar-callout">
+            <img src="/assets/keeper.svg" alt="" aria-hidden="true" />
+            <div><p class="eyebrow">Royal Curator</p><h3>The Keeper</h3><p>Ask me where a recorded treasure lives, what needs organizing, or which records may be duplicates.</p><button class="gold-button compact-button" type="button" data-keeper-open>Ask The Keeper</button></div>
+          </section>
+        </aside>
+
+        <section class="vault-collection marble-panel" aria-labelledby="collection-title">
+          <div class="section-heading compact">
+            <div><p class="eyebrow">Treasures</p><h2 id="collection-title">Inside your Royal Vault</h2></div>
+            <button class="gold-button" type="button" data-open-treasure-form>Add treasure</button>
+          </div>
+          <div id="vault-loading" class="vault-loading" hidden>Opening secure drawers…</div>
+          <div id="vault-empty" class="vault-empty" hidden>
+            <div class="empty-vault-emblem" aria-hidden="true">♛</div>
+            <h3>Your Vault is ready for its first treasure.</h3>
+            <p>Add one collectible with the information you know. You can improve its record, add photos, and place it in a physical location later.</p>
+            <button class="gold-button" type="button" data-open-treasure-form>Add my first treasure</button>
+          </div>
+          <div id="treasure-grid" class="treasure-grid"></div>
+          <div class="pagination-row"><button id="load-more" class="quiet-button" type="button" hidden>Load more treasures</button></div>
+        </section>
+      </section>
+    </main>
+
+    <dialog id="treasure-dialog" class="kingdom-dialog treasure-dialog">
+      <form id="treasure-form" method="dialog" class="dialog-card">
+        <div class="dialog-head"><div><p class="eyebrow">Royal Vault Record</p><h2 id="treasure-form-title">Add a treasure</h2></div><button class="icon-button" type="button" data-close-dialog="treasure-dialog" aria-label="Close treasure form">×</button></div>
+        <p class="dialog-intro">Record what you know. Only title and category are required; the Vault can become richer as you learn more.</p>
+        <input id="treasure-id" type="hidden" />
+        <div class="form-grid two-column">
+          <label>Title<input id="treasure-title" required maxlength="240" autocomplete="off" /></label>
+          <label>Category<input id="treasure-category" required maxlength="120" list="category-suggestions" autocomplete="off" /><datalist id="category-suggestions"></datalist></label>
+          <label>Series / set<input id="treasure-series" maxlength="180" autocomplete="off" /></label>
+          <label>Publisher / manufacturer<input id="treasure-manufacturer" maxlength="180" autocomplete="off" /></label>
+          <label>Year<input id="treasure-year" type="number" min="-5000" max="3000" inputmode="numeric" /></label>
+          <label>Condition<input id="treasure-condition" maxlength="100" placeholder="Near Mint, Good, Sealed…" /></label>
+          <label>Quantity<input id="treasure-quantity" type="number" min="1" max="1000000" value="1" required /></label>
+          <label>Collection folder<select id="treasure-folder"><option value="">No folder</option></select></label>
+          <label class="full-column">Physical storage location<select id="treasure-location"><option value="">Location not recorded</option></select></label>
+          <label>Purchase price<input id="treasure-purchase-price" inputmode="decimal" placeholder="0.00" /></label>
+          <label>Purchase currency<input id="treasure-purchase-currency" maxlength="3" value="USD" /></label>
+          <label>Purchase date<input id="treasure-purchase-date" type="date" /></label>
+          <label>Recorded estimated value<input id="treasure-estimated-value" inputmode="decimal" placeholder="0.00" /></label>
+          <label>Estimate currency<input id="treasure-estimated-currency" maxlength="3" value="USD" /></label>
+          <label>Value source<input id="treasure-valuation-source" maxlength="180" placeholder="Collector-entered, auction comp…" /></label>
+          <label class="full-column">Tags<input id="treasure-tags" maxlength="1000" placeholder="favorite, signed, first-edition" /><small>Separate tags with commas.</small></label>
+          <label class="full-column">Collector notes<textarea id="treasure-notes" maxlength="12000" rows="5" placeholder="Condition details, story, provenance notes, reminders…"></textarea></label>
+        </div>
+        <div class="dialog-actions"><span id="treasure-form-status" class="form-status" role="status" aria-live="polite"></span><button class="quiet-button" type="button" data-close-dialog="treasure-dialog">Cancel</button><button id="save-treasure" class="gold-button" type="submit">Save treasure</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="detail-dialog" class="kingdom-dialog detail-dialog">
+      <section class="dialog-card detail-card">
+        <div class="dialog-head"><div><p id="detail-eyebrow" class="eyebrow">Royal Vault Treasure</p><h2 id="detail-title">Treasure</h2></div><button class="icon-button" type="button" data-close-dialog="detail-dialog" aria-label="Close treasure details">×</button></div>
+        <div id="detail-content" class="detail-content"></div>
+        <div class="detail-actions"><button id="edit-treasure" class="quiet-button" type="button">Edit record</button><label class="file-button">Add photo<input id="treasure-image-input" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="environment" /></label><button id="delete-treasure" class="danger-button" type="button">Remove from Vault</button></div>
+        <p id="detail-status" class="form-status" role="status" aria-live="polite"></p>
+      </section>
+    </dialog>
+
+    <dialog id="folder-dialog" class="kingdom-dialog manager-dialog">
+      <section class="dialog-card">
+        <div class="dialog-head"><div><p class="eyebrow">Collection Organization</p><h2>Manage folders</h2></div><button class="icon-button" type="button" data-close-dialog="folder-dialog" aria-label="Close folder manager">×</button></div>
+        <form id="folder-form" class="manager-create-form"><label>Folder name<input id="folder-name" required maxlength="100" /></label><label>Inside folder<select id="folder-parent"><option value="">Top level</option></select></label><button class="gold-button" type="submit">Create folder</button></form>
+        <div id="folder-manager-list" class="manager-list"></div>
+        <p id="folder-status" class="form-status" role="status" aria-live="polite"></p>
+      </section>
+    </dialog>
+
+    <dialog id="location-dialog" class="kingdom-dialog manager-dialog">
+      <section class="dialog-card">
+        <div class="dialog-head"><div><p class="eyebrow">Physical Treasure Map</p><h2>Manage storage locations</h2></div><button class="icon-button" type="button" data-close-dialog="location-dialog" aria-label="Close location manager">×</button></div>
+        <p class="dialog-intro">Build the real path to a treasure: room → safe → shelf → box → row, or any structure that matches how you collect.</p>
+        <form id="location-form" class="manager-create-form"><label>Location name<input id="location-name" required maxlength="100" /></label><label>Type<select id="location-kind"><option value="room">Room</option><option value="safe">Safe</option><option value="cabinet">Cabinet</option><option value="display-case">Display case</option><option value="shelf">Shelf</option><option value="binder">Binder</option><option value="page">Page</option><option value="pocket">Pocket</option><option value="box">Box</option><option value="row">Row</option><option value="divider">Divider</option><option value="container">Container</option><option value="other">Other</option></select></label><label>Inside location<select id="location-parent"><option value="">Top level</option></select></label><button class="gold-button" type="submit">Create location</button></form>
+        <div id="location-manager-list" class="manager-list"></div>
+        <p id="location-status" class="form-status" role="status" aria-live="polite"></p>
+      </section>
+    </dialog>
+
+    <dialog id="duplicates-dialog" class="kingdom-dialog manager-dialog">
+      <section class="dialog-card">
+        <div class="dialog-head"><div><p class="eyebrow">Duplicate Detection Foundation</p><h2>Possible duplicate records</h2></div><button class="icon-button" type="button" data-close-dialog="duplicates-dialog" aria-label="Close duplicates">×</button></div>
+        <p class="dialog-intro">These are possible matches based on normalized title, category, series, maker, and year. The Vault will not merge or delete anything without your decision.</p>
+        <div id="duplicates-list" class="manager-list"></div>
+      </section>
+    </dialog>
+
+    <aside id="keeper-panel" class="keeper-panel" aria-labelledby="keeper-title" hidden>
+      <div class="keeper-panel-head"><div class="keeper-heading"><img class="keeper-panel-portrait" src="/assets/keeper.svg" alt="" aria-hidden="true" /><div><p class="eyebrow">Royal Curator</p><h2 id="keeper-title">The Keeper</h2></div></div><button id="keeper-close" class="icon-button" type="button" aria-label="Close The Keeper panel">×</button></div>
+      <div id="keeper-messages" class="keeper-messages" role="log" aria-live="polite" aria-relevant="additions"><p class="keeper-message assistant">Welcome to your Royal Vault. I can help you understand your recorded treasures, locate them, spot organization gaps, and discuss possible duplicates. I will not invent records or values that are not in your Vault.</p></div>
+      <form id="keeper-form" class="keeper-form"><label class="sr-only" for="keeper-input">Message The Keeper</label><textarea id="keeper-input" maxlength="4000" rows="3" placeholder="Ask your Royal Curator…" required></textarea><div class="keeper-form-row"><span id="keeper-status" class="form-status" role="status" aria-live="polite"></span><button class="gold-button" type="submit">Send</button></div></form>
+    </aside>
+    <div id="keeper-backdrop" class="keeper-backdrop" hidden></div>
+  </body>
+</html>
