@@ -6,15 +6,15 @@ K.I.N.G.S. Collector's Kingdom is being built as a collector-first environment f
 
 Active milestone: **IMP-005 — Royal Vault, Phase 1**.
 
-**Latest verified checkpoint:** the Royal Vault now includes permanent owner-scoped treasure records, hierarchical storage, secure private media, voice/talk-to-text, transactional JSON/CSV migration, a cross-device **Royal Intake Queue**, progressive camera barcode scanning, real review-only ISBN and UPC/EAN/GTIN catalog candidates, an append-only **Provenance & Ownership Ledger**, and a verified browser bootstrap that actually loads the transactional import, Intake Queue, scanner, and provenance enhancement modules on the Vault page.
+**Latest verified checkpoint:** the Royal Vault now includes permanent owner-scoped treasure records, hierarchical storage, secure private media, voice/talk-to-text, transactional JSON/CSV migration, a cross-device **Royal Intake Queue**, progressive camera barcode scanning, real review-only ISBN and UPC/EAN/GTIN catalog candidates, an append-only **Provenance & Ownership Ledger**, a verified browser enhancement bootstrap, and live cycle-safe **collection/location reorganization PATCH APIs**.
 
-Latest verified code gate: **Kingdom Quality Gates #425** — run `33963495455` — **PASS** on commit `34ca527c4f608d07290d43fa32fddacedc5df0f0`.
+Latest verified code gate: **Kingdom Quality Gates #433** — run `33964005746` — **PASS** on commit `bd0502f57d9bb333f2ea262c93d27e495cd45462`.
 
-A connection-interrupted build had left several already-tested Vault enhancement files packaged but not actually loaded by the live Vault page. That gap is now closed through an ordered `vault-extras.js` loader. The loader brings up transactional import first, then Intake Queue, then scanner, then provenance; it stops on the first failed module instead of pretending later enhancements loaded.
+The reorganization API now exposes owner-authenticated `PATCH /api/vault/collections/:id` and `PATCH /api/vault/locations/:id`. Collection rename preserves treasure membership and permanent treasure UUIDs. Location rename/reparent preserves descendant IDs and treasure references while recalculating paths. Self-parent, descendant-cycle, cross-owner, unsupported-field, and unauthorized mutations are rejected server-side. No collection/location DELETE shortcut or bulk movement endpoint was added.
 
-The reorganization foundation has also advanced: **Quality Gates #422** passed the owner-scoped collection/location repository and cycle-safe service tests. Collection rename preserves membership and permanent treasure IDs; nested location branch moves preserve descendants and treasure references while recalculating paths; self/descendant/cross-owner parent moves are rejected. This reorganization logic is not yet exposed through live PATCH routes or browser edit controls.
+Competition research for this pass reconfirmed the product direction: explicit edit intent, omitted-field PATCH preservation, clear selection before bulk changes, and one authoritative movement rule set shared by individual and future bulk workflows. See `docs/research/2026-09-05-IMP-005-REORGANIZATION-PATCH-PASS.md`.
 
-The next engineering target is therefore a deliberately small production slice: **authenticated PATCH APIs for collection and location reorganization**, followed by responsive individual edit controls. Previewed atomic bulk treasure movement remains after those single-structure controls are proven.
+The next engineering target is a deliberately small browser slice: **responsive individual collection and location edit controls** backed only by the verified PATCH APIs. Previewed atomic bulk treasure movement remains after those controls are proven.
 
 Evidence-backed current valuation, image recognition, broad category-specific catalog coverage, and Marketplace ownership transfers remain separate future milestones and are not represented as live.
 
@@ -90,14 +90,7 @@ Camera permission is least-privilege: `/vault.html` receives `camera=(self)`, wh
 
 ### Verified Vault enhancement bootstrap
 
-The live Vault page now schedules one dependency-safe enhancement loader after the core Vault and Keeper code initializes. It loads:
-
-1. transactional import UI;
-2. Royal Intake Queue UI;
-3. progressive scanner UI;
-4. provenance timeline UI.
-
-The loader is regression-tested to preserve that order and stop immediately on a failed dependency rather than leaving later tools in a misleading half-loaded state.
+The live Vault page schedules one dependency-safe enhancement loader after the core Vault and Keeper code initializes. It loads transactional import UI, Royal Intake Queue UI, progressive scanner UI, and provenance timeline UI in that order. The loader is regression-tested to stop on the first failed dependency rather than leaving later tools in a misleading half-loaded state.
 
 ### Review-only external catalog evidence
 
@@ -114,35 +107,28 @@ UPCitemdb provider prices, offers, merchant links/domains, and images are delibe
 
 Saved treasures expose an append-only provenance timeline backed by `vault_provenance_events`.
 
-Verified behavior includes:
+Verified behavior includes acquisition, ownership/provenance note, supporting-document, loan/custody, sale/gift/trade, loss/stolen/recovery, and correction events; amount/currency validation; owner isolation; audit events; no ordinary update/delete API; archive survival; export schema version 2; responsive timeline UI; and explicit `collector-recorded` / `independentlyVerified: false` truthfulness policy.
 
-- acquisition, ownership/provenance note, supporting-document, loan/custody, sale/gift/trade, loss/stolen/recovery, and correction events;
-- effective date, counterparty/source, method, transaction amount/currency, reference, evidence URL, and notes;
-- amount stored as integer cents with explicit currency;
-- same-owner/same-treasure correction linkage;
-- owner isolation;
-- normal audit events for each append;
-- no ordinary update/delete API;
-- provenance survives treasure archive;
-- export schema version 2 includes portable provenance events;
-- responsive saved-treasure entry/timeline UI;
-- explicit `collector-recorded` / `independentlyVerified: false` truthfulness policy.
+### Cycle-safe reorganization — live API foundation
 
-### Reorganization foundation
+Verified through Quality Gates #433:
 
-The current green domain foundation supports:
-
-- owner-scoped collection name/description updates;
-- owner-scoped location parent/name/type/notes updates;
+- owner-authenticated `PATCH /api/vault/collections/:id`;
+- owner-authenticated `PATCH /api/vault/locations/:id`;
+- strict mutable-field allowlists;
+- omitted fields remain unchanged;
+- explicit `parentId: null` top-level movement supported by the domain service;
 - unique collection-name enforcement;
-- server-authoritative rejection of location self-parenting and descendant cycles;
-- cross-owner parent/reference rejection;
-- moving an entire location branch while preserving descendant IDs;
-- recalculating nested location paths after a branch move;
-- preserving permanent treasure UUIDs and treasure collection/location references;
-- structure-level audit events rather than inventing treasure-change events for a container rename.
+- self-parent and descendant-cycle rejection;
+- cross-owner reference rejection;
+- branch movement preserves descendant IDs;
+- treasure UUID and collection/location references remain intact;
+- descendant display paths recalculate from authoritative parent links;
+- unsupported fields are rejected instead of silently ignored;
+- DELETE is not exposed for these stewardship routes;
+- `/api/vault` reports individual reorganization availability while keeping `bulkMoveAvailable: false` and destructive bulk actions unavailable.
 
-This domain/service layer passed Quality Gates #422 but is **not yet represented as a live collector feature** until authenticated PATCH routes and browser controls are added and verified.
+The browser still needs collector-facing edit controls before this is a complete end-user reorganization workflow.
 
 ## Truthfulness boundary
 
@@ -150,6 +136,6 @@ Market values remain absent until a real evidence-backed valuation service is im
 
 ## Current next target
 
-**Vault Reorganization — authenticated PATCH API slice.**
+**Vault Reorganization — responsive individual edit controls.**
 
-The next short build will expose the already-green collection/location stewardship service through owner-authenticated PATCH routes, prove owner isolation and cycle errors at the HTTP boundary, and only then add responsive individual edit controls. Previewed atomic bulk treasure movement remains the following slice; destructive mass archive/delete remains separately gated.
+The next short build will research current UI patterns again, add mobile/Chromebook-friendly collection and location edit controls against the verified PATCH routes, preserve explicit Save/Cancel behavior and visible cycle errors, then run the full gate. Previewed atomic bulk treasure movement remains the following slice; destructive mass archive/delete remains separately gated.
