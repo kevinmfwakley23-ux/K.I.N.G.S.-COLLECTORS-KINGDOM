@@ -52,12 +52,34 @@ function compactSetSummary(set) {
   };
 }
 
+function compactDuplicateGroup(group) {
+  return {
+    count: Number(group.count ?? 0),
+    returnedTreasureCount: Number(group.returnedTreasureCount ?? 0),
+    truncated: Boolean(group.truncated),
+    matchingFields: group.matchingFields ?? null,
+    treasures: (group.treasures ?? []).slice(0, 4).map((treasure) => ({
+      id: treasure.id,
+      title: treasure.title,
+      category: treasure.category,
+      series: treasure.series ?? null,
+      manufacturer: treasure.manufacturer ?? null,
+      year: treasure.year ?? null,
+      condition: treasure.condition ?? null,
+      quantity: Number(treasure.quantity ?? 1),
+      locationName: treasure.locationName ?? null
+    })),
+    explanation: group.explanation
+  };
+}
+
 export function createVaultIntelligence({
   vaultService,
   searchService = null,
   attributeService = null,
   setSummaryService = null,
-  recommendationService = null
+  recommendationService = null,
+  duplicateSummaryService = null
 } = {}) {
   if (!vaultService) throw new TypeError("Vault intelligence requires the Vault service.");
 
@@ -101,23 +123,34 @@ export function createVaultIntelligence({
       ? setSummaryService.list(identity, { incompleteOnly: true, limit: 6 }).slice(0, 6).map(compactSetSummary)
       : [];
 
+    const duplicateGroups = duplicateSummaryService?.list
+      ? duplicateSummaryService.list(identity, { limit: 5, treasuresPerGroup: 4 }).slice(0, 5).map(compactDuplicateGroup)
+      : [];
+
     return {
       summary: base.summary,
       recentTreasures,
       queryMatches,
       incompleteSets,
+      duplicateGroups,
       contextPolicy: {
         maximumRecentTreasures: 8,
         maximumQueryMatches: 8,
         maximumDetailsPerTreasure: 12,
         maximumRecommendedTagsPerTreasure: 3,
         maximumIncompleteSets: 6,
+        maximumDuplicateGroups: 5,
+        maximumTreasuresPerDuplicateGroup: 4,
         verificationReferencesIncluded: false,
         setEntryGraphsIncluded: false,
         setSourceReferencesIncluded: false,
         tagRecommendationsAutomatic: false,
         tagRecommendationBasis: "authenticated collector Vault patterns only",
-        note: "Only collector-authorized Vault records are included. Collector-entered estimates and verification claims remain labeled by source/status. Tag recommendations are grounded in this collector's existing Vault tag patterns, are advisory only, and are never auto-applied. Set context is limited to derived completion summaries; checklist entries, linked treasure graphs, notes, and source references are excluded by default."
+        duplicateAutomaticMerge: false,
+        duplicateAutomaticDelete: false,
+        duplicateCollectorDecisionRequired: true,
+        duplicateDetectionBasis: "normalized title/category/series/manufacturer/year",
+        note: "Only collector-authorized Vault records are included. Collector-entered estimates and verification claims remain labeled by source/status. Tag recommendations are grounded in this collector's existing Vault tag patterns, are advisory only, and are never auto-applied. Possible duplicate groups are bounded, sanitized, and advisory only; records remain separate unless the collector explicitly decides otherwise. Set context is limited to derived completion summaries; checklist entries, linked treasure graphs, notes, and source references are excluded by default."
       }
     };
   }
