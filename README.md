@@ -10,6 +10,12 @@ IMP-004 Great Hall & Navigation is merged and verified on `main`. IMP-005 is und
 
 The current IMP-005 implementation includes real persistent Vault records, flexible multi-category collectible metadata, nested collection and physical-location organization, media/evidence handling, scalable search, saved views, collection sets, duplicate detection, import/export, recovery foundations, Marketplace handoff preparation, and bounded Royal Curator intelligence.
 
+## Build recovery & continuity
+
+For power loss, browser/session loss, machine failure, new-chat continuation, or contributor handoff, read [`docs/BUILD-RECOVERY-LEDGER.md`](docs/BUILD-RECOVERY-LEDGER.md) before resuming implementation.
+
+That ledger is the durable current-state record for the active branch/PR, last green CI checkpoint, candidate work, exact next steps, research decisions, K.I.N.G.S. reuse boundaries, deployment notes, and remaining acceptance blockers. It must be updated at every meaningful build checkpoint so engineering progress can be recovered without depending on chat history.
+
 ## Permanent engineering mission
 
 Every meaningful build session must follow [`docs/MISSION-STATEMENT.md`](docs/MISSION-STATEMENT.md).
