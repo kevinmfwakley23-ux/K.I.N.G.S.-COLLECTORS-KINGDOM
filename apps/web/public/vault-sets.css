@@ -1,0 +1,59 @@
+.vault-sets-panel { display: grid; gap: 0.75rem; }
+.vault-set-sidebar-list { display: grid; gap: 0.55rem; }
+.vault-set-list-item { width: 100%; display: grid; gap: 0.4rem; padding: 0.7rem; text-align: left; border: 1px solid rgba(17, 17, 17, 0.16); border-radius: 0.8rem; background: rgba(255, 255, 255, 0.72); color: inherit; cursor: pointer; }
+.vault-set-list-item:hover, .vault-set-list-item:focus-visible { border-color: rgba(143, 109, 27, 0.65); box-shadow: 0 0 0 2px rgba(191, 148, 42, 0.12); }
+.vault-set-list-item.is-complete { border-color: rgba(94, 122, 70, 0.45); }
+.vault-set-list-item-top { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.vault-set-list-item-top > span { font-size: 0.75rem; opacity: 0.72; }
+.vault-set-list-item progress, .vault-set-progress progress { width: 100%; accent-color: currentColor; }
+.vault-set-list-item-copy, .vault-set-progress-copy { font-size: 0.75rem; opacity: 0.74; }
+.vault-set-show-all[hidden] { display: none; }
+
+.vault-set-dialog { width: min(860px, calc(100vw - 2rem)); max-height: min(88vh, 900px); overflow: auto; border: 1px solid rgba(17, 17, 17, 0.18); border-radius: 1rem; padding: 1.1rem; background: rgba(250, 249, 246, 0.98); color: #171717; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25); }
+.vault-set-dialog::backdrop { background: rgba(15, 15, 15, 0.56); backdrop-filter: blur(3px); }
+.vault-set-dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 0.85rem; }
+.vault-set-dialog-head h2, .vault-set-dialog h3 { margin: 0; }
+.vault-set-dialog-close { flex: 0 0 auto; }
+.vault-set-meta { margin: 0.25rem 0 0; font-size: 0.82rem; opacity: 0.7; }
+.vault-set-progress { display: grid; gap: 0.4rem; padding: 0.85rem; margin-bottom: 1rem; border-radius: 0.85rem; background: rgba(143, 109, 27, 0.08); }
+.vault-set-list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 0.65rem; }
+.vault-set-missing-copy { font-size: 0.8rem; opacity: 0.72; text-align: right; }
+.vault-set-entry-list { display: grid; gap: 0.75rem; }
+.vault-set-entry { display: grid; gap: 0.7rem; padding: 0.85rem; border: 1px solid rgba(17, 17, 17, 0.14); border-radius: 0.85rem; background: rgba(255, 255, 255, 0.7); }
+.vault-set-entry.is-complete { border-color: rgba(94, 122, 70, 0.4); }
+.vault-set-entry.is-missing { border-color: rgba(143, 109, 27, 0.32); }
+.vault-set-entry-head { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+.vault-set-entry-head > div { display: grid; gap: 0.15rem; }
+.vault-set-entry-key { font-size: 0.75rem; opacity: 0.62; }
+.vault-set-entry-quantity { font-size: 0.78rem; white-space: nowrap; }
+.vault-set-linked-list { display: grid; gap: 0.35rem; }
+.vault-set-linked-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.45rem 0.55rem; border-radius: 0.65rem; background: rgba(0, 0, 0, 0.035); }
+.vault-set-link-search { border-top: 1px solid rgba(17, 17, 17, 0.09); padding-top: 0.55rem; }
+.vault-set-link-search summary { cursor: pointer; font-weight: 650; }
+.vault-set-treasure-search-form { display: flex; gap: 0.5rem; margin-top: 0.65rem; }
+.vault-set-treasure-search-form input { flex: 1 1 auto; }
+.vault-set-search-results { display: grid; gap: 0.45rem; margin-top: 0.55rem; }
+.vault-set-search-result { display: grid; grid-template-columns: minmax(0, 1fr) 5rem auto; gap: 0.55rem; align-items: center; padding: 0.55rem; border: 1px solid rgba(17, 17, 17, 0.1); border-radius: 0.7rem; }
+.vault-set-search-result-copy { display: grid; min-width: 0; gap: 0.15rem; }
+.vault-set-search-result-copy strong, .vault-set-search-result-copy span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vault-set-search-result-copy span { font-size: 0.74rem; opacity: 0.68; }
+.vault-set-link-quantity { width: 100%; }
+.vault-set-remove-entry { justify-self: start; }
+.vault-set-form, .vault-set-entry-form { display: grid; gap: 0.7rem; }
+.vault-set-entry-form { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(17, 17, 17, 0.12); }
+.vault-set-field { display: grid; gap: 0.3rem; }
+.vault-set-field-label { font-size: 0.78rem; font-weight: 700; }
+.vault-set-field input { width: 100%; }
+.vault-set-form-status { margin: 0; min-height: 1.1rem; font-size: 0.78rem; opacity: 0.78; }
+.vault-set-error { padding: 0.75rem; border-radius: 0.7rem; background: rgba(150, 40, 40, 0.08); }
+.vault-set-danger-zone { display: grid; gap: 0.5rem; margin-top: 1.15rem; padding-top: 1rem; border-top: 1px solid rgba(130, 30, 30, 0.16); }
+
+@media (max-width: 720px) {
+  .vault-set-dialog { width: calc(100vw - 1rem); padding: 0.8rem; }
+  .vault-set-dialog-head, .vault-set-list-head, .vault-set-entry-head { align-items: stretch; flex-direction: column; }
+  .vault-set-missing-copy { text-align: left; }
+  .vault-set-treasure-search-form { display: grid; }
+  .vault-set-search-result { grid-template-columns: 1fr auto; }
+  .vault-set-search-result-copy { grid-column: 1 / -1; }
+  .vault-set-link-quantity { width: 5rem; }
+}
