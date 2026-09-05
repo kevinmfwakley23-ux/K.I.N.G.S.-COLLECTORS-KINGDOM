@@ -15,6 +15,8 @@ const required = [
   "dist/apps/web/public/vault.html",
   "dist/apps/web/public/vault.js",
   "dist/apps/web/public/vault.css",
+  "dist/apps/web/public/vault-import.js",
+  "dist/apps/web/public/vault-import.css",
   "dist/apps/web/public/styles.css",
   "dist/apps/web/public/world.css",
   "dist/apps/web/public/assets/keeper.svg",
