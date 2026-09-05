@@ -1,4 +1,5 @@
 import { measureBrowserCentering } from "./vault-grading-core.js";
+import { getCurrentGradingAnalysisSnapshot } from "./vault-grading-ui.js";
 
 function node(tag, className, text) {
   const element = document.createElement(tag);
@@ -38,6 +39,73 @@ function centeringLabel(record) {
   return `${centering.side} • H ${centering.measurement.horizontal?.ratioLabel ?? "—"} • V ${centering.measurement.vertical?.ratioLabel ?? "—"}`;
 }
 
+function shortWarnings(values = []) {
+  return [...new Set(values.filter((value) => typeof value === "string" && value.trim()).map((value) => value.trim().slice(0, 240)))];
+}
+
+async function sha256File(file) {
+  if (!(file instanceof File)) throw new Error("A browser File is required for media integrity matching.");
+  if (!globalThis.crypto?.subtle) throw new Error("This browser does not provide WebCrypto SHA-256 support.");
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function matchPrivateImage(treasureId, file) {
+  const digest = await sha256File(file);
+  return api(`/api/vault/treasures/${encodeURIComponent(treasureId)}/media-match?sha256=${digest}`);
+}
+
+function captureEvidence(snapshot, mediaId, side) {
+  if (!snapshot?.quality) return null;
+  const quality = snapshot.quality;
+  const geometry = snapshot.geometry;
+  const confidence = Math.max(0, Math.min(1, Math.min(
+    Number.isFinite(quality.analyzerConfidence) ? quality.analyzerConfidence : 0.5,
+    Number.isFinite(geometry?.confidence) ? geometry.confidence : 0.35
+  )));
+  return {
+    sourceMediaId: mediaId,
+    view: `${side}-straight-on`,
+    cropComplete: geometry?.cropComplete === true,
+    resolutionAdequate: quality.resolutionAdequate === true,
+    focusAdequate: quality.focusAdequate === true,
+    glareAcceptable: quality.glareAcceptable === true,
+    perspectiveAcceptable: geometry?.perspectiveAcceptable === true,
+    analyzerConfidence: confidence,
+    warnings: shortWarnings([
+      ...(quality.warnings ?? []),
+      ...(geometry?.warnings ?? []),
+      ...(!geometry?.detected && geometry?.reason ? [geometry.reason] : [])
+    ])
+  };
+}
+
+function contourEvidence(snapshot, mediaId) {
+  if (!snapshot?.contour?.analyzed || !snapshot.contour.usable) return [];
+  return (snapshot.contour.signals ?? []).map((signal) => ({
+    type: signal.type === "corner-contour-asymmetry" ? "corner-contour-anomaly" : "edge-contour-anomaly",
+    region: signal.region,
+    severity: signal.severity,
+    confidence: signal.confidence,
+    sourceMediaId: mediaId,
+    note: signal.note
+  }));
+}
+
+function surfaceEvidence(snapshot, primaryMediaId, companionMediaId, side) {
+  if (!snapshot?.surface?.analyzed) return [];
+  return (snapshot.surface.signals ?? []).map((signal) => ({
+    type: "surface-reflectance-anomaly",
+    region: `${side}-surface-${signal.shape}`,
+    severity: signal.severity,
+    confidence: signal.confidence,
+    sourceMediaId: primaryMediaId,
+    comparisonMediaId: companionMediaId,
+    boundingBox: signal.boundingBox,
+    note: signal.note
+  }));
+}
+
 export function createVaultGradingPersistenceUi() {
   const gradingPanel = document.querySelector("#ai-pregrade-panel");
   const profile = document.querySelector("#grading-standard-profile");
@@ -48,13 +116,14 @@ export function createVaultGradingPersistenceUi() {
   const top = document.querySelector("#grading-border-top");
   const bottom = document.querySelector("#grading-border-bottom");
   const localImage = document.querySelector("#grading-image-file");
+  const companionImage = document.querySelector("#grading-raking-companion-file");
   if (!gradingPanel || !profile || !size || !side || !left || !right || !top || !bottom || document.querySelector("#grading-persistence-panel")) return null;
 
   const section = node("section", "grading-quality-panel grading-persistence-panel");
   section.id = "grading-persistence-panel";
   section.append(
     node("h3", "", "Save advisory pre-grade evidence"),
-    node("p", "muted-copy", "Find the permanent Vault treasure, then append the current centering analysis as a hashed advisory record. Saved analyses are immutable history. They never overwrite the treasure's condition, grade, authenticity or value.")
+    node("p", "muted-copy", "Find the permanent Vault treasure, then append the current advisory analysis as a hashed record. Saved analyses are immutable history. They never overwrite the treasure's condition, grade, authenticity or value.")
   );
 
   const searchForm = node("form", "grading-reference-form grading-pregrade-treasure-search");
@@ -85,7 +154,7 @@ export function createVaultGradingPersistenceUi() {
   section.append(status);
 
   const actions = node("div", "grading-persistence-actions");
-  const save = node("button", "gold-button", "Save current centering analysis");
+  const save = node("button", "gold-button", "Save current advisory analysis");
   save.type = "button";
   save.disabled = true;
   const refresh = node("button", "quiet-button", "Refresh saved history");
@@ -94,7 +163,7 @@ export function createVaultGradingPersistenceUi() {
   actions.append(save, refresh);
   section.append(actions);
 
-  const policy = node("p", "muted-copy", "Persistence scope in this slice: current centering controls plus profile/card-size metadata. Capture-quality, contour, paired-surface, color and autograph results remain live advisory tools until their result objects are separately wired into this recorder.");
+  const policy = node("p", "muted-copy", "Centering is always stored as a collector-reviewed measurement. Browser-computed capture-quality and contour findings are stored only when the exact analyzed primary file SHA-256 matches private image media on the selected treasure. Paired surface findings require exact matches for both images. Color and autograph persistence remain separate until their source-image linkage is wired. No detector result becomes an official grade or authentication claim.");
   section.append(policy);
   const history = node("div", "grading-pregrade-history");
   section.append(history);
@@ -136,9 +205,12 @@ export function createVaultGradingPersistenceUi() {
     }
     for (const record of result.analyses) {
       const card = node("article", "grading-pregrade-history-card");
+      const captureCount = record.analysis?.captureQuality?.length ?? 0;
+      const defectCount = record.analysis?.defects?.length ?? 0;
       card.append(
         node("strong", "", `${record.standardProfile.toUpperCase()} reference • ${centeringLabel(record)}`),
         node("span", "", formatTimestamp(record.createdAt)),
+        node("span", "", `${record.sourceMediaIds?.length ?? 0} linked media • ${captureCount} capture record${captureCount === 1 ? "" : "s"} • ${defectCount} detector signal${defectCount === 1 ? "" : "s"}`),
         node("code", "", record.analysisSha256),
         node("p", "muted-copy", "Append-only advisory evidence • not an official grade • does not authenticate the physical card")
       );
@@ -188,17 +260,61 @@ export function createVaultGradingPersistenceUi() {
     save.disabled = true;
     save.textContent = "Saving advisory record…";
     try {
+      const snapshot = getCurrentGradingAnalysisSnapshot();
+      const primaryFile = localImage?.files?.[0] ?? null;
+      const companionFile = companionImage?.files?.[0] ?? null;
+      const sourceMediaIds = [];
+      const captureQuality = [];
+      const defects = [];
       const limitations = [
         `Browser centering snapshot saved from ${measurement.horizontal.label} horizontal and ${measurement.vertical.label} vertical measurements.`,
         "Current saved record does not contain an overall grade estimate."
       ];
-      if (localImage?.files?.[0]) limitations.push("A local card image was used in the Lab but is not linked as private Vault media in this centering-only saved record.");
+
+      let primaryMatch = null;
+      if (primaryFile && snapshot.primaryFile === primaryFile) {
+        try {
+          primaryMatch = await matchPrivateImage(treasureId, primaryFile);
+          if (primaryMatch.matched && primaryMatch.media?.id) {
+            sourceMediaIds.push(primaryMatch.media.id);
+            const capture = captureEvidence(snapshot, primaryMatch.media.id, side.value);
+            if (capture) captureQuality.push(capture);
+            defects.push(...contourEvidence(snapshot, primaryMatch.media.id));
+            limitations.push("Primary-image detector evidence was computed in this browser and linked to private Vault media only after an exact SHA-256 byte match. The server stores the evidence but did not independently recompute the image pixels.");
+          } else {
+            limitations.push("The analyzed primary image did not match private media on this treasure by SHA-256, so browser-computed capture and contour findings were omitted from the durable record.");
+          }
+        } catch (error) {
+          limitations.push(`Primary-image integrity linkage was unavailable (${String(error.message ?? error).slice(0, 280)}); pixel-derived primary-image findings were omitted.`);
+        }
+      } else if (primaryFile) {
+        limitations.push("The selected primary image did not match the Lab's current analyzed File object, so stale pixel-derived findings were omitted.");
+      }
+
+      if (primaryMatch?.matched && primaryMatch.media?.id && companionFile && snapshot.companionFile === companionFile && snapshot.surface?.analyzed) {
+        try {
+          const companionMatch = await matchPrivateImage(treasureId, companionFile);
+          if (companionMatch.matched && companionMatch.media?.id) {
+            sourceMediaIds.push(companionMatch.media.id);
+            defects.push(...surfaceEvidence(snapshot, primaryMatch.media.id, companionMatch.media.id, side.value));
+            limitations.push(`Paired raking-light comparison used two SHA-256-matched private Vault images and produced ${snapshot.surface.signals?.length ?? 0} advisory reflectance review candidate${snapshot.surface.signals?.length === 1 ? "" : "s"}. A reflectance signal is not a confirmed scratch, dent, print line or other physical defect.`);
+          } else {
+            limitations.push("The companion raking-light image did not match private media on this treasure by SHA-256, so paired surface findings were omitted from the durable record.");
+          }
+        } catch (error) {
+          limitations.push(`Companion-image integrity linkage was unavailable (${String(error.message ?? error).slice(0, 280)}); paired surface findings were omitted.`);
+        }
+      } else if (snapshot.surface?.analyzed && companionFile) {
+        limitations.push("Paired surface findings were not persisted because both currently analyzed files could not be proven as the exact Lab File objects linked to this treasure.");
+      }
+
+      const uniqueSourceMediaIds = [...new Set(sourceMediaIds)];
       const result = await api(`/api/grading/treasures/${encodeURIComponent(treasureId)}/pregrade-analyses`, {
         method: "POST",
         body: JSON.stringify({
           standardProfile: profile.value,
           cardSizeProfile: size.value,
-          sourceMediaIds: [],
+          sourceMediaIds: uniqueSourceMediaIds,
           centering: {
             side: side.value,
             left: Number(left.value),
@@ -206,12 +322,14 @@ export function createVaultGradingPersistenceUi() {
             top: Number(top.value),
             bottom: Number(bottom.value),
             method: "manual-anchor",
-            confidence: localImage?.files?.[0] ? 0.8 : 0.65
+            confidence: primaryMatch?.matched ? 0.8 : 0.65
           },
+          captureQuality,
+          defects,
           limitations
         })
       });
-      status.textContent = `Saved advisory analysis ${result.analysis.id.slice(0, 8)}… • SHA-256 ${result.analysis.analysisSha256.slice(0, 12)}…`;
+      status.textContent = `Saved advisory analysis ${result.analysis.id.slice(0, 8)}… • SHA-256 ${result.analysis.analysisSha256.slice(0, 12)}… • ${uniqueSourceMediaIds.length} linked media`;
       status.className = "grading-quality-summary pass";
       await loadHistory();
     } catch (error) {
@@ -219,7 +337,7 @@ export function createVaultGradingPersistenceUi() {
       status.className = "grading-quality-summary miss";
     } finally {
       save.disabled = !selectedTreasureId();
-      save.textContent = "Save current centering analysis";
+      save.textContent = "Save current advisory analysis";
     }
   });
 
