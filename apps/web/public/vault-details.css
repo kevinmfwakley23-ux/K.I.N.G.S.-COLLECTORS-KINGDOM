@@ -1,0 +1,122 @@
+.detail-extended-sections {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 1rem;
+  margin-top: .35rem;
+}
+
+.collectible-details-section {
+  padding: 1rem;
+  border: 1px solid rgba(118,88,22,.28);
+  background: linear-gradient(145deg, rgba(255,255,255,.86), rgba(246,241,225,.74));
+}
+
+.collectible-details-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.collectible-details-heading h3,
+.provenance-heading h3 { margin: 0; font-size: 1.05rem; }
+
+.collectible-detail-list {
+  display: grid;
+  gap: .45rem;
+  margin: .8rem 0;
+}
+
+.collectible-detail-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: .7rem;
+  align-items: center;
+  padding: .7rem;
+  border: 1px solid rgba(23,23,23,.1);
+  background: rgba(255,255,255,.72);
+}
+
+.collectible-detail-copy {
+  min-width: 0;
+  display: grid;
+  gap: .15rem;
+  font-family: system-ui, sans-serif;
+}
+
+.collectible-detail-copy strong { font-size: .83rem; }
+.collectible-detail-copy span { color: var(--ink); font-size: .8rem; overflow-wrap: anywhere; }
+.collectible-detail-copy small { color: var(--ink-soft); font-size: .67rem; overflow-wrap: anywhere; }
+
+.collectible-detail-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: .65rem;
+  padding-top: .85rem;
+  border-top: 1px solid var(--line);
+}
+
+.collectible-detail-form label {
+  margin: 0;
+  display: grid;
+  gap: .3rem;
+}
+
+.collectible-detail-form label > span {
+  color: var(--ink-soft);
+  font: 700 .67rem/1.2 system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.collectible-detail-form input,
+.collectible-detail-form select {
+  width: 100%;
+  min-height: 42px;
+  padding: .7rem;
+  border: 1px solid #6d6657;
+  background: white;
+  color: var(--ink);
+  font: .85rem system-ui, sans-serif;
+}
+
+.collectible-value-field,
+.collectible-custom-field,
+.collectible-trust-note { grid-column: 1 / -1; }
+.collectible-detail-form > button { justify-self: start; }
+.collectible-trust-note { margin: 0; color: var(--ink-soft); font: .7rem/1.45 system-ui, sans-serif; }
+
+.category-profile-hint {
+  display: block;
+  margin-top: .2rem;
+  color: var(--gold-deep) !important;
+  font: .68rem/1.45 system-ui, sans-serif !important;
+}
+
+.provenance-history {
+  margin-top: 0;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.58);
+}
+
+.provenance-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: start; }
+.provenance-list { margin: .8rem 0; padding: 0; list-style: none; display: grid; gap: .45rem; }
+.provenance-event { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: .7rem; align-items: center; padding: .7rem; border: 1px solid rgba(23,23,23,.1); background: rgba(255,255,255,.72); }
+.provenance-event-copy { display: grid; gap: .15rem; font-family: system-ui, sans-serif; }
+.provenance-event-copy span,.provenance-event-copy p { color: var(--ink-soft); font-size: .73rem; margin: 0; }
+.provenance-form { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .65rem; padding-top: .85rem; border-top: 1px solid var(--line); }
+.provenance-form label { margin: 0; }
+.provenance-form label > span { color: var(--ink-soft); font: 700 .67rem/1.2 system-ui,sans-serif; text-transform: uppercase; letter-spacing: .05em; }
+.provenance-form select { width: 100%; padding: .7rem; border: 1px solid #6d6657; background: white; }
+.provenance-notes-field { grid-column: 1 / -1; }
+.provenance-form > button { justify-self: start; }
+
+@media (max-width: 700px) {
+  .collectible-detail-form,
+  .provenance-form { grid-template-columns: 1fr; }
+  .collectible-value-field,
+  .collectible-custom-field,
+  .collectible-trust-note,
+  .provenance-notes-field { grid-column: auto; }
+}
