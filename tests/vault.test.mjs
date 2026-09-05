@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createVaultOwnershipService } from "../packages/vault/src/ownership.mjs";
@@ -116,14 +116,15 @@ test("Vault export is portable CSV and does not omit physical organization", asy
   await withVault(async ({ service }) => {
     const folder = service.createFolder(collectorA, { name: "Cards, Favorites" });
     const location = service.createLocation(collectorA, { name: "Safe Shelf 1", kind: "shelf" });
-    service.createTreasure(collectorA, sampleTreasure({ folderId: folder.id, locationId: location.id, notes: "Line one\nLine two" }));
+    const created = service.createTreasure(collectorA, sampleTreasure({ folderId: folder.id, locationId: location.id, notes: "Line one\nLine two" }));
+    assert.equal(created.notes, "Line one Line two");
 
     const csv = service.exportCsv(collectorA);
     assert.match(csv, /title,category/);
     assert.match(csv, /1999 Charizard Holo/);
     assert.match(csv, /"Cards, Favorites"/);
     assert.match(csv, /Safe Shelf 1/);
-    assert.match(csv, /"Line one\nLine two"/);
+    assert.match(csv, /Line one Line two/);
   });
 });
 
