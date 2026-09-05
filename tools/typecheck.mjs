@@ -25,6 +25,11 @@ const contractFiles = [
   "packages/grading/src/centering.mjs",
   "packages/grading/src/evidence.mjs",
   "packages/grading/src/aggregate.mjs",
+  "packages/grading/src/findings.mjs",
+  "packages/grading/src/measurement.mjs",
+  "packages/grading/src/dimensions.mjs",
+  "packages/grading/src/review-repository.mjs",
+  "packages/grading/src/report-service.mjs",
   "packages/grading/src/commons-autograph-provider.mjs",
   "packages/grading/src/repository.mjs",
   "packages/grading/src/service.mjs",
@@ -91,4 +96,4 @@ for (const relative of contractFiles) {
 const entries = await readdir(resolve(root, "packages"), { withFileTypes: true });
 if (!entries.some((entry) => entry.isDirectory())) throw new Error("No package boundaries found.");
 
-console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, provider-neutral catalog/cert evidence, AI card pre-grading profiles/centering/evidence/detector-coverage/advisory-range contracts, append-only hashed pre-grade persistence and read-only estimate API/UI, browser capture-quality/card-geometry/contour/paired-surface/color/autograph analysis UI, authenticated Commons autograph reference search/proxy, append-only provenance API/UI, saved Vault views and deterministic keyset retrieval API/UI, cycle-safe individual and previewed atomic bulk reorganization API/UI, Vault, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice boundaries.");
+console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, provider-neutral catalog/cert evidence, AI card pre-grading profiles/centering/evidence/detector-coverage/advisory-range and explainable front/back dimension contracts, deterministic finding identity and normalized extent measurement, append-only finding review/report services, append-only hashed pre-grade persistence and read-only estimate API/UI, browser capture-quality/card-geometry/contour/paired-surface/color/autograph analysis UI, authenticated Commons autograph reference search/proxy, append-only provenance API/UI, saved Vault views and deterministic keyset retrieval API/UI, cycle-safe individual and previewed atomic bulk reorganization API/UI, Vault, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice boundaries.");
