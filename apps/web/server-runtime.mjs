@@ -11,6 +11,7 @@ import { createVaultEvidenceService } from "../../packages/vault/src/evidence.mj
 import { createVaultIntelligence } from "../../packages/vault/src/intelligence.mjs";
 import { createVaultOwnershipService } from "../../packages/vault/src/ownership.mjs";
 import { createVaultSearchService } from "../../packages/vault/src/search.mjs";
+import { createVaultSetSummaryService } from "../../packages/vault/src/set-summaries.mjs";
 import { createVaultSetService } from "../../packages/vault/src/sets.mjs";
 import { handleVaultSetRequest } from "../../packages/vault/src/sets-http.mjs";
 import { createVaultService, VaultError } from "../../packages/vault/src/service.mjs";
@@ -47,7 +48,7 @@ function requireIdentity(identityService, request) {
   return identity;
 }
 
-export function installVaultSetRoutes({ server, identityService, setService, logger = createLogger({ level: "info" }) } = {}) {
+export function installVaultSetRoutes({ server, identityService, setService, summaryService = null, logger = createLogger({ level: "info" }) } = {}) {
   if (!server || typeof server.listeners !== "function") throw new TypeError("A Kingdom HTTP server is required.");
   if (!setService) throw new TypeError("A Vault collection-set service is required.");
 
@@ -77,7 +78,8 @@ export function installVaultSetRoutes({ server, identityService, setService, log
         request,
         pathname: requestUrl.pathname,
         identity,
-        setService
+        setService,
+        summaryService
       });
       if (result === null) return sendJson(response, 405, { error: "method_not_allowed" }, method);
       if (result === false) return sendJson(response, 404, { error: "not_found" }, method);
@@ -103,6 +105,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
   const vaultOwnershipService = createVaultOwnershipService({ filename: vaultDatabasePath });
   const vaultSearchService = createVaultSearchService({ filename: vaultDatabasePath });
   const vaultSetService = createVaultSetService({ filename: vaultDatabasePath });
+  const vaultSetSummaryService = createVaultSetSummaryService({ filename: vaultDatabasePath });
   const identityService = createIdentityService({
     store: identityStore,
     sessionTtlMs: config.sessionTtlHours * 60 * 60 * 1000
@@ -135,7 +138,13 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
     vaultSearchService,
     vaultEvidenceService
   });
-  installVaultSetRoutes({ server, identityService, setService: vaultSetService, logger });
+  installVaultSetRoutes({
+    server,
+    identityService,
+    setService: vaultSetService,
+    summaryService: vaultSetSummaryService,
+    logger
+  });
 
   async function prepare() {
     await vaultEvidenceService.sweepCleanup();
@@ -145,6 +154,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
   function closeServices() {
     identityStore.close();
     vaultEvidenceService.close();
+    vaultSetSummaryService.close();
     vaultSetService.close();
     vaultSearchService.close();
     vaultOwnershipService.close();
@@ -162,6 +172,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
       vaultSearchService,
       vaultEvidenceService,
       vaultSetService,
+      vaultSetSummaryService,
       greatHallService,
       kingsAiClient
     })
