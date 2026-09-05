@@ -5,6 +5,7 @@ import { VaultError } from "./service.mjs";
 
 const SEARCH_SCHEMA_VERSION = 1;
 const MAX_QUERY_TOKENS = 16;
+const SORTS = new Set(["updated-desc", "updated-asc", "created-desc", "title-asc", "title-desc", "value-desc", "year-desc"]);
 const STOPWORDS = new Set([
   "a", "an", "and", "are", "can", "collection", "do", "everything", "find", "for", "from", "have",
   "i", "in", "is", "it", "me", "my", "of", "please", "show", "that", "the", "to", "vault", "what",
@@ -42,6 +43,14 @@ function requireIdentity(identity) {
 function integer(value, name, { min, max }) {
   if (!Number.isInteger(value) || value < min || value > max) throw new VaultError(`invalid_${name}`, `${name} is invalid.`);
   return value;
+}
+
+function cleanOptionalText(value, name, max) {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value !== "string") throw new VaultError(`invalid_${name}`, `${name} must be text.`);
+  const clean = value.trim().replace(/\s+/g, " ");
+  if (!clean || clean.length > max) throw new VaultError(`invalid_${name}`, `${name} must contain 1 to ${max} characters.`);
+  return clean;
 }
 
 function queryTokens(query) {
@@ -144,17 +153,12 @@ export function createVaultSearchService({ filename } = {}) {
   }
 
   function refreshTreasure(accountId, row) {
-    const treasure = database.prepare(`SELECT t.*, f.name AS folder_name, l.name AS location_name
-      FROM vault_treasures t
-      LEFT JOIN vault_folders f ON f.account_id = t.account_id AND f.id = t.folder_id
-      LEFT JOIN vault_locations l ON l.account_id = t.account_id AND l.id = t.location_id
-      WHERE t.account_id = ? AND t.id = ?`).get(accountId, row.treasure_id);
-    if (!treasure) return;
     const content = database.prepare(`SELECT ${contentExpression()} AS content
       FROM vault_treasures t
       LEFT JOIN vault_folders f ON f.account_id = t.account_id AND f.id = t.folder_id
       LEFT JOIN vault_locations l ON l.account_id = t.account_id AND l.id = t.location_id
-      WHERE t.account_id = ? AND t.id = ?`).get(accountId, row.treasure_id)?.content ?? "";
+      WHERE t.account_id = ? AND t.id = ?`).get(accountId, row.treasure_id)?.content;
+    if (content === undefined) return;
     database.prepare("DELETE FROM vault_extended_search WHERE account_id = ? AND treasure_id = ?").run(accountId, row.treasure_id);
     database.prepare("INSERT INTO vault_extended_search (treasure_id, account_id, content) VALUES (?, ?, ?)").run(row.treasure_id, accountId, content);
     database.prepare(`INSERT INTO vault_extended_search_meta (
@@ -183,7 +187,7 @@ export function createVaultSearchService({ filename } = {}) {
     const collector = requireIdentity(identity);
     removeOrphans(collector.id);
     const rows = versionRows(database, collector.id);
-    const metaRows = database.prepare(`SELECT * FROM vault_extended_search_meta WHERE account_id = ?`).all(collector.id);
+    const metaRows = database.prepare("SELECT * FROM vault_extended_search_meta WHERE account_id = ?").all(collector.id);
     const meta = new Map(metaRows.map((row) => [row.treasure_id, row]));
     const stale = rows.filter((row) => {
       const current = meta.get(row.treasure_id);
@@ -211,19 +215,57 @@ export function createVaultSearchService({ filename } = {}) {
     return { refreshed: stale.length, rebuilt: false };
   }
 
-  function searchTreasureIds(identity, query, { limit = 5000 } = {}) {
+  function search(identity, query, options = {}) {
     const collector = requireIdentity(identity);
-    const safeLimit = integer(limit, "search_limit", { min: 1, max: 5000 });
     const expression = ftsQuery(query);
-    if (!expression) return [];
+    const limit = integer(options.limit ?? 50, "search_limit", { min: 1, max: 200 });
+    const offset = integer(options.offset ?? 0, "search_offset", { min: 0, max: 10_000_000 });
+    if (!expression) return { ids: [], limit, offset, hasMore: false, searchApplied: false, queryTokens: [] };
     synchronize(collector);
-    return database.prepare(`SELECT treasure_id FROM vault_extended_search
-      WHERE vault_extended_search MATCH ? AND account_id = ? LIMIT ?`).all(expression, collector.id, safeLimit).map((row) => row.treasure_id);
+
+    const category = cleanOptionalText(options.category, "category", 120);
+    const folderId = cleanOptionalText(options.folderId, "folder_id", 200);
+    const locationId = cleanOptionalText(options.locationId, "location_id", 200);
+    const tag = cleanOptionalText(options.tag, "tag", 60)?.toLowerCase() ?? null;
+    const sort = typeof options.sort === "string" && SORTS.has(options.sort) ? options.sort : "updated-desc";
+    const clauses = ["vault_extended_search MATCH ?", "s.account_id = ?"];
+    const values = [expression, collector.id];
+    if (category) { clauses.push("t.category = ? COLLATE NOCASE"); values.push(category); }
+    if (folderId) { clauses.push("t.folder_id = ?"); values.push(folderId); }
+    if (locationId) { clauses.push("t.location_id = ?"); values.push(locationId); }
+    if (tag) {
+      clauses.push("EXISTS (SELECT 1 FROM vault_tags tg WHERE tg.treasure_id = t.id AND tg.tag = ? COLLATE NOCASE)");
+      values.push(tag);
+    }
+    const orderBy = {
+      "updated-desc": "t.updated_at DESC",
+      "updated-asc": "t.updated_at ASC",
+      "created-desc": "t.created_at DESC",
+      "title-asc": "t.title COLLATE NOCASE ASC",
+      "title-desc": "t.title COLLATE NOCASE DESC",
+      "value-desc": "COALESCE(t.estimated_value_cents, -1) DESC, t.title COLLATE NOCASE ASC",
+      "year-desc": "COALESCE(t.year, -1) DESC, t.title COLLATE NOCASE ASC"
+    }[sort];
+    const rows = database.prepare(`SELECT s.treasure_id FROM vault_extended_search s
+      JOIN vault_treasures t ON t.account_id = s.account_id AND t.id = s.treasure_id
+      WHERE ${clauses.join(" AND ")} ORDER BY ${orderBy} LIMIT ? OFFSET ?`).all(...values, limit + 1, offset);
+    return {
+      ids: rows.slice(0, limit).map((row) => row.treasure_id),
+      limit,
+      offset,
+      hasMore: rows.length > limit,
+      searchApplied: true,
+      queryTokens: queryTokens(query)
+    };
+  }
+
+  function searchTreasureIds(identity, query, { limit = 8 } = {}) {
+    return search(identity, query, { limit, offset: 0, sort: "updated-desc" }).ids;
   }
 
   function close() {
     database.close();
   }
 
-  return Object.freeze({ synchronize, searchTreasureIds, close });
+  return Object.freeze({ synchronize, search, searchTreasureIds, close });
 }
