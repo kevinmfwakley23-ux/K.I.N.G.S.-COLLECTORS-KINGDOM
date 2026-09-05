@@ -41,10 +41,12 @@ const required = [
   "dist/packages/vault/src/portable.mjs",
   "dist/packages/vault/src/taxonomy.mjs",
   "dist/packages/vault/src/attributes.mjs",
+  "dist/packages/vault/src/search.mjs",
+  "dist/packages/vault/src/intelligence.mjs",
   "dist/build-manifest.json"
 ];
 
 for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
 if (manifest.phase !== "IMP-005-VAULT-PHASE-1") throw new Error("Unexpected build phase in manifest.");
-console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 output, including portable intake, provenance, category intelligence, and flexible collectible details.");
+console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 output, including portable intake, provenance, category intelligence, extended search, and bounded Royal Curator context.");
