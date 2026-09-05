@@ -27,6 +27,8 @@ const required = [
   "dist/apps/web/public/vault-evidence.css",
   "dist/apps/web/public/vault-view-modes.js",
   "dist/apps/web/public/vault-view-modes.css",
+  "dist/apps/web/public/vault-system-views.js",
+  "dist/apps/web/public/vault-system-views.css",
   "dist/apps/web/public/vault-ui-styles.js",
   "dist/apps/web/public/styles.css",
   "dist/apps/web/public/world.css",
@@ -58,4 +60,4 @@ const required = [
 for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
 if (manifest.phase !== "IMP-005-VAULT-PHASE-1") throw new Error("Unexpected build phase in manifest.");
-console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 output, including portable intake, provenance, category intelligence, extended search, saved Vault views, protected evidence documents, Grid/List/Binder/Gallery presentation assets, live enrichment UI assets, and bounded Royal Curator context.");
+console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 output, including portable intake, provenance, category intelligence, extended search, saved Vault views, protected evidence documents, Grid/List/Binder/Gallery presentation assets, authoritative recent/duplicate system views, live enrichment UI assets, and bounded Royal Curator context.");
