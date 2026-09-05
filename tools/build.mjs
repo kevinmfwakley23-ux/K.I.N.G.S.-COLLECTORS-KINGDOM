@@ -24,7 +24,7 @@ await writeFile(resolve(dist, "build-manifest.json"), `${JSON.stringify({
   product: "K.I.N.G.S. Collector's Kingdom",
   version: packageJson.version,
   phase: "IMP-005-VAULT-PHASE-1",
-  entrypoint: "apps/web/server.mjs"
+  entrypoint: "apps/web/server-runtime.mjs"
 }, null, 2)}\n`);
 
 console.log(`Built production artifact at ${dist}`);
