@@ -17,13 +17,16 @@
 .grading-results, .grading-quality-panel { display: grid; gap: .5rem; padding: .8rem; border-radius: .9rem; background: rgba(255,255,255,.42); border: 1px solid rgba(35, 28, 20, .12); }
 .grading-result-row, .grading-threshold, .grading-quality-row { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
 .grading-ratio { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
-.grading-threshold-list, .grading-quality-metrics { display: grid; gap: .35rem; }
+.grading-threshold-list, .grading-quality-metrics, .grading-contour-signals { display: grid; gap: .35rem; }
 .grading-threshold, .grading-quality-row { padding: .45rem .55rem; border-radius: .65rem; font-size: .82rem; }
 .grading-threshold.pass, .grading-quality-row.pass, .grading-quality-summary.pass { background: rgba(34, 128, 80, .1); border: 1px solid rgba(34, 128, 80, .2); }
 .grading-threshold.miss, .grading-quality-row.miss, .grading-quality-summary.miss { background: rgba(160, 58, 45, .08); border: 1px solid rgba(160, 58, 45, .16); }
 .grading-quality-row.pending { background: rgba(165, 123, 35, .08); border: 1px solid rgba(165, 123, 35, .18); }
 .grading-quality-summary { margin: 0; padding: .55rem .65rem; border-radius: .65rem; font-weight: 800; }
 .grading-quality-warnings { margin: .15rem 0 0; padding-left: 1.2rem; display: grid; gap: .3rem; font-size: .82rem; }
+.grading-contour-signal { display: grid; gap: .25rem; padding: .65rem; border-radius: .75rem; border: 1px solid rgba(160, 58, 45, .18); background: rgba(160, 58, 45, .06); }
+.grading-contour-signal p { margin: 0; }
+.grading-contour-signal > span { font-size: .8rem; font-variant-numeric: tabular-nums; }
 .grading-capture-plan { padding: .9rem 1rem; border-radius: .9rem; border: 1px solid rgba(35, 28, 20, .12); background: rgba(255,255,255,.3); }
 .grading-capture-plan h3, .grading-controls h3, .grading-quality-panel h3 { margin: 0; }
 .grading-capture-plan ul { margin: .55rem 0; padding-left: 1.2rem; display: grid; gap: .35rem; }
