@@ -22,11 +22,7 @@ function parseBoolean(rawValue, name) {
 
 function parseHttpUrl(rawValue, name) {
   let parsed;
-  try {
-    parsed = new URL(rawValue);
-  } catch {
-    throw new Error(`${name} must be a valid URL.`);
-  }
+  try { parsed = new URL(rawValue); } catch { throw new Error(`${name} must be a valid URL.`); }
   if (!["http:", "https:"].includes(parsed.protocol)) throw new Error(`${name} must use http or https.`);
   return parsed.toString().replace(/\/$/, "");
 }
@@ -42,27 +38,23 @@ function parseExternalHttpsUrl(rawValue, name) {
 function parseOptionalEmail(rawValue, name) {
   if (rawValue === undefined || rawValue === null || rawValue === "") return null;
   const value = String(rawValue).trim();
-  if (!value || value.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-    throw new Error(`${name} must be a valid email address when provided.`);
-  }
+  if (!value || value.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) throw new Error(`${name} must be a valid email address when provided.`);
   return value;
 }
 
-function parseOptionalSecret(rawValue, name) {
+function parseOptionalSecret(rawValue, name, maxLength = 512) {
   if (rawValue === undefined || rawValue === null || rawValue === "") return null;
   if (typeof rawValue !== "string") throw new Error(`${name} must be text when provided.`);
   const value = rawValue.trim();
-  if (!value || value.length > 512 || /[\r\n]/.test(value)) throw new Error(`${name} is invalid.`);
+  if (!value || value.length > maxLength || /[\r\n]/.test(value)) throw new Error(`${name} is invalid.`);
   return value;
 }
 
 function resolveKingsAiBaseUrl(env) {
   const explicitBaseUrl = env.KINGDOM_KINGS_AI_BASE_URL?.trim();
   if (explicitBaseUrl) return parseHttpUrl(explicitBaseUrl, "KINGDOM_KINGS_AI_BASE_URL");
-
   const privateHostport = env.KINGDOM_KINGS_AI_HOSTPORT?.trim();
   if (privateHostport) return parseHttpUrl(`http://${privateHostport}`, "KINGDOM_KINGS_AI_HOSTPORT");
-
   return "http://127.0.0.1:8790";
 }
 
@@ -96,6 +88,10 @@ export function loadRuntimeConfig(env = process.env) {
     pokemonTcgMinIntervalMs: parsePositiveInteger(env.KINGDOM_POKEMON_TCG_MIN_INTERVAL_MS ?? "5000", "KINGDOM_POKEMON_TCG_MIN_INTERVAL_MS"),
     scryfallBaseUrl: parseExternalHttpsUrl(env.KINGDOM_SCRYFALL_BASE_URL ?? "https://api.scryfall.com", "KINGDOM_SCRYFALL_BASE_URL"),
     scryfallTimeoutMs: parsePositiveInteger(env.KINGDOM_SCRYFALL_TIMEOUT_MS ?? "5000", "KINGDOM_SCRYFALL_TIMEOUT_MS"),
-    scryfallMinIntervalMs: parsePositiveInteger(env.KINGDOM_SCRYFALL_MIN_INTERVAL_MS ?? "150", "KINGDOM_SCRYFALL_MIN_INTERVAL_MS")
+    scryfallMinIntervalMs: parsePositiveInteger(env.KINGDOM_SCRYFALL_MIN_INTERVAL_MS ?? "150", "KINGDOM_SCRYFALL_MIN_INTERVAL_MS"),
+    psaBaseUrl: parseExternalHttpsUrl(env.KINGDOM_PSA_BASE_URL ?? "https://api.psacard.com/publicapi", "KINGDOM_PSA_BASE_URL"),
+    psaAccessToken: parseOptionalSecret(env.KINGDOM_PSA_ACCESS_TOKEN, "KINGDOM_PSA_ACCESS_TOKEN", 4096),
+    psaTimeoutMs: parsePositiveInteger(env.KINGDOM_PSA_TIMEOUT_MS ?? "5000", "KINGDOM_PSA_TIMEOUT_MS"),
+    psaMinIntervalMs: parsePositiveInteger(env.KINGDOM_PSA_MIN_INTERVAL_MS ?? "1000", "KINGDOM_PSA_MIN_INTERVAL_MS")
   });
 }

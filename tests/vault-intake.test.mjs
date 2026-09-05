@@ -175,7 +175,7 @@ test("Royal Intake Queue safely ignores arbitrary provider-specific external ide
   });
 });
 
-test("Royal Intake Queue validates identifier types and structured barcode/card patterns", async () => {
+test("Royal Intake Queue validates identifier types and structured barcode/card/cert patterns", async () => {
   await withIntake(async ({ intakeService }) => {
     assert.throws(() => intakeService.capture(collectorA, {
       identifierType: "upc",
@@ -185,7 +185,7 @@ test("Royal Intake Queue validates identifier types and structured barcode/card 
     assert.throws(() => intakeService.capture(collectorA, {
       identifierType: "mystery-provider",
       identifierValue: "123"
-    }), /Identifier type must be barcode, UPC, EAN, ISBN, Pokémon card ID, Pokémon set\/card number, Magic Scryfall ID, Magic set\/collector number, catalog, serial, SKU, or custom/i);
+    }), /Identifier type must be barcode, UPC, EAN, ISBN, Pokémon card ID, Pokémon set\/card number, Magic Scryfall ID, Magic set\/collector number, PSA certification number, catalog, serial, SKU, or custom/i);
 
     assert.throws(() => intakeService.capture(collectorA, {
       identifierType: "isbn",
@@ -201,5 +201,10 @@ test("Royal Intake Queue validates identifier types and structured barcode/card 
       identifierType: "pokemon-set-number",
       identifierValue: "base1"
     }), /setId\/cardNumber/i);
+
+    assert.throws(() => intakeService.capture(collectorA, {
+      identifierType: "psa-cert",
+      identifierValue: "PSA-123"
+    }), /PSA certification number must contain 1 to 12 digits/i);
   });
 });

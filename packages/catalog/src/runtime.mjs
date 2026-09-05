@@ -1,6 +1,7 @@
 import { MemoryCatalogCache } from "./cache.mjs";
 import { createOpenLibraryCatalogProvider } from "./open-library-provider.mjs";
 import { createPokemonTcgCatalogProvider } from "./pokemon-tcg-provider.mjs";
+import { createPsaCertificationProvider } from "./psa-cert-provider.mjs";
 import { createScryfallCatalogProvider } from "./scryfall-provider.mjs";
 import { createCatalogService } from "./service.mjs";
 import { createUpcItemDbCatalogProvider } from "./upcitemdb-provider.mjs";
@@ -23,54 +24,45 @@ export function createCatalogRuntime({
     throw new TypeError("Catalog runtime timing hooks must be functions.");
   }
 
-  const cache = new MemoryCatalogCache({
-    ttlMs: runtime.catalogCacheTtlMs,
-    maxEntries: runtime.catalogCacheEntries
-  });
+  const cache = new MemoryCatalogCache({ ttlMs: runtime.catalogCacheTtlMs, maxEntries: runtime.catalogCacheEntries });
 
   const openLibraryProvider = createOpenLibraryCatalogProvider({
-    fetchImpl,
-    baseUrl: runtime.openLibraryBaseUrl,
-    timeoutMs: runtime.catalogTimeoutMs,
-    minIntervalMs: runtime.catalogMinIntervalMs,
-    now: providerNow,
-    sleep,
-    version: runtime.version,
-    contactEmail: runtime.catalogContactEmail
+    fetchImpl, baseUrl: runtime.openLibraryBaseUrl, timeoutMs: runtime.catalogTimeoutMs,
+    minIntervalMs: runtime.catalogMinIntervalMs, now: providerNow, sleep,
+    version: runtime.version, contactEmail: runtime.catalogContactEmail
   });
 
   const upcItemDbProvider = createUpcItemDbCatalogProvider({
-    fetchImpl,
-    baseUrl: runtime.upcItemDbBaseUrl,
-    userKey: runtime.upcItemDbUserKey,
-    timeoutMs: runtime.upcItemDbTimeoutMs,
-    minIntervalMs: runtime.upcItemDbMinIntervalMs,
-    now: providerNow,
-    sleep
+    fetchImpl, baseUrl: runtime.upcItemDbBaseUrl, userKey: runtime.upcItemDbUserKey,
+    timeoutMs: runtime.upcItemDbTimeoutMs, minIntervalMs: runtime.upcItemDbMinIntervalMs,
+    now: providerNow, sleep
   });
 
   const pokemonTcgProvider = createPokemonTcgCatalogProvider({
-    fetchImpl,
-    baseUrl: runtime.pokemonTcgBaseUrl,
-    apiKey: runtime.pokemonTcgApiKey,
-    timeoutMs: runtime.pokemonTcgTimeoutMs,
-    minIntervalMs: runtime.pokemonTcgMinIntervalMs,
-    now: providerNow,
-    sleep
+    fetchImpl, baseUrl: runtime.pokemonTcgBaseUrl, apiKey: runtime.pokemonTcgApiKey,
+    timeoutMs: runtime.pokemonTcgTimeoutMs, minIntervalMs: runtime.pokemonTcgMinIntervalMs,
+    now: providerNow, sleep
   });
 
   const scryfallProvider = createScryfallCatalogProvider({
-    fetchImpl,
-    baseUrl: runtime.scryfallBaseUrl,
-    timeoutMs: runtime.scryfallTimeoutMs,
-    minIntervalMs: runtime.scryfallMinIntervalMs,
-    now: providerNow,
-    sleep,
-    version: runtime.version,
-    contactEmail: runtime.catalogContactEmail
+    fetchImpl, baseUrl: runtime.scryfallBaseUrl, timeoutMs: runtime.scryfallTimeoutMs,
+    minIntervalMs: runtime.scryfallMinIntervalMs, now: providerNow, sleep,
+    version: runtime.version, contactEmail: runtime.catalogContactEmail
   });
 
-  const providers = Object.freeze([openLibraryProvider, upcItemDbProvider, pokemonTcgProvider, scryfallProvider]);
+  const psaCertificationProvider = createPsaCertificationProvider({
+    fetchImpl, baseUrl: runtime.psaBaseUrl, accessToken: runtime.psaAccessToken,
+    timeoutMs: runtime.psaTimeoutMs, minIntervalMs: runtime.psaMinIntervalMs,
+    now: providerNow, sleep
+  });
+
+  const providers = Object.freeze([
+    openLibraryProvider,
+    upcItemDbProvider,
+    pokemonTcgProvider,
+    scryfallProvider,
+    psaCertificationProvider
+  ]);
   const service = createCatalogService({ providers, cache, now: serviceNow });
 
   return Object.freeze({
@@ -85,6 +77,9 @@ export function createCatalogRuntime({
       pokemonSetNumberCandidates: true,
       mtgScryfallIdCandidates: true,
       mtgSetNumberCandidates: true,
+      psaCertificationCandidates: Boolean(runtime.psaAccessToken),
+      psaCertificationRequiresServerToken: true,
+      certificationEvidenceCanAuthenticatePhysicalItem: false,
       automaticVaultMutation: false,
       valuationFromCatalogProviders: false
     })

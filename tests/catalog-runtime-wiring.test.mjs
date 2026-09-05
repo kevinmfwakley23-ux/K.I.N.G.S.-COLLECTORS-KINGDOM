@@ -7,7 +7,7 @@ function jsonResponse(payload, { status = 200, headers = {} } = {}) {
   return new Response(JSON.stringify(payload), { status, headers: { "content-type": "application/json", ...headers } });
 }
 
-test("production catalog runtime composes book, retail, Pokémon, and Scryfall providers behind one review-only service", async () => {
+test("production evidence runtime composes catalog and PSA certification providers behind one review-only service", async () => {
   const calls = [];
   const fetchImpl = async (url) => {
     const requestUrl = new URL(url);
@@ -27,9 +27,11 @@ test("production catalog runtime composes book, retail, Pokémon, and Scryfall p
     KINGDOM_OPEN_LIBRARY_BASE_URL: "http://127.0.0.1:9911",
     KINGDOM_UPCITEMDB_BASE_URL: "http://127.0.0.1:9912",
     KINGDOM_SCRYFALL_BASE_URL: "http://127.0.0.1:9920",
+    KINGDOM_PSA_BASE_URL: "http://127.0.0.1:9930",
     KINGDOM_CATALOG_MIN_INTERVAL_MS: "1",
     KINGDOM_UPCITEMDB_MIN_INTERVAL_MS: "1",
-    KINGDOM_SCRYFALL_MIN_INTERVAL_MS: "1"
+    KINGDOM_SCRYFALL_MIN_INTERVAL_MS: "1",
+    KINGDOM_PSA_MIN_INTERVAL_MS: "1"
   });
   const routedFetch = async (url, options) => {
     const parsed = new URL(url);
@@ -39,11 +41,14 @@ test("production catalog runtime composes book, retail, Pokémon, and Scryfall p
   };
 
   const runtime = createCatalogRuntime({ config, fetchImpl: routedFetch });
-  assert.deepEqual(runtime.providers.map((provider) => provider.id), ["open-library", "upcitemdb", "pokemon-tcg", "scryfall"]);
+  assert.deepEqual(runtime.providers.map((provider) => provider.id), ["open-library", "upcitemdb", "pokemon-tcg", "scryfall", "psa-cert"]);
   assert.equal(runtime.capabilities.pokemonCardIdCandidates, true);
   assert.equal(runtime.capabilities.pokemonSetNumberCandidates, true);
   assert.equal(runtime.capabilities.mtgScryfallIdCandidates, true);
   assert.equal(runtime.capabilities.mtgSetNumberCandidates, true);
+  assert.equal(runtime.capabilities.psaCertificationCandidates, false);
+  assert.equal(runtime.capabilities.psaCertificationRequiresServerToken, true);
+  assert.equal(runtime.capabilities.certificationEvidenceCanAuthenticatePhysicalItem, false);
   assert.equal(runtime.capabilities.automaticVaultMutation, false);
   assert.equal(runtime.capabilities.valuationFromCatalogProviders, false);
 
@@ -57,4 +62,15 @@ test("production catalog runtime composes book, retail, Pokémon, and Scryfall p
   assert.equal(retail.candidates[0].providerId, "upcitemdb");
   assert.doesNotMatch(JSON.stringify(retail.candidates[0]), /49\.99|39\.99|Ignored Merchant/i);
   assert.equal(calls.length, 2);
+
+  const configuredRuntime = createCatalogRuntime({
+    config: loadRuntimeConfig({
+      KINGDOM_PSA_BASE_URL: "http://127.0.0.1:9930",
+      KINGDOM_PSA_ACCESS_TOKEN: "server-only-token",
+      KINGDOM_PSA_MIN_INTERVAL_MS: "1"
+    }),
+    fetchImpl: async () => { throw new Error("PSA network should not run during capability inspection"); }
+  });
+  assert.equal(configuredRuntime.capabilities.psaCertificationCandidates, true);
+  assert.equal(configuredRuntime.capabilities.certificationEvidenceCanAuthenticatePhysicalItem, false);
 });

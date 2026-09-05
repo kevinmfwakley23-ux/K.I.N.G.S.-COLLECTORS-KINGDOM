@@ -5,11 +5,11 @@ This file is the durable engineering recovery ledger. Read it before substantial
 ## Permanent execution rules
 
 - The locked K.I.N.G.S. Collectibles construction documents are the primary product/construction guide.
-- Research current competitors and open-source implementations before each meaningful build pass.
+- Research current competitors, official provider APIs, and data-use terms before each meaningful build pass.
 - Adopt improvements only when they strengthen rather than silently replace the construction-document intent.
 - Do not call functionality complete until it is real, wired, persistent/integrated where required, and supported by the strongest available quality gates.
 - Preserve permanent Kingdom treasure identity across organization, provenance, Marketplace, grading, insurance, valuation, and legacy expansion.
-- Never manufacture market values, identification certainty, provenance verification, grading certainty, activity, or successful mutations.
+- Never manufacture market values, identification certainty, provenance verification, grading certainty, physical authenticity, activity, or successful mutations.
 
 ---
 
@@ -17,162 +17,137 @@ This file is the durable engineering recovery ledger. Read it before substantial
 
 **Date:** 2026-09-05  
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Latest verified checkpoint:** **Category-Specific Catalog Intelligence — Magic: The Gathering exact-printing review via Scryfall**  
-**Latest verified implementation gate:** **Kingdom Quality Gates #485** — run `33971901302` — **PASS**  
-**Verified implementation commit:** `1301f2d4b49530f87ea99124ed202d2b9dcb2efc`  
-**Working branch:** `imp-005-scryfall-mtg-catalog`  
-**Pull request:** `#12` — `IMP-005: Scryfall Magic catalog intelligence`
+**Latest verified checkpoint:** **PSA Certification-Database Evidence Boundary**  
+**Latest verified implementation gate:** **Kingdom Quality Gates #490** — run `33973285905` — **PASS**  
+**Verified implementation commit:** `85cbb9a78211dd2b09259ef088f88f8a1d59748b`  
+**Working branch:** `imp-005-sports-card-cert-evidence`  
+**Pull request:** `#13` — `IMP-005: PSA certification evidence boundary`
 
 ### Exact recovery point
 
-Do **not** rebuild saved views, large-result pagination, bulk movement, Pokémon catalog intelligence, or the first Scryfall/MTG adapter.
+Do **not** rebuild saved views, large-result pagination, bulk movement, provenance, Pokémon catalog intelligence, Scryfall/MTG intelligence, or the PSA certification provider/evidence UI.
 
 The Royal Vault currently has verified:
 
 - permanent owner-scoped treasure UUIDs and SQLite persistence;
 - treasure create/read/update/archive;
 - collection groups and arbitrary-depth physical locations;
-- normalized search/filter/sort and real collection statistics;
 - secure private treasure media;
 - voice command/talk-to-text;
 - transactional JSON/CSV migration;
 - Royal Intake Queue and progressive native barcode scanning;
-- review-only Open Library ISBN candidates;
-- review-only UPCitemdb UPC/EAN/GTIN candidates with provider commerce/price/image data excluded;
+- review-only Open Library ISBN evidence;
+- review-only UPCitemdb UPC/EAN/GTIN evidence with commerce/price/image data excluded;
 - append-only Provenance & Ownership Ledger;
-- cycle-safe individual collection/location stewardship;
-- previewed atomic bulk treasure movement for up to 100 permanent UUIDs;
+- cycle-safe individual and previewed atomic bulk reorganization;
 - private Saved Vault Views with deterministic keyset pagination and verified SQLite paging indexes;
-- **review-only Pokémon TCG exact-card candidates** using provider card ID or set/card identifiers;
-- **review-only Magic: The Gathering exact-printing candidates via Scryfall** using printing UUID or set/collector identifiers;
-- **Royal Intake support for Pokémon and Magic exact identifiers**;
-- **responsive provider candidate review and copy-to-new-unsaved-editor workflows**;
-- **explicit separation between provider catalog evidence and physical variant/finish, condition, grade, authenticity, provenance, ownership, and valuation**.
+- review-only Pokémon TCG exact-card evidence;
+- review-only Magic: The Gathering exact-printing evidence via Scryfall;
+- **review-only PSA certification-number database evidence when a server-side PSA token is configured**;
+- **PSA cert numbers as their own Intake evidence type, intentionally not ordinary catalog/serial identity**;
+- **responsive PSA database verification that cannot automatically hand off to treasure identity, grade, condition, authenticity, provenance, ownership, or value**;
+- explicit separation among provider catalog identity, certification database records, physical authentication, provenance, ownership, and valuation.
 
-### Construction-document guidance used for the latest pass
+### Construction-document guidance used for this pass
 
 `K.I.N.G.S. Collectibles construction documents .pdf` remains authoritative.
 
-The Scryfall/MTG pass follows its requirements for:
+The PSA/sports-card pass follows its requirements for evidence-backed intelligence, collector authority, server-side provider credentials, portable provider-independent treasure identity, mobile/Chromebook/desktop continuity, truthful uncertainty, and no silent authoritative mutation from an external lookup.
 
-- category-aware collector intelligence without surrendering collector authority;
-- permanent provider-independent Kingdom treasure identity;
-- mobile/Chromebook/desktop continuity through the existing Intake Queue;
-- review before authoritative record creation;
-- truthful uncertainty around print finish, language, condition, grading, authenticity, provenance, and value;
-- centralized server-side provider transport and traffic rules;
-- portable evidence instead of provider lock-in;
-- one shared catalog architecture instead of a separate subsystem per collectible type.
-
-### Research completed for the latest pass
+### Research completed for this pass
 
 Pass-specific research record:
 
-- `docs/research/2026-09-05-IMP-005-SCRYFALL-MTG-CATALOG.md`
+- `docs/research/2026-09-05-IMP-005-SPORTS-CARD-CERT-EVIDENCE.md`
 
-Current Scryfall guidance and active SDK/tooling were inspected before implementation.
+Official sources reviewed included PSA Public API documentation, PSA's public Cert Verification security notice, SportsCardsPro API/CSV documentation, SportsCardsPro Terms of Service, and SportsCardsPro price-guide terms.
 
 Key decisions:
 
-- exact lookup modes only for the first MTG slice: `mtg-scryfall-id` and `mtg-set-number`;
-- Scryfall printing `id` and `oracle_id` remain separate evidence concepts;
-- set code, collector number, language, rarity, release date, artist, layout/frame, card faces, print flags, and available finishes are bounded review metadata;
-- `finishes` describes provider-declared available finishes and does not prove the collector's physical finish;
-- Scryfall prices, purchase/store links, image URIs, and commerce material are excluded from normalized catalog candidates;
-- large-volume future enrichment should use Scryfall bulk data rather than repeatedly walking the live API;
-- external requests use HTTPS, meaningful User-Agent, explicit JSON Accept, shared caching, and conservative serialized traffic;
-- the Kingdom defaults to 150 ms request spacing (~6.7/sec), an internal safety margin beneath Scryfall's published under-10-requests/sec guidance;
-- 429 is surfaced explicitly; there is no aggressive automatic retry loop.
+- PSA exposes an official HTTPS Public API for single cert-number lookup and requires a bearer access token.
+- PSA provider credentials stay server-side only.
+- PSA's own public security notice warns that cert-number verification does not eliminate counterfeit risk and does not guarantee that a particular physical item/holder shown to a collector is genuine.
+- Therefore a successful PSA result is `certification-database-record` evidence with `certificationNumberVerifiedInDatabase=true` while `physicalItemAuthenticated=false`.
+- PSA cert numbers are not aliased to ordinary product catalog/serial identity.
+- PSA estimate, sales, and pricing data are excluded from normalized Kingdom evidence.
+- SportsCardsPro currently requires paid API access and documents a one-request-per-second API limit.
+- SportsCardsPro's current terms restrict proprietary price-data use/redistribution in third-party-accessible software without express written permission.
+- Therefore SportsCardsPro pricing is **not** wired as a default Kingdom valuation source. Any future adapter must be permission-aware and separate identification metadata from price/valuation authority.
 
-### Latest implemented slice
+### Latest implemented slice — PR #13
 
-Files added/changed in PR #12 include:
+Primary files added/changed:
 
-- `packages/catalog/src/scryfall-provider.mjs`
+- `packages/catalog/src/psa-cert-provider.mjs`
 - `packages/catalog/src/runtime.mjs`
+- `packages/catalog/src/service.mjs`
 - `config/runtime.mjs`
 - `packages/vault/src/intake-service.mjs`
-- `apps/web/public/vault-intake-core.js`
 - `apps/web/public/vault-catalog-core.js`
+- `apps/web/public/vault-intake-core.js`
 - `apps/web/public/vault-intake-ui.js`
 - `.env.example`
-- `tests/scryfall-provider.test.mjs`
-- `tests/mtg-intake.test.mjs`
-- `tests/scryfall-vault-ui.test.mjs`
-- `tests/scryfall-intake-ui-artifact.test.mjs`
-- `tests/catalog-runtime-wiring.test.mjs`
+- `tests/psa-cert-provider.test.mjs`
+- `tests/psa-intake.test.mjs`
+- `tests/psa-evidence-ui.test.mjs`
+- `tests/psa-intake-ui-artifact.test.mjs`
 - `tests/catalog-runtime.test.mjs`
+- `tests/catalog-runtime-wiring.test.mjs`
 - `tests/config.test.mjs`
 - `tests/vault-intake.test.mjs`
 - `tools/typecheck.mjs`
 - `tools/verify-build.mjs`
-- `docs/research/2026-09-05-IMP-005-SCRYFALL-MTG-CATALOG.md`
+- `docs/research/2026-09-05-IMP-005-SPORTS-CARD-CERT-EVIDENCE.md`
 
 Verified behavior:
 
-- `mtg-scryfall-id` validates an exact Scryfall printing UUID before outbound lookup;
-- `mtg-set-number` accepts exact `setCode/collectorNumber` or `setCode:collectorNumber` and normalizes it;
-- Scryfall transport requires HTTPS outside local testing;
-- requests send a meaningful K.I.N.G.S. Collector's Kingdom User-Agent and explicit JSON Accept header;
-- default provider spacing is 150 ms and requests are serialized;
-- provider access has timeout and maximum response-size protection;
-- 404 returns an honest no-match;
-- 429 remains an explicit retryable rate-limit failure without automatic retry-through behavior;
-- malformed JSON, malformed payloads, oversized responses, and upstream errors fail explicitly;
-- the returned printing UUID or set/collector identity must match the requested evidence key;
-- normalized candidates preserve Scryfall printing ID and Oracle ID separately;
-- bounded print metadata includes title, set, collector number, language, rarity, release date, artist, layout, type line, frame, border color, available finishes, promo/digital/reprint/variation flags, and bounded multiface summaries;
-- Scryfall `prices`, `purchase_uris`, store/affiliate material, and `image_uris` are excluded from normalized evidence;
-- Royal Intake accepts Magic set/collector and Scryfall printing identifiers and preserves owner isolation/history;
-- a saved catalog key can surface as a duplicate-review warning without asserting two physical cards are the same item;
-- responsive Intake UI exposes `Find Magic printing candidate`;
-- selected Scryfall evidence copies only into a **new unsaved treasure editor**;
-- draft metadata does not set physical finish/variant, condition, grade, authenticity, provenance, ownership, market value, or purchase price;
-- runtime capabilities report both MTG exact modes while preserving `automaticVaultMutation: false` and `valuationFromCatalogProviders: false`;
-- production contract/artifact checks now explicitly require both Pokémon and Scryfall provider modules.
+- `psa-cert` validates and normalizes 1–12 digit certification numbers;
+- aliases `psa` and `psa-certification` normalize to the same controlled Intake type;
+- PSA cert numbers do not alias to ordinary catalog/serial identity for duplicate matching;
+- official PSA API transport requires HTTPS outside local tests;
+- bearer token is supplied only through server runtime configuration and never exposed in browser code/public source URLs/normalized evidence;
+- the collector-facing source link points to PSA's normal public cert page, not the authenticated API endpoint;
+- provider requests have bounded timeout and maximum response size;
+- requests are serialized with a conservative default 1000 ms interval;
+- PSA provider uses a 15-minute provider-specific cache instead of the generic six-hour catalog TTL;
+- 204/404 no-data, invalid PSA request, rejected token, 429, upstream failure, malformed JSON/payload, oversized payload, and returned-cert mismatch remain explicit;
+- bounded PSA/PSA-DNA metadata can include cert number, year/brand/category/card number/subject/variety, grade description/card grade, signer data, population values, item status, and PSA/DNA result metadata where returned;
+- price/estimate/sales material is excluded from normalized evidence;
+- database success explicitly records verification scope without claiming physical-holder authentication;
+- runtime reports PSA capability as unavailable when no server-side token is configured rather than pretending access works;
+- Royal Intake exposes `Verify PSA cert record` for PSA cert items;
+- certification evidence cannot use ordinary `Use in treasure editor` or provider `Review in treasure editor` handoff;
+- no automatic treasure identity, grade, condition, authenticity, provenance, ownership, purchase price, market value, or Vault mutation occurs.
 
 Verification sequence:
 
-- **Quality Gates #484** — initial Scryfall PR gate — **FAILED 1/139** because an older Royal Intake error-message test still asserted the pre-Magic controlled identifier list. All new Scryfall/MTG provider, Intake, UI, truthfulness, runtime, type-contract, and artifact tests reached before that failure were green.
-- The stale test was updated to require the expanded controlled vocabulary including both Magic identifier modes; production behavior was not weakened.
-- **Quality Gates #485** — run `33971901302` — **PASS** on `1301f2d4b49530f87ea99124ed202d2b9dcb2efc`.
-- #485 passed lint, type contracts, all 139 tests, production build/build artifact verification, and production dependency audit.
+- **Quality Gates #489** — run `33973247184` — **FAILED 1/153** because a newly added artifact test expected the policy-owned text `Verify PSA cert record` to be duplicated inside `vault-intake-ui.js`. Provider, Intake, runtime, domain, and truthfulness behavior passed.
+- The artifact test was corrected to inspect the actual module boundary: the policy label in `vault-catalog-core.js` and certification-only behavior in `vault-intake-ui.js`. No production behavior was weakened or duplicated merely to satisfy the test.
+- **Quality Gates #490** — run `33973285905` — **PASS** on `85cbb9a78211dd2b09259ef088f88f8a1d59748b`.
+- #490 passed lint, type contracts, all **153 tests**, production build/artifact verification, and production dependency audit.
 
 ---
 
 ## Exact next engineering target
 
-**IMP-005 — Sports-Card Catalog Evidence + Grading-Cert Verification Boundaries**
+**IMP-005 — Sports-Card Identity Evidence + Additional Grading-Provider Verification Research**
 
-Current reconnaissance has identified two distinct evidence classes that must not be conflated:
-
-1. **SportsCardsPro / PriceCharting catalog evidence**
-   - real sports-card product/catalog APIs exist;
-   - API access requires a paid subscription/token;
-   - the documented limit is one API call per second;
-   - product records include a provider product ID, set name, product/card name, and price-heavy fields;
-   - if integrated, identification-only fields must be allowlisted and every price field excluded from the catalog evidence path;
-   - server-only credentials are required and subscription-dependent capability must be reported honestly.
-
-2. **PSA certification verification evidence**
-   - PSA exposes an authenticated public API for single certification-number lookup;
-   - certificate verification can confirm PSA database data associated with a cert number;
-   - PSA itself warns that certification-number verification does not eliminate counterfeit risk and does not prove a physical item presented online is genuine;
-   - therefore cert evidence must be a separate verification record linked to a treasure, not an automatic authenticity/ownership/value assertion.
+Do not start with a price feed. First identify lawful, current evidence sources and preserve the existing authority boundaries.
 
 Build/research next in this order:
 
-1. document SportsCardsPro API subscription/access, token handling, 1 req/sec limit, product/search response semantics, set/card/parallel ambiguity, and data-use constraints;
-2. document PSA API authentication/token handling, cert response fields, API agreement constraints, and cert-verification truthfulness language;
-3. decide whether sports-card catalog integration can be enabled only when a paid server-side token exists, with honest unavailable state otherwise;
-4. define a provider-neutral **certification evidence** model separate from catalog evidence and provenance claims;
-5. never store provider access tokens in browser code or logs;
-6. never put SportsCardsPro price fields into catalog identity or authoritative Kingdom valuation;
-7. never treat PSA cert lookup success as physical-slab authentication;
-8. preserve provider/source/date/cert-number/returned-label metadata and explicit verification scope;
-9. add review UI rather than automatic treasure mutation;
-10. add provider/runtime/HTTP/Vault/UI regression tests before claiming support;
-11. run full Kingdom quality gates and update this ledger before merge.
+1. research current official verification/API options and terms for other major grading providers such as BGS, SGC, CGC and other relevant graders;
+2. add another grader only if current official access can support a production verification flow without scraping or invented capability;
+3. preserve the same certification-database-record versus physical-authentication boundary used for PSA;
+4. research sports-card catalog **identity** providers separately from valuation providers, including card number, set, player/subject, parallel/variant and provider identifiers;
+5. if SportsCardsPro remains a candidate, require explicit licensing/permission appropriate to the Kingdom's intended distribution before surfacing proprietary price data;
+6. keep all provider credentials server-side and capability status honest when credentials/subscriptions are absent;
+7. do not map price fields into catalog identity or authoritative value;
+8. do not let a cert lookup silently set grade or authenticity on a treasure;
+9. extend provider-neutral evidence service rather than creating a second subsystem;
+10. add provider/runtime/HTTP/Intake/UI/artifact regression tests;
+11. pass full Kingdom Quality Gates;
+12. update README and this recovery ledger before merge.
 
 ---
 
@@ -191,7 +166,8 @@ Build/research next in this order:
 - **Previewed Atomic Bulk Treasure Reorganization:** final Quality Gates #460 — PASS.
 - **Saved Vault Views + Large-Collection Retrieval:** final planner/index gate #475 — PASS.
 - **Pokémon TCG Category Catalog Intelligence:** Quality Gates #480 — PASS.
-- **Magic: The Gathering / Scryfall Category Catalog Intelligence:** Quality Gates #485 — PASS on `1301f2d4b49530f87ea99124ed202d2b9dcb2efc`.
+- **Magic: The Gathering / Scryfall Catalog Intelligence:** Quality Gates #485 and later regression gates — PASS.
+- **PSA Certification-Database Evidence Boundary:** Quality Gates #490 — run `33973285905` — PASS on `85cbb9a78211dd2b09259ef088f88f8a1d59748b`.
 
 ---
 
@@ -200,10 +176,11 @@ Build/research next in this order:
 Do not represent these as live until separately implemented and verified:
 
 - destructive bulk archive/delete flows;
-- sports-card provider candidates;
-- grading-company certification verification;
+- sports-card catalog provider candidates beyond existing generic retail/card paths;
+- grading-company verification beyond PSA;
+- automatic physical slab authentication;
 - multi-provider Pokémon reconciliation/fallback;
-- fuzzy card-name/set disambiguation;
+- fuzzy card-name/set/parallel disambiguation;
 - Scryfall bulk-data local indexing;
 - comic-specific provider candidates;
 - video-game-specific provider candidates;
@@ -217,4 +194,4 @@ Do not represent these as live until separately implemented and verified:
 
 ### Permanent truthfulness boundary
 
-Market value stays absent/null until backed by real valuation evidence. A barcode, image, AI answer, external catalog candidate, title match, ISBN, catalog ID, receipt, certificate number, grading label, Oracle ID, provider finish list, or collector-entered provenance statement is never silently upgraded into an authoritative independently verified claim. Certification-number lookup may verify database metadata for that number but must never silently authenticate the physical collectible. Permanent Kingdom treasure UUIDs remain provider-independent physical-item identities.
+Market value stays absent/null until backed by real, legally usable valuation evidence. A barcode, image, AI answer, external catalog candidate, title match, ISBN, catalog ID, receipt, certificate number, grading label, Oracle ID, provider finish list, or collector-entered provenance statement is never silently upgraded into an authoritative independently verified claim. Certification-number lookup may verify database metadata for that number but must never silently authenticate the physical collectible. Permanent Kingdom treasure UUIDs remain provider-independent physical-item identities.
