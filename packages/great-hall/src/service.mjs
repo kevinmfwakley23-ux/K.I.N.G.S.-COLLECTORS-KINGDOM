@@ -169,9 +169,9 @@ function formatUsd(cents) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
 }
 
-function safeKeeperVaultContext(vaultService, collector) {
+function safeKeeperVaultContext(vaultService, collector, query = "") {
   if (!vaultService || typeof vaultService.keeperContext !== "function") return null;
-  return vaultService.keeperContext(collector);
+  return vaultService.keeperContext(collector, query);
 }
 
 export function createGreatHallService({ identityService, vaultService = null, now = () => new Date() } = {}) {
@@ -283,7 +283,7 @@ export function createGreatHallService({ identityService, vaultService = null, n
     const currentRoom = resolveRoom(roomId, hall.navigation);
     const roomStatus = hall.navigation.map((room) => `${room.name}: ${room.status}`).join("; ");
     const activity = hall.recentActivity.map((entry) => entry.message).join(" ") || "No recent account activity is available.";
-    const vaultContext = currentRoom.id === "vault" ? safeKeeperVaultContext(vaultService, collector) : null;
+    const vaultContext = currentRoom.id === "vault" ? safeKeeperVaultContext(vaultService, collector, safeMessage) : null;
 
     return Object.freeze({
       messages: [
