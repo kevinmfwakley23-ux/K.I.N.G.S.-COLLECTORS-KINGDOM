@@ -8,10 +8,20 @@ import { createKingdomServer } from "../apps/web/server.mjs";
 import { createGreatHallService } from "../packages/great-hall/src/service.mjs";
 import { createIdentityService } from "../packages/identity/src/service.mjs";
 import { SqliteIdentityStore } from "../packages/identity/src/sqlite-store.mjs";
+import { createVaultMediaRepository } from "../packages/vault/src/media-repository.mjs";
+import { createVaultMediaService } from "../packages/vault/src/media-service.mjs";
+import { LocalVaultMediaStorage } from "../packages/vault/src/media-storage.mjs";
 import { createVaultService } from "../packages/vault/src/service.mjs";
 import { SqliteVaultStore } from "../packages/vault/src/sqlite-store.mjs";
 
 const silentLogger = Object.freeze({ debug() {}, info() {}, warn() {}, error() {} });
+
+function pngBytes() {
+  const bytes = Buffer.alloc(32);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(bytes, 0);
+  Buffer.from("IHDR", "ascii").copy(bytes, 12);
+  return bytes;
+}
 
 async function withKingdom(run) {
   const directory = await mkdtemp(join(tmpdir(), "kingdom-vault-server-"));
@@ -19,6 +29,12 @@ async function withKingdom(run) {
   const vaultStore = new SqliteVaultStore(join(directory, "vault.sqlite"));
   const identityService = createIdentityService({ store: identityStore });
   const vaultService = createVaultService({ store: vaultStore });
+  const vaultMediaRepository = createVaultMediaRepository({ vaultStore });
+  const vaultMediaService = createVaultMediaService({
+    vaultStore,
+    mediaRepository: vaultMediaRepository,
+    storage: new LocalVaultMediaStorage(join(directory, "vault-media"))
+  });
   const greatHallService = createGreatHallService({ identityService, vaultService });
   const config = {
     host: "127.0.0.1",
@@ -32,7 +48,8 @@ async function withKingdom(run) {
     logger: silentLogger,
     identityService,
     greatHallService,
-    vaultService
+    vaultService,
+    vaultMediaService
   });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -80,10 +97,12 @@ async function registerAndSignIn(baseUrl, suffix = "owner") {
   return cookie;
 }
 
-test("authenticated Vault APIs persist real records, open Great Hall navigation, and enforce collector isolation", async () => {
+test("authenticated Vault APIs persist real records, protect media, support voice policy, and enforce collector isolation", async () => {
   await withKingdom(async (baseUrl) => {
     const denied = await json(baseUrl, "/api/vault");
     assert.equal(denied.response.status, 401);
+    assert.match(denied.response.headers.get("permissions-policy"), /microphone=\(self\)/);
+    assert.match(denied.response.headers.get("permissions-policy"), /camera=\(\)/);
 
     const ownerCookie = await registerAndSignIn(baseUrl, "owner");
     const outsiderCookie = await registerAndSignIn(baseUrl, "outsider");
@@ -139,6 +158,47 @@ test("authenticated Vault APIs persist real records, open Great Hall navigation,
     const treasureId = created.body.treasure.id;
     assert.equal(created.body.treasure.location.path, "Vault Room → Comic Cabinet");
 
+    const mediaUpload = await fetch(`${baseUrl}/api/vault/treasures/${treasureId}/media?filename=front-cover.png`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        cookie: ownerCookie,
+        "content-type": "image/png"
+      },
+      body: pngBytes()
+    });
+    assert.equal(mediaUpload.status, 201);
+    const mediaBody = await mediaUpload.json();
+    assert.equal(mediaBody.media.mediaKind, "image");
+    assert.equal(mediaBody.media.originalName, "front-cover.png");
+
+    const mediaList = await json(baseUrl, `/api/vault/treasures/${treasureId}/media`, { headers: { cookie: ownerCookie } });
+    assert.equal(mediaList.response.status, 200);
+    assert.equal(mediaList.body.media.length, 1);
+
+    const mediaId = mediaBody.media.id;
+    const privateMedia = await fetch(`${baseUrl}/api/vault/media/${mediaId}`, { headers: { cookie: ownerCookie } });
+    assert.equal(privateMedia.status, 200);
+    assert.equal(privateMedia.headers.get("content-type"), "image/png");
+    assert.equal(privateMedia.headers.get("cache-control"), "private, no-store, max-age=0");
+    assert.deepEqual(Buffer.from(await privateMedia.arrayBuffer()), pngBytes());
+
+    const outsiderMedia = await json(baseUrl, `/api/vault/media/${mediaId}`, { headers: { cookie: outsiderCookie } });
+    assert.equal(outsiderMedia.response.status, 404);
+    assert.equal(outsiderMedia.body.error, "media_not_found");
+
+    const spoofedMedia = await fetch(`${baseUrl}/api/vault/treasures/${treasureId}/media?filename=fake.jpg`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        cookie: ownerCookie,
+        "content-type": "image/jpeg"
+      },
+      body: pngBytes()
+    });
+    assert.equal(spoofedMedia.status, 415);
+    assert.equal((await spoofedMedia.json()).error, "media_type_mismatch");
+
     const search = await json(baseUrl, "/api/vault/treasures?q=spider&category=Comic%20Book&sort=title&order=asc", {
       headers: { cookie: ownerCookie }
     });
@@ -173,8 +233,8 @@ test("authenticated Vault APIs persist real records, open Great Hall navigation,
 
     const history = await json(baseUrl, `/api/vault/treasures/${treasureId}/history`, { headers: { cookie: ownerCookie } });
     assert.equal(history.response.status, 200);
-    assert.equal(history.body.history.length, 2);
-    assert.equal(history.body.history[0].eventType, "vault.treasure_updated");
+    assert.ok(history.body.history.some((entry) => entry.eventType === "vault.media_added"));
+    assert.ok(history.body.history.some((entry) => entry.eventType === "vault.treasure_updated"));
 
     const exported = await json(baseUrl, "/api/vault/export", { headers: { cookie: ownerCookie } });
     assert.equal(exported.response.status, 200);
@@ -190,6 +250,13 @@ test("authenticated Vault APIs persist real records, open Great Hall navigation,
     assert.equal(preview.response.status, 200);
     assert.equal(preview.body.accepted.length, 1);
     assert.equal(preview.body.canCommit, false);
+
+    const mediaDelete = await json(baseUrl, `/api/vault/media/${mediaId}`, {
+      method: "DELETE",
+      headers: { cookie: ownerCookie }
+    });
+    assert.equal(mediaDelete.response.status, 200);
+    assert.equal(mediaDelete.body.media.removed, true);
 
     const archived = await json(baseUrl, `/api/vault/treasures/${treasureId}`, {
       method: "DELETE",
