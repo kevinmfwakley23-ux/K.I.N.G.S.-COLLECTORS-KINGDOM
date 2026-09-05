@@ -6,7 +6,7 @@ import { VaultError } from "./service.mjs";
 
 const MAX_SAVED_VIEWS = 100;
 const SORTS = new Set(["updated-desc", "updated-asc", "created-desc", "title-asc", "title-desc", "value-desc", "year-desc"]);
-const VIEWS = new Set(["grid", "list"]);
+const VIEWS = new Set(["grid", "list", "binder", "gallery"]);
 
 const SCHEMA = `
 PRAGMA foreign_keys = ON;
@@ -104,7 +104,7 @@ export function createVaultSavedViewService({ filename, now = () => new Date() }
     const sort = input.sort === undefined ? undefined : String(input.sort).trim();
     const view = input.view === undefined ? undefined : String(input.view).trim();
     if (sort !== undefined && !SORTS.has(sort)) throw new VaultError("invalid_saved_view_sort", "Saved view sort option is not supported.");
-    if (view !== undefined && !VIEWS.has(view)) throw new VaultError("invalid_saved_view_mode", "Saved view mode must be grid or list.");
+    if (view !== undefined && !VIEWS.has(view)) throw new VaultError("invalid_saved_view_mode", "Saved view mode must be grid, list, binder, or gallery.");
 
     return {
       name,
