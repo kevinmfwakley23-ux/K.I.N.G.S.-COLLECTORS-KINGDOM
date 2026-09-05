@@ -145,12 +145,12 @@ export function createVaultImprovementService({ filename, setSummaryService = nu
       }));
     }
 
-    if (tableExists(database, "vault_evidence")) {
+    if (tableExists(database, "vault_evidence_documents")) {
       const evidenceCandidates = count(database, `SELECT COUNT(*) AS count FROM vault_treasures t
         WHERE t.account_id = ?
           AND (t.purchase_price_cents IS NOT NULL OR t.estimated_value_cents IS NOT NULL)
           AND NOT EXISTS (
-            SELECT 1 FROM vault_evidence e WHERE e.account_id = t.account_id AND e.treasure_id = t.id
+            SELECT 1 FROM vault_evidence_documents e WHERE e.account_id = t.account_id AND e.treasure_id = t.id
           )`, accountId);
       if (evidenceCandidates) suggestions.push(recommendation({
         id: "attach-supporting-evidence",
@@ -162,7 +162,7 @@ export function createVaultImprovementService({ filename, setSummaryService = nu
           WHERE t.account_id = ?
             AND (t.purchase_price_cents IS NOT NULL OR t.estimated_value_cents IS NOT NULL)
             AND NOT EXISTS (
-              SELECT 1 FROM vault_evidence e WHERE e.account_id = t.account_id AND e.treasure_id = t.id
+              SELECT 1 FROM vault_evidence_documents e WHERE e.account_id = t.account_id AND e.treasure_id = t.id
             ) ORDER BY t.updated_at DESC LIMIT ?`, accountId),
         action: "Attach receipts, appraisals, certificates, grading paperwork, insurance records, or other documents you genuinely possess. Uploaded evidence remains not independently checked unless a real verifier confirms it."
       }));
@@ -203,7 +203,7 @@ export function createVaultImprovementService({ filename, setSummaryService = nu
       const startedButIncomplete = count(database, `SELECT COUNT(*) AS count FROM vault_marketplace_preparation p
         JOIN vault_treasures t ON t.id = p.treasure_id AND t.account_id = p.account_id
         WHERE p.account_id = ? AND (
-          p.description_draft IS NULL OR trim(p.description_draft) = '' OR
+          p.listing_description IS NULL OR trim(p.listing_description) = '' OR
           p.condition_disclosure IS NULL OR trim(p.condition_disclosure) = '' OR
           t.condition IS NULL OR trim(t.condition) = '' OR
           NOT EXISTS (SELECT 1 FROM vault_media m WHERE m.account_id = t.account_id AND m.treasure_id = t.id)
@@ -217,7 +217,7 @@ export function createVaultImprovementService({ filename, setSummaryService = nu
         examples: examples(database, `SELECT t.id, t.title FROM vault_marketplace_preparation p
           JOIN vault_treasures t ON t.id = p.treasure_id AND t.account_id = p.account_id
           WHERE p.account_id = ? AND (
-            p.description_draft IS NULL OR trim(p.description_draft) = '' OR
+            p.listing_description IS NULL OR trim(p.listing_description) = '' OR
             p.condition_disclosure IS NULL OR trim(p.condition_disclosure) = '' OR
             t.condition IS NULL OR trim(t.condition) = '' OR
             NOT EXISTS (SELECT 1 FROM vault_media m WHERE m.account_id = t.account_id AND m.treasure_id = t.id)
