@@ -4,6 +4,23 @@ import { detectCardGeometry } from "./vault-grading-geometry-core.js";
 import { analyzeBrowserCapturePixels, captureQualityLabel } from "./vault-grading-image-core.js";
 import { compareRakingLightCaptures } from "./vault-grading-surface-core.js";
 
+let currentGradingAnalysisSnapshot = Object.freeze({
+  primaryFile: null,
+  companionFile: null,
+  quality: null,
+  geometry: null,
+  contour: null,
+  surface: null
+});
+
+function publishAnalysisSnapshot(update = {}) {
+  currentGradingAnalysisSnapshot = Object.freeze({ ...currentGradingAnalysisSnapshot, ...update });
+}
+
+export function getCurrentGradingAnalysisSnapshot() {
+  return currentGradingAnalysisSnapshot;
+}
+
 function node(tag, className, text) {
   const element = document.createElement(tag);
   if (className) element.className = className;
@@ -361,6 +378,7 @@ export function createVaultGradingUi() {
 
   async function analyzeSurfacePair() {
     renderSurface(null);
+    publishAnalysisSnapshot({ surface: null });
     if (!companionImage || !mainGeometry?.usableForCentering) return;
     const sizeProfile = BROWSER_CARD_SIZE_PROFILES[size.value];
     if (!sizeProfile?.widthMm || !sizeProfile?.heightMm) return;
@@ -378,7 +396,9 @@ export function createVaultGradingUi() {
       surfaceSummary.className = "grading-quality-summary miss";
       return;
     }
-    renderSurface(compareRakingLightCaptures({ width: mainCrop.width, height: mainCrop.height, dataA: mainCrop.data, dataB: companionCrop.data }));
+    const surface = compareRakingLightCaptures({ width: mainCrop.width, height: mainCrop.height, dataA: mainCrop.data, dataB: companionCrop.data });
+    publishAnalysisSnapshot({ companionFile: companionFile.files?.[0] ?? null, surface });
+    renderSurface(surface);
   }
 
   async function analyzeLoadedImage() {
@@ -387,6 +407,13 @@ export function createVaultGradingUi() {
     const sizeProfile = BROWSER_CARD_SIZE_PROFILES[size.value];
     mainGeometry = sizeProfile?.widthMm && sizeProfile?.heightMm ? detectCardGeometry({ width: mainSamplePixels.width, height: mainSamplePixels.height, data: mainSamplePixels.data, expectedWidthMm: sizeProfile.widthMm, expectedHeightMm: sizeProfile.heightMm }) : null;
     const contour = mainGeometry?.detected ? analyzeCardContourCondition({ width: mainSamplePixels.width, height: mainSamplePixels.height, data: mainSamplePixels.data, geometry: mainGeometry }) : null;
+    publishAnalysisSnapshot({
+      primaryFile: file.files?.[0] ?? null,
+      quality,
+      geometry: mainGeometry,
+      contour,
+      surface: null
+    });
     renderQuality(quality, mainGeometry);
     renderContour(contour);
     imageStatus.textContent = mainGeometry?.detected ? `${image.naturalWidth} × ${image.naturalHeight} analyzed locally. ${mainGeometry.usableForCentering ? "Geometry is usable for centering and contour review." : "Retake or correct the capture before trusting measurements."}` : `${image.naturalWidth} × ${image.naturalHeight} analyzed locally. ${quality.readinessReason}`;
@@ -397,11 +424,15 @@ export function createVaultGradingUi() {
     try { renderCentering(); } catch (error) { imageStatus.textContent = error.message; }
   });
   size.addEventListener("change", () => {
+    publishAnalysisSnapshot({ geometry: null, contour: null, surface: null });
     if (!image.hidden && image.complete) analyzeLoadedImage().catch((error) => { imageStatus.textContent = error.message; });
   });
 
   file.addEventListener("change", () => {
     const selected = file.files?.[0];
+    publishAnalysisSnapshot({ primaryFile: selected ?? null, quality: null, geometry: null, contour: null, surface: null });
+    mainGeometry = null;
+    mainSamplePixels = null;
     if (!selected) return;
     if (!selected.type.startsWith("image/")) {
       imageStatus.textContent = "Choose a supported image file.";
@@ -415,13 +446,17 @@ export function createVaultGradingUi() {
       preview.style.aspectRatio = `${image.naturalWidth} / ${image.naturalHeight}`;
       preview.style.minHeight = "0";
       try { await analyzeLoadedImage(); }
-      catch (error) { imageStatus.textContent = `Image loaded, but local analysis failed: ${error.message}`; }
+      catch (error) {
+        publishAnalysisSnapshot({ quality: null, geometry: null, contour: null, surface: null });
+        imageStatus.textContent = `Image loaded, but local analysis failed: ${error.message}`;
+      }
     };
     image.src = objectUrl;
   });
 
   companionFile.addEventListener("change", async () => {
     const selected = companionFile.files?.[0];
+    publishAnalysisSnapshot({ companionFile: selected ?? null, surface: null });
     if (!selected) return;
     if (!selected.type.startsWith("image/")) {
       surfaceSummary.textContent = "Choose a supported image for the raking-light companion capture.";
@@ -435,13 +470,14 @@ export function createVaultGradingUi() {
       companionUrl = loaded.url;
       await analyzeSurfacePair();
     } catch (error) {
+      publishAnalysisSnapshot({ surface: null });
       surfaceSummary.textContent = error.message;
       surfaceSummary.className = "grading-quality-summary miss";
     }
   });
 
   renderCentering();
-  return Object.freeze({ render: renderCentering });
+  return Object.freeze({ render: renderCentering, getAnalysisSnapshot: getCurrentGradingAnalysisSnapshot });
 }
 
 createVaultGradingUi();
