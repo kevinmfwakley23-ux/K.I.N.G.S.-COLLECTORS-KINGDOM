@@ -5,6 +5,7 @@ import { VaultError } from "../../packages/vault/src/service.mjs";
 const MAX_REORGANIZATION_JSON_BYTES = 16 * 1024;
 const COLLECTION_FIELDS = new Set(["name", "description"]);
 const LOCATION_FIELDS = new Set(["name", "locationType", "parentId", "notes"]);
+const BULK_PREVIEW_FIELDS = new Set(["treasureIds", "destination"]);
 
 function requireIdentity(identityService, request) {
   const token = parseCookies(request.headers.cookie ?? "").kingdom_session ?? null;
@@ -48,7 +49,7 @@ async function readJson(request) {
   try {
     const parsed = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      throw new VaultError("invalid_reorganization_update", "Reorganization update data must be a JSON object.");
+      throw new VaultError("invalid_reorganization_update", "Reorganization data must be a JSON object.");
     }
     return parsed;
   } catch (error) {
@@ -57,17 +58,33 @@ async function readJson(request) {
   }
 }
 
+function decodePathValue(value, code, message) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    throw new VaultError(code, message);
+  }
+}
+
 function parseRoute(pathname) {
   const match = pathname.match(/^\/api\/vault\/(collections|locations)\/([^/]+)$/);
   if (!match) return null;
-  try {
-    return {
-      resource: match[1],
-      id: decodeURIComponent(match[2])
-    };
-  } catch {
-    throw new VaultError("invalid_reorganization_id", "The collection or location identifier is invalid.");
+  return {
+    resource: match[1],
+    id: decodePathValue(match[2], "invalid_reorganization_id", "The collection or location identifier is invalid.")
+  };
+}
+
+function parseBulkRoute(pathname) {
+  if (pathname === "/api/vault/reorganization/bulk/preview") {
+    return Object.freeze({ action: "preview", batchId: null });
   }
+  const match = pathname.match(/^\/api\/vault\/reorganization\/bulk\/([^/]+)(?:\/(commit))?$/);
+  if (!match) return null;
+  return Object.freeze({
+    action: match[2] ?? "get",
+    batchId: decodePathValue(match[1], "invalid_reorganization_batch_id", "The bulk reorganization batch identifier is invalid.")
+  });
 }
 
 function selectAllowedFields(input, allowed, resource) {
@@ -83,13 +100,13 @@ function selectAllowedFields(input, allowed, resource) {
   if (unknown.length) {
     throw new VaultError(
       "unsupported_reorganization_field",
-      `Unsupported ${resource} update field${unknown.length === 1 ? "" : "s"}: ${unknown.join(", ")}.`,
+      `Unsupported ${resource} field${unknown.length === 1 ? "" : "s"}: ${unknown.join(", ")}.`,
       400,
       { allowed: [...allowed], unsupported: unknown }
     );
   }
   if (!Object.keys(output).length) {
-    throw new VaultError("empty_reorganization_update", `At least one mutable ${resource} field is required.`);
+    throw new VaultError("empty_reorganization_update", `At least one ${resource} field is required.`);
   }
   return output;
 }
@@ -102,26 +119,50 @@ export async function handleVaultReorganizationRoute({
   vaultReorganizationService,
   securityHeaders
 } = {}) {
-  const route = parseRoute(requestUrl.pathname);
-  if (!route) return null;
+  const bulkRoute = parseBulkRoute(requestUrl.pathname);
+  const route = bulkRoute ? null : parseRoute(requestUrl.pathname);
+  if (!bulkRoute && !route) return null;
   if (!vaultReorganizationService) {
     throw new VaultError("vault_reorganization_unavailable", "Vault reorganization is unavailable.", 503);
   }
 
   const method = request.method ?? "GET";
-  if (method !== "PATCH") return false;
-
   const identity = requireIdentity(identityService, request);
+
+  if (bulkRoute?.action === "preview") {
+    if (method !== "POST") return false;
+    const body = selectAllowedFields(await readJson(request), BULK_PREVIEW_FIELDS, "bulk preview");
+    const batch = vaultReorganizationService.previewBulkMove(identity, {
+      treasureIds: body.treasureIds,
+      destination: body.destination
+    });
+    return sendJson(response, 201, { batch }, method, securityHeaders);
+  }
+
+  if (bulkRoute?.action === "get") {
+    if (method !== "GET" && method !== "HEAD") return false;
+    const batch = vaultReorganizationService.getBulkMove(identity, bulkRoute.batchId);
+    return sendJson(response, 200, { batch }, method, securityHeaders);
+  }
+
+  if (bulkRoute?.action === "commit") {
+    if (method !== "POST") return false;
+    const idempotencyKey = String(request.headers["idempotency-key"] ?? "").trim();
+    const batch = vaultReorganizationService.commitBulkMove(identity, bulkRoute.batchId, { idempotencyKey });
+    return sendJson(response, 200, { batch }, method, securityHeaders);
+  }
+
+  if (method !== "PATCH") return false;
   const body = await readJson(request);
 
   if (route.resource === "collections") {
-    const update = selectAllowedFields(body, COLLECTION_FIELDS, "collection");
+    const update = selectAllowedFields(body, COLLECTION_FIELDS, "collection update");
     return sendJson(response, 200, {
       collection: vaultReorganizationService.updateCollection(identity, route.id, update)
     }, method, securityHeaders);
   }
 
-  const update = selectAllowedFields(body, LOCATION_FIELDS, "location");
+  const update = selectAllowedFields(body, LOCATION_FIELDS, "location update");
   return sendJson(response, 200, {
     location: vaultReorganizationService.updateLocation(identity, route.id, update)
   }, method, securityHeaders);
