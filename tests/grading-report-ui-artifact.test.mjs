@@ -20,6 +20,9 @@ test("explainable grading report UI exposes eight advisory dimensions and append
   assert.match(source, /Overall raw-evidence advisory range/);
   assert.match(source, /reviews affect the eight dimension interpretations/i);
   assert.match(source, /do not rewrite or recalculate the overall raw-evidence range/i);
+  assert.match(source, /Append-only collector review history/);
+  assert.match(source, /earlier decisions and the original detector evidence are never overwritten or deleted/i);
+  assert.match(source, /reviewHistory/);
   assert.match(source, /Not an official grade/i);
   assert.match(source, /official subgrade: no/i);
   assert.doesNotMatch(source, /officialGrade\s*:\s*true|officialSubgrade\s*:\s*true|physicalAuthentication\s*:\s*true|mutatesTreasure\s*:\s*true/);
