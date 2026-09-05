@@ -71,9 +71,27 @@ export async function handleVaultRequest({
   const method = request.method ?? "GET";
   const portable = createVaultPortableService({ vaultService });
   const collectibleDetails = attributeService ?? ownershipService?.attributeService ?? null;
+  const savedViews = searchService?.savedViews ?? null;
 
   if (pathname === "/api/vault/categories") {
     if (method === "GET") return json(200, { categories: listVaultCategoryProfiles(), customCategoriesAllowed: true });
+    return null;
+  }
+
+  if (pathname === "/api/vault/saved-views") {
+    if (!savedViews) throw new VaultError("saved_views_unavailable", "Saved Vault views are unavailable.", 503);
+    if (method === "GET") return json(200, { savedViews: savedViews.list(identity), maximumSavedViews: savedViews.maximumSavedViews });
+    if (method === "POST") return json(201, { savedView: savedViews.create(identity, await readJson(request)) });
+    return null;
+  }
+
+  const savedViewMatch = pathname.match(/^\/api\/vault\/saved-views\/([^/]+)$/);
+  if (savedViewMatch) {
+    if (!savedViews) throw new VaultError("saved_views_unavailable", "Saved Vault views are unavailable.", 503);
+    const id = decodeURIComponent(savedViewMatch[1]);
+    if (method === "GET") return json(200, { savedView: savedViews.get(identity, id) });
+    if (method === "PATCH") return json(200, { savedView: savedViews.update(identity, id, await readJson(request)) });
+    if (method === "DELETE") return json(200, savedViews.remove(identity, id));
     return null;
   }
 
