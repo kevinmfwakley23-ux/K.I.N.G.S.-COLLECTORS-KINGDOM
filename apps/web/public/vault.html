@@ -18,10 +18,12 @@
         <span><strong>K.I.N.G.S.</strong><small>Collector's Kingdom</small></span>
       </a>
       <div class="topbar-actions">
+        <button class="quiet-button voice-command-button" type="button" data-voice-command aria-label="Use a Kingdom voice command">Voice command</button>
         <button class="quiet-button" type="button" data-keeper-open>Call The Keeper</button>
         <a class="text-link" href="/great-hall.html">← Great Hall</a>
       </div>
     </header>
+    <p id="voice-status" class="voice-status" role="status" aria-live="polite"></p>
 
     <main id="vault-main" class="vault-layout">
       <section class="vault-hero marble-panel" aria-labelledby="vault-title">
@@ -83,7 +85,7 @@
           <section class="marble-panel vault-search-panel" aria-labelledby="search-title">
             <div class="section-heading compact"><div><p class="eyebrow">Find anything</p><h2 id="search-title">Search the Vault</h2></div><span id="result-count" class="vault-result-count"></span></div>
             <form id="vault-search-form" class="vault-search-form">
-              <label class="vault-search-wide"><span class="sr-only">Search treasure records</span><input id="vault-search" type="search" maxlength="240" placeholder="Title, maker, series, variant, identifier, notes…" /></label>
+              <label class="vault-search-wide"><span class="sr-only">Search treasure records</span><div class="voice-field-row"><input id="vault-search" type="search" maxlength="240" placeholder="Title, maker, series, variant, identifier, notes…" /><button class="voice-dictation-button" type="button" data-voice-target="#vault-search" aria-label="Dictate a Vault search">Mic</button></div></label>
               <label><span>Category</span><select id="filter-category"><option value="">All categories</option></select></label>
               <label><span>Collection</span><select id="filter-collection"><option value="">All collections</option></select></label>
               <label><span>Location</span><select id="filter-location"><option value="">All locations</option></select></label>
@@ -97,7 +99,7 @@
             <div class="section-heading compact"><div><p class="eyebrow">Authoritative record</p><h2 id="editor-title">Add a treasure</h2></div><button id="close-editor" class="icon-button" type="button" aria-label="Close treasure editor">×</button></div>
             <form id="treasure-form" class="treasure-form">
               <input id="treasure-id" type="hidden" />
-              <label class="field-span-2">Title<input id="treasure-title" maxlength="240" required /></label>
+              <label class="field-span-2">Title<div class="voice-field-row"><input id="treasure-title" maxlength="240" required /><button class="voice-dictation-button" type="button" data-voice-target="#treasure-title" aria-label="Dictate treasure title">Mic</button></div></label>
               <label>Category<input id="treasure-category" list="category-suggestions" maxlength="100" required /></label>
               <datalist id="category-suggestions"><option value="Trading Card"></option><option value="Comic Book"></option><option value="Video Game"></option><option value="Coin"></option><option value="Currency"></option><option value="Stamp"></option><option value="Book"></option><option value="Toy / Figure"></option><option value="LEGO"></option><option value="Vinyl Record"></option><option value="Sports Memorabilia"></option><option value="Autograph"></option><option value="Art"></option><option value="Other"></option></datalist>
               <label>Collection<select id="treasure-collection"><option value="">No collection group</option></select></label>
@@ -112,10 +114,22 @@
               <label>Currency<input id="treasure-currency" maxlength="3" value="USD" /></label>
               <label>Barcode / UPC / ISBN<input id="treasure-barcode" maxlength="160" /></label>
               <label>Catalog / serial identifier<input id="treasure-catalog" maxlength="160" /></label>
-              <label class="field-span-2">Description<textarea id="treasure-description" maxlength="8000" rows="3"></textarea></label>
-              <label class="field-span-2">Condition notes<textarea id="treasure-condition-notes" maxlength="4000" rows="2"></textarea></label>
+              <label class="field-span-2">Description<div class="voice-field-row"><textarea id="treasure-description" maxlength="8000" rows="3"></textarea><button class="voice-dictation-button" type="button" data-voice-target="#treasure-description" aria-label="Dictate treasure description">Mic</button></div></label>
+              <label class="field-span-2">Condition notes<div class="voice-field-row"><textarea id="treasure-condition-notes" maxlength="4000" rows="2"></textarea><button class="voice-dictation-button" type="button" data-voice-target="#treasure-condition-notes" aria-label="Dictate condition notes">Mic</button></div></label>
               <label class="field-span-2">Custom attributes (JSON object)<textarea id="treasure-attributes" rows="3" placeholder='{"language":"English","grade":9.4}'></textarea></label>
-              <label class="field-span-2">Collector notes<textarea id="treasure-notes" maxlength="8000" rows="3"></textarea></label>
+              <label class="field-span-2">Collector notes<div class="voice-field-row"><textarea id="treasure-notes" maxlength="8000" rows="3"></textarea><button class="voice-dictation-button" type="button" data-voice-target="#treasure-notes" aria-label="Dictate collector notes">Mic</button></div></label>
+
+              <fieldset id="treasure-media-section" class="field-span-2 vault-media-section" hidden>
+                <legend>Treasure images & documents</legend>
+                <p class="muted-copy">Private Vault media is stored outside the public webroot. Accepted files: JPEG, PNG, WebP, GIF, AVIF, and PDF. Images up to 12 MiB; PDFs up to 20 MiB.</p>
+                <div class="vault-media-upload-row">
+                  <input id="treasure-media-file" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,.avif,.pdf,image/jpeg,image/png,image/webp,image/gif,image/avif,application/pdf" />
+                  <button id="upload-treasure-media" class="dark-button" type="button">Add media</button>
+                </div>
+                <span id="treasure-media-status" class="form-status" role="status" aria-live="polite"></span>
+                <div id="treasure-media-list" class="vault-media-list"></div>
+              </fieldset>
+
               <div class="field-span-2 treasure-form-actions">
                 <button id="save-treasure" class="gold-button" type="submit">Save treasure</button>
                 <button id="archive-treasure" class="danger-button" type="button" hidden>Archive treasure</button>
@@ -152,7 +166,7 @@
       </div>
       <form id="keeper-form" class="keeper-form">
         <label class="sr-only" for="keeper-input">Message The Keeper</label>
-        <textarea id="keeper-input" maxlength="4000" rows="3" placeholder="Ask The Keeper…" required></textarea>
+        <div class="voice-field-row"><textarea id="keeper-input" maxlength="4000" rows="3" placeholder="Ask The Keeper…" required></textarea><button class="voice-dictation-button" type="button" data-voice-target="#keeper-input" aria-label="Dictate a message to The Keeper">Mic</button></div>
         <div class="keeper-form-row"><span id="keeper-status" class="form-status" role="status" aria-live="polite"></span><button class="gold-button" type="submit">Send</button></div>
       </form>
     </aside>
