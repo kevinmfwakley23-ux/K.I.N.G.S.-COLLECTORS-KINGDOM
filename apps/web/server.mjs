@@ -13,12 +13,15 @@ import { createKingsAiClient, KingsAiClientError } from "../../packages/kings-ai
 import { createLogger } from "../../packages/observability/src/logger.mjs";
 import { createVaultImportRepository } from "../../packages/vault/src/import-repository.mjs";
 import { createVaultImportService } from "../../packages/vault/src/import-service.mjs";
+import { createVaultIntakeRepository } from "../../packages/vault/src/intake-repository.mjs";
+import { createVaultIntakeService } from "../../packages/vault/src/intake-service.mjs";
 import { createVaultMediaRepository } from "../../packages/vault/src/media-repository.mjs";
 import { createVaultMediaService } from "../../packages/vault/src/media-service.mjs";
 import { LocalVaultMediaStorage } from "../../packages/vault/src/media-storage.mjs";
 import { createVaultService, VaultError } from "../../packages/vault/src/service.mjs";
 import { SqliteVaultStore } from "../../packages/vault/src/sqlite-store.mjs";
 import { handleVaultImportRoute } from "./vault-import-http.mjs";
+import { handleVaultIntakeRoute } from "./vault-intake-http.mjs";
 import { handleVaultMediaRoute } from "./vault-media-http.mjs";
 
 const CONTENT_TYPES = Object.freeze({
@@ -252,7 +255,16 @@ function vaultTreasureRoute(pathname) {
   }
 }
 
-async function handleVaultRoute({ request, response, requestUrl, identityService, vaultService, vaultMediaService, vaultImportService }) {
+async function handleVaultRoute({
+  request,
+  response,
+  requestUrl,
+  identityService,
+  vaultService,
+  vaultMediaService,
+  vaultImportService,
+  vaultIntakeService
+}) {
   if (!vaultService) throw new HttpError(503, "vault_unavailable", "The Royal Vault service is unavailable.");
   const method = request.method ?? "GET";
   const identity = requireIdentity(identityService, request);
@@ -278,6 +290,14 @@ async function handleVaultRoute({ request, response, requestUrl, identityService
         message: vaultImportService
           ? "Bulk intake uses persistent preview batches, duplicate review, explicit commit, and all-or-nothing transaction semantics."
           : "Transactional bulk intake is unavailable until the Vault import service is wired."
+      },
+      intake: {
+        available: Boolean(vaultIntakeService),
+        ...(vaultIntakeService ? vaultIntakeService.stats(identity) : { pendingCount: null, pendingCaptureCount: null }),
+        cameraAvailable: false,
+        message: vaultIntakeService
+          ? "The Royal Intake Queue stores rapid identifier captures server-side for cross-device review. Capture does not assert exact collectible identity."
+          : "The Royal Intake Queue is unavailable until its service is wired."
       }
     }, method);
   }
@@ -355,7 +375,8 @@ export function createKingdomServer({
   kingsAiClient = null,
   vaultService = null,
   vaultMediaService = null,
-  vaultImportService = null
+  vaultImportService = null,
+  vaultIntakeService = null
 } = {}) {
   return createServer(async (request, response) => {
     const requestStartedAt = performance.now();
@@ -441,6 +462,19 @@ export function createKingdomServer({
           return sendJson(response, 405, { error: "method_not_allowed" }, method);
         }
 
+        const intakeHandled = await handleVaultIntakeRoute({
+          request,
+          response,
+          requestUrl,
+          identityService,
+          vaultIntakeService,
+          securityHeaders: SECURITY_HEADERS
+        });
+        if (intakeHandled !== null) {
+          if (intakeHandled !== false) return;
+          return sendJson(response, 405, { error: "method_not_allowed" }, method);
+        }
+
         const handled = await handleVaultRoute({
           request,
           response,
@@ -448,7 +482,8 @@ export function createKingdomServer({
           identityService,
           vaultService,
           vaultMediaService,
-          vaultImportService
+          vaultImportService,
+          vaultIntakeService
         });
         if (handled !== false) return;
         return sendJson(response, 405, { error: "method_not_allowed" }, method);
@@ -495,6 +530,11 @@ async function run() {
     vaultStore,
     importRepository: vaultImportRepository
   });
+  const vaultIntakeRepository = createVaultIntakeRepository({ vaultStore });
+  const vaultIntakeService = createVaultIntakeService({
+    vaultStore,
+    intakeRepository: vaultIntakeRepository
+  });
   const vaultMediaRepository = createVaultMediaRepository({ vaultStore });
   const vaultMediaStorage = new LocalVaultMediaStorage(resolve(config.dataDir, "vault-media"));
   const vaultMediaService = createVaultMediaService({
@@ -516,7 +556,8 @@ async function run() {
     kingsAiClient,
     vaultService,
     vaultMediaService,
-    vaultImportService
+    vaultImportService,
+    vaultIntakeService
   });
 
   server.on("error", (error) => {
