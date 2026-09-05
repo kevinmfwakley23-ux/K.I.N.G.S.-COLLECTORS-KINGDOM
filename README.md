@@ -1,151 +1,150 @@
 # K.I.N.G.S. Collector's Kingdom
 
-K.I.N.G.S. Collector's Kingdom is being built as a collector-first environment for cataloging, locating, documenting, researching, protecting, grading-prep, and eventually buying, selling, trading, valuing, insuring, and transferring collectible treasures through the wider K.I.N.G.S. ecosystem.
+**KNOWLEDGE • INVESTIGATION • NARRATIVE • GENERATION • SYSTEM**
 
-## Engineering status
+K.I.N.G.S. Collector's Kingdom is a collector-first environment for cataloging, locating, documenting, researching, protecting, grading-prep, and eventually buying, selling, trading, valuing, insuring, and transferring collectible treasures.
 
-Active milestone: **IMP-005 — Royal Vault, Phase 1**.
+> **Canonical architecture status:** The architecture rules in this README are owner-approved and locked. If an older note, test, branch, environment example, or temporary implementation conflicts with them, this README wins unless the owner explicitly changes the architecture.
 
-**Latest verified implementation checkpoint:** **AI-assisted card pre-grading foundation with SHA-linked evidence persistence and a read-only Kingdom advisory grade-range engine**, alongside the already verified Royal Vault, Intake, scanner, provenance, saved-view/paging, bulk-reorganization, Pokémon, Magic/Scryfall, PSA certification-evidence and exact sports-card catalog slices.
+## Architecture Gospel — LOCKED
 
-**Latest verified gate:** **Kingdom Quality Gates #598** — run `33982767676` — **PASS** on implementation commit `bbe7bad9e4282fe987274e3d42403782e0c96bef`.
+### K.I.N.G.S. is the brand
 
-The verified grading foundation now includes card-size/grader reference profiles, centering math, browser capture-quality analysis, card geometry/crop/perspective detection, contour-based corner/edge review signals, paired raking-light surface analysis, same-printing color/fade comparison, web-backed autograph similarity review, append-only hashed pre-grade persistence, SHA-256 linkage to exact private Vault media, detector-completion coverage records, and a conservative server-computed advisory range.
+The full product identity is **K.I.N.G.S. COLLECTOR'S KINGDOM**. "Collector's Kingdom" and "the Kingdom" are acceptable conversational short names, but K.I.N.G.S. must remain visible in primary product identity and major UI entry surfaces.
 
-A Kingdom pre-grade remains **advisory evidence**. It is not an official PSA/BGS/CGC/SGC grade, does not authenticate a physical card or autograph, and cannot silently overwrite the treasure's condition, grade, authenticity, provenance, ownership or value.
+K.I.N.G.S. always means:
 
-### AI card pre-grading — verified foundation
+**KNOWLEDGE • INVESTIGATION • NARRATIVE • GENERATION • SYSTEM**
 
-The Kingdom includes a real AI-assisted card pre-grading/condition-analysis foundation rather than a fake official-grade generator.
+The Keeper is the Kingdom's royal collector assistant, steward, curator and guide. The Keeper is **not** an alternate expansion of the K.I.N.G.S. acronym.
 
-Verified capability includes:
+### Kingdom owns its own full brain
 
-- card-size/calibration profiles for standard western trading cards and Japanese-size TCG cards;
-- front/back border and centering measurement with left/right/top/bottom ratios;
-- grader-profile comparison for published PSA/BGS/CGC centering references without claiming affiliation or official grading;
-- browser image-quality analysis for resolution, sharpness/focus, glare/overexposure, underexposure and contrast;
-- automatic whole-card geometry detection on contrasting backgrounds;
-- crop-completeness, perspective/skew and profile-aspect checks;
-- contour-based possible corner and edge anomaly signals;
-- paired raking-light surface comparison that suppresses stable artwork and surfaces possible scratch/scuff/print-line/dent/gloss anomalies;
-- same-printing reference color comparison for possible fading/chroma loss/color drift after brightness/channel normalization;
-- autograph scan isolation and visual similarity comparison across multiple sourced references;
-- authenticated Wikimedia Commons reference discovery/proxy with source/license metadata preserved;
-- append-only pre-grade records linked to permanent treasure UUIDs;
-- SHA-256 matching that allows pixel-derived evidence to persist only when the exact analyzed file matches private media on that treasure;
-- detector-completion coverage that distinguishes `ran and found zero candidates` from `never ran`;
-- a deterministic server-side advisory grade range that fails closed on insufficient evidence and deliberately widens when front/back/surface coverage is incomplete;
-- explicit non-mutation flags for official grade, condition, authenticity and value.
+K.I.N.G.S. Collector's Kingdom is a standalone intelligent application. Normal collector-facing AI work must **not require the separate K.I.N.G.S. AI application to be online**.
 
-The current rubric does **not** reverse-engineer any third-party grader's proprietary overall score. Published grader material is used only as reference evidence. The Kingdom range is its own versioned advisory condition rubric.
+Kingdom owns its own full application brain using the same K.I.N.G.S. Brain Core DNA:
 
-Research record: `docs/research/2026-09-05-IMP-005-AI-CARD-PREGRADING.md`.
+- collector/domain memory and authoritative Kingdom state;
+- context selection and token optimization;
+- provider/model registry and model broker;
+- OmniRoute integration;
+- 9Router integration;
+- additional authorized direct providers;
+- provider/model health, cooldown, retry and failover;
+- quota, cost, quality, latency and reliability policy;
+- governed research and source provenance;
+- tool authorization;
+- verification, evidence and recovery;
+- Kingdom-specific agents including The Keeper;
+- collectible-specific vision, grading-assistance, catalog, valuation and marketplace workflows as they are implemented and verified.
 
-## Durable engineering records
+### Shared Brain Core, independent applications
 
-- [`docs/MISSION-STATEMENT.md`](docs/MISSION-STATEMENT.md) — permanent mission and authority order.
-- [`docs/MISSION-PROGRESS.md`](docs/MISSION-PROGRESS.md) — recoverable build state, verified checkpoints, blockers and exact next target.
-- [`docs/research/`](docs/research/) — dated provider, competitor, standards and technical research.
+K.I.N.G.S. AI, K.I.N.G.S. Author's Forge, and K.I.N.G.S. Collector's Kingdom should share reusable K.I.N.G.S. Brain Core modules/contracts where practical so fixes and improvements propagate without copy/paste drift.
 
-After each substantial verified code batch, `docs/MISSION-PROGRESS.md` must be updated so work can resume from the repository rather than relying on chat history.
+They remain independent applications with their own runtime state, domain memory, provider configuration, quotas, policies and specialized workers.
+
+### Provider policy
+
+Kingdom should route work to the strongest appropriate configured resource under owner policy. OmniRoute and 9Router are first-class routing options, followed by other authorized configured providers according to capability, quality, availability, cost, quota, reliability and latency.
+
+Local Ollama models are **last-resort/offline/local fallback**. Ollama is not the architectural center of Kingdom.
+
+### Relationship to K.I.N.G.S. AI
+
+The separate K.I.N.G.S. AI application remains the master general-purpose engineering/building system. Kingdom may optionally call it for software-engineering missions, cross-app orchestration, or explicitly configured services.
+
+That connection is **optional support**, not a required dependency for ordinary Keeper/collector inference.
+
+### Current implementation truth — known brain migration gap
+
+At the checkpoint when this architecture was locked, Kingdom's production server still constructs `packages/kings-ai/src/client.mjs` and routes Keeper inference to a separately running K.I.N.G.S. AI router through `KINGDOM_KINGS_AI_BASE_URL` / `KINGDOM_KINGS_AI_HOSTPORT`.
+
+That current path is a **known implementation gap**, not the desired final architecture. Existing verified Vault, grading, identity, catalog, provenance and UI work remains valid and must not be thrown away while the brain boundary is migrated.
+
+The migration is complete only when:
+
+1. Kingdom has its own provider registry/model broker;
+2. OmniRoute and 9Router can be configured directly for the Kingdom server;
+3. additional authorized providers can participate through the common Brain Core contract;
+4. Keeper requests route through the Kingdom-owned brain;
+5. K.I.N.G.S. AI becomes optional for ordinary Keeper inference;
+6. provider credentials remain server-side;
+7. routing, failover and evidence are verified through the real Kingdom path;
+8. AI output does not gain authority to mutate collector-owned truth merely by being generated.
+
+See [`docs/KINGS_FAMILY_ARCHITECTURE_GOSPEL.md`](docs/KINGS_FAMILY_ARCHITECTURE_GOSPEL.md).
+
+### No fake completion
+
+Architecture documentation is not implementation proof. The permanent engineering sequence is:
+
+**Requirement → existing-code audit → correct integration point → build → integrate → unit test → integration test → end-to-end test → real-world proof → complete.**
+
+A file existing, a successful build, or a printed `SUCCESS` line does not by itself make a feature complete.
+
+## Current engineering state
+
+Active product milestone remains **IMP-005 — Royal Vault**.
+
+The latest previously verified implementation checkpoint includes the AI-assisted card pre-grading foundation with SHA-linked evidence persistence and a read-only Kingdom advisory grade-range engine, alongside the Royal Vault, Intake, scanner, provenance, saved-view/paging, bulk reorganization, Pokémon, Magic/Scryfall, PSA certification evidence and exact sports-card catalog slices.
+
+The latest previously recorded verified gate before this architecture branch was **Kingdom Quality Gates #598**, run `33982767676`, on implementation commit `bbe7bad9e4282fe987274e3d42403782e0c96bef`.
+
+A Kingdom pre-grade remains advisory evidence. It is not an official PSA/BGS/CGC/SGC grade, does not authenticate a physical card or autograph, and cannot silently overwrite condition, grade, authenticity, provenance, ownership or value.
+
+Detailed recoverable build state belongs in [`docs/MISSION-PROGRESS.md`](docs/MISSION-PROGRESS.md). Dated provider/competitor/standards research belongs in [`docs/research/`](docs/research/).
 
 ## Permanent engineering rules
 
-- The locked K.I.N.G.S. construction documents remain the primary product guide.
-- Research current competitors, open-source patterns, official APIs and provider terms before meaningful integration work.
-- Build real executable functionality; never present simulated integrations, mock totals, fake market data, decorative-only interfaces, or unverified AI analysis as complete.
+- Build real executable functionality; never present simulated integrations, mock totals, fake market data, decorative-only interfaces or unverified AI analysis as complete.
 - Never commit secrets or expose provider credentials in browser code.
 - Preserve collector authority over destructive, ownership-changing, grading, authentication and authoritative record actions.
-- External catalog results, AI analysis and image similarity must surface uncertainty instead of silently inventing identity, physical variant, condition, grade, authenticity, provenance or value.
+- External catalog results, AI analysis and image similarity must surface uncertainty instead of silently inventing identity, variant, condition, grade, authenticity, provenance or value.
 - Permanent Kingdom treasure UUIDs remain provider-independent physical-item identities.
 - Mobile, Android, Chromebook, tablet and desktop workflows are first-class.
+- Update [`docs/MISSION-PROGRESS.md`](docs/MISSION-PROGRESS.md) after substantial verified code batches so work resumes from repository truth rather than chat memory.
 
-## Shared K.I.N.G.S. AI core
+## Royal Vault — verified capability carried forward
 
-K.I.N.G.S. AI is the shared intelligence/router core for the K.I.N.G.S. application family. Collector's Kingdom owns collector identity, authorization, Vault records, Marketplace rules, ownership state and product actions. Model/provider routing stays behind the governed server-to-server K.I.N.G.S. AI boundary.
+Verified work already includes permanent owner-scoped treasure identities and SQLite persistence, collections/storage locations, responsive editing, protected bulk movement, saved views, deterministic paging, private media with SHA-256 integrity, structured attributes, duplicate review, audit/provenance history, pre-grade history, statistics, portable import/export, Royal Intake, barcode capture where supported, voice navigation and Keeper/talk-to-text entry points.
 
-The Keeper can advise through K.I.N.G.S. AI, including grading/vision workflows, but Collector's Kingdom and the collector remain the authority for record mutation.
+External evidence integrations remain review-only unless a later authoritative workflow explicitly says otherwise. Existing catalog/evidence support includes Open Library, UPCitemdb, Pokémon TCG API, Scryfall, The Card API, PSA Public API and Wikimedia Commons paths when legitimately configured.
 
-## Royal Vault — verified capability
+Market value remains absent until a real legally usable valuation system is implemented. Provider matches, AI suggestions, certification numbers and image similarity do not automatically become authoritative Kingdom truth.
 
-Current verified Vault capability includes:
+## Start K.I.N.G.S. Collector's Kingdom
 
-- permanent owner-scoped treasure UUIDs and SQLite persistence;
-- treasure create/read/update/archive;
-- collections and arbitrary-depth physical storage locations;
-- responsive collection/location editing with cycle protection;
-- previewed atomic bulk movement of up to 100 treasures;
-- private Saved Vault Views storing query/filter/sort definitions rather than frozen results;
-- deterministic keyset pagination with bounded pages and verified paging indexes;
-- secure private treasure media with SHA-256 integrity metadata for new uploads;
-- structured condition/variant/quantity/acquisition/cost/identifier/custom attributes;
-- duplicate-review warnings and normalized search/filter/sort;
-- append-only audit/provenance history;
-- append-only hashed pre-grade analysis history;
-- real statistics and currency-separated purchase totals;
-- portable versioned JSON export;
-- transactional review-first JSON/CSV migration;
-- Royal Intake Queue with repeated-capture counts and preserved dismissed history;
-- progressive native camera barcode scanning where the browser supports `BarcodeDetector`;
-- voice navigation, Keeper questions, Vault search and talk-to-text where browser speech recognition is available.
+Requires Node.js **22.13+**.
 
-## Review-only external evidence
+```bash
+npm ci
+npm run dev
+```
 
-The provider-neutral evidence boundary currently supports:
+Production verification gate:
 
-- **Open Library** — checksum-valid ISBN/book candidates;
-- **UPCitemdb** — checksum-valid UPC/EAN/GTIN retail identification candidates;
-- **Pokémon TCG API** — exact card ID or explicit set-ID/card-number candidates;
-- **Scryfall** — exact Magic printing UUID or set-code/collector-number candidates;
-- **The Card API** — exact sports-card UCID or set-USID/printed-card-number candidates when eligible server-side Catalog access is configured;
-- **PSA Public API** — exact certification-number database evidence when a server-side token is configured;
-- **Wikimedia Commons / MediaWiki API** — review-only autograph reference-image candidates with source/license metadata, fetched through the authenticated Kingdom proxy.
+```bash
+npm run verify
+```
 
-All provider paths are authenticated or server-governed, bounded and review-only. Provider IDs remain supporting evidence rather than permanent Kingdom physical identity. Identification-provider price/commerce material, The Card API Market/Sales data and PSA estimate/sales data do not become Kingdom valuation through these paths.
+The current scripts run lint, typecheck, tests, build and build verification.
 
-### Sports-card identity evidence
+## Brain migration target
 
-Verified through **Quality Gates #495**:
+The next architecture-critical intelligence milestone is to replace the mandatory remote `createKingsAiClient()` inference dependency with a Kingdom-owned Brain Core/provider broker while preserving an **optional** K.I.N.G.S. AI engineering/orchestration connection.
 
-- permanent UCID normalization;
-- exact set-USID + printed-number lookup;
-- independent sports-category verification of the referenced set;
-- server-only API key and HTTPS outside local tests;
-- preserved `/api/v1` provider path;
-- bounded timeout/response size and serialized request pacing;
-- explicit configuration, paid-plan, auth, rate-limit, upstream, malformed, category-mismatch, identifier-mismatch and ambiguity failures;
-- no sales/market-price/image import;
-- Royal Intake integration;
-- responsive review-only candidate handoff into a new unsaved Trading Card editor;
-- no automatic physical parallel/variant/finish, condition, grade, authenticity, provenance, ownership or value mutation.
+This migration must reuse proven K.I.N.G.S./Forge routing patterns rather than introducing a fourth unrelated router implementation.
 
-Research: `docs/research/2026-09-05-IMP-005-THE-CARD-API-SPORTS-CATALOG.md`.
+## Canonical references
 
-### PSA certification evidence
+- [`docs/KINGS_FAMILY_ARCHITECTURE_GOSPEL.md`](docs/KINGS_FAMILY_ARCHITECTURE_GOSPEL.md) — expanded locked family architecture.
+- [`docs/MISSION-STATEMENT.md`](docs/MISSION-STATEMENT.md) — Kingdom mission and authority order.
+- [`docs/MISSION-PROGRESS.md`](docs/MISSION-PROGRESS.md) — recoverable verified build state and next target.
+- [`docs/research/`](docs/research/) — dated evidence and technical research.
 
-PSA certification lookup remains a separate evidence class. A matching database record can verify that PSA returned information for a certification number; it does **not** by itself authenticate the physical slab/card being presented. The Kingdom does not automatically copy PSA evidence into treasure grade, condition, authenticity, provenance, ownership or value.
+## Definition of complete
 
-## Truthfulness boundary
+K.I.N.G.S. Collector's Kingdom is complete only when a real collector can use the intended product journey with durable authoritative state, independent real AI routing, truthful provider/research evidence, secure private assets, explicit collector authority, verified production behavior and the strongest applicable mobile/desktop quality gates.
 
-Market value remains absent until a real, legally usable valuation system is implemented. A barcode, image, title match, provider result, AI suggestion, cert number, grading label, autograph similarity result, catalog ID or collector-entered provenance statement is not automatically authoritative.
-
-Likewise, a Kingdom AI pre-grade is an **estimated condition analysis** based on captured evidence. It remains distinct from an official PSA/BGS/CGC/SGC grade, from professional autograph authentication, and from physical-card authentication.
-
-## Current next target
-
-**IMP-005 — Explainable Grading Report + Dimension Evidence.**
-
-Current research shows the best direction is not a more mysterious single score. Professional and technology-assisted grading workflows increasingly expose condition dimensions, annotations and measurable defect evidence. The next verified slice will adapt those ideas into Kingdom-owned transparent reporting:
-
-1. add separate front/back evidence summaries for centering, corners, edges and surface;
-2. compute dimension-level advisory scores/ranges only when that dimension has sufficient evidence;
-3. add measured defect metadata such as affected normalized area/length where the detector can support it;
-4. distinguish likely manufacturing artifacts from handling/wear evidence when enough evidence exists, without pretending certainty;
-5. expose annotated review candidates and collector accept/reject/uncertain decisions without deleting the original detector evidence;
-6. keep human-review decisions append-only and attributable;
-7. add report completeness and `needs more capture` guidance per dimension;
-8. keep third-party grader standards as versioned references rather than proprietary-score emulation;
-9. pass full Kingdom Quality Gates;
-10. update README and mission-progress ledger before merge.
-
-Later separate milestones remain: lawful evidence-backed market valuation/value history, image-based collectible identification, insurance/reporting expansion, additional official grader integrations, Marketplace ownership transfer/settlement, and destructive bulk archive/delete flows.
+Until that standard is met, engineering continues.
