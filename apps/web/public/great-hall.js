@@ -1,6 +1,17 @@
 import { createKeeperController } from "./keeper.js";
 import { createVoiceController } from "./voice.js";
 
+const KINGS_DEFINITION = "KNOWLEDGE • INVESTIGATION • NARRATIVE • GENERATION • SYSTEM";
+document.title = "Great Hall • K.I.N.G.S. Collector's Kingdom";
+
+const brandLockup = document.querySelector(".royal-brand > span:last-child");
+if (brandLockup && !brandLockup.querySelector(".brand-definition")) {
+  const definition = document.createElement("small");
+  definition.className = "brand-definition";
+  definition.textContent = KINGS_DEFINITION;
+  brandLockup.append(definition);
+}
+
 const hallTitle = document.querySelector("#hall-title");
 const hallGreeting = document.querySelector("#hall-greeting");
 const collectorChip = document.querySelector("#collector-chip");
