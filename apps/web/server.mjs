@@ -11,6 +11,9 @@ import { SqliteIdentityStore } from "../../packages/identity/src/sqlite-store.mj
 import { clearSessionCookie, parseCookies, sessionCookie } from "../../packages/identity/src/tokens.mjs";
 import { createKingsAiClient, KingsAiClientError } from "../../packages/kings-ai/src/client.mjs";
 import { createLogger } from "../../packages/observability/src/logger.mjs";
+import { handleVaultRequest } from "../../packages/vault/src/http.mjs";
+import { createVaultService, VaultError } from "../../packages/vault/src/service.mjs";
+import { SqliteVaultStore } from "../../packages/vault/src/sqlite-store.mjs";
 
 const CONTENT_TYPES = Object.freeze({
   ".css": "text/css; charset=utf-8",
@@ -22,11 +25,11 @@ const CONTENT_TYPES = Object.freeze({
 });
 
 const SECURITY_HEADERS = Object.freeze({
-  "Content-Security-Policy": "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'",
+  "Content-Security-Policy": "default-src 'self'; img-src 'self' data: blob:; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'",
   "Referrer-Policy": "no-referrer",
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
-  "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
+  "Permissions-Policy": "camera=(self), microphone=(), geolocation=()"
 });
 
 const MAX_JSON_BYTES = 64 * 1024;
@@ -46,6 +49,19 @@ function sendJson(response, statusCode, payload, method = "GET", headers = {}) {
     ...headers,
     "Content-Type": "application/json; charset=utf-8",
     "Content-Length": Buffer.byteLength(body),
+    "Cache-Control": "no-store"
+  });
+  response.end(method === "HEAD" ? undefined : body);
+}
+
+function sendVaultResult(response, method, result) {
+  if (result.kind === "json") return sendJson(response, result.status, result.payload, method, result.headers);
+  const body = Buffer.isBuffer(result.body) ? result.body : Buffer.from(String(result.body ?? ""));
+  response.writeHead(result.status, {
+    ...SECURITY_HEADERS,
+    ...result.headers,
+    "Content-Type": result.contentType ?? "application/octet-stream",
+    "Content-Length": body.length,
     "Cache-Control": "no-store"
   });
   response.end(method === "HEAD" ? undefined : body);
@@ -225,7 +241,8 @@ export function createKingdomServer({
   publicRoot = fileURLToPath(new URL("./public/", import.meta.url)),
   identityService = null,
   greatHallService = null,
-  kingsAiClient = null
+  kingsAiClient = null,
+  vaultService = null
 } = {}) {
   return createServer(async (request, response) => {
     const requestStartedAt = performance.now();
@@ -252,16 +269,16 @@ export function createKingdomServer({
       }
 
       if (requestUrl.pathname === "/ready" && ["GET", "HEAD"].includes(method)) {
-        const readiness = createReadinessSnapshot({ configLoaded: true, identityReady: Boolean(identityService) });
+        const readiness = createReadinessSnapshot({ configLoaded: true, identityReady: Boolean(identityService), vaultReady: Boolean(vaultService) });
         return sendJson(response, readiness.status === "ready" ? 200 : 503, readiness, method);
       }
 
       if (requestUrl.pathname === "/api/meta" && ["GET", "HEAD"].includes(method)) {
         return sendJson(response, 200, {
           product: "K.I.N.G.S. Collector's Kingdom",
-          phase: "IMP-004 Great Hall & Navigation",
+          phase: "IMP-005 Vault Phase 1",
           version: config.version,
-          featureStatus: "great-hall-in-progress"
+          featureStatus: "vault-phase1-in-progress"
         }, method);
       }
 
@@ -284,12 +301,26 @@ export function createKingdomServer({
         return sendJson(response, 405, { error: "method_not_allowed" }, method);
       }
 
+      if (requestUrl.pathname.startsWith("/api/vault/")) {
+        const identity = requireIdentity(identityService, request);
+        const result = await handleVaultRequest({
+          request,
+          pathname: requestUrl.pathname,
+          searchParams: requestUrl.searchParams,
+          identity,
+          vaultService
+        });
+        if (result === null) return sendJson(response, 405, { error: "method_not_allowed" }, method);
+        if (result === false) return sendJson(response, 404, { error: "not_found" }, method);
+        return sendVaultResult(response, method, result);
+      }
+
       if (requestUrl.pathname.startsWith("/api/")) return sendJson(response, 404, { error: "not_found" }, method);
       if (!["GET", "HEAD"].includes(method)) return sendJson(response, 405, { error: "method_not_allowed" }, method);
       if (await sendStatic(response, method, requestUrl.pathname, publicRoot)) return;
       return sendJson(response, 404, { error: "not_found" }, method);
     } catch (error) {
-      if (error instanceof IdentityError || error instanceof HttpError) {
+      if (error instanceof IdentityError || error instanceof HttpError || error instanceof VaultError) {
         return sendJson(response, error.statusCode, { error: error.code, message: error.message }, method);
       }
       if (error instanceof KingsAiClientError) {
@@ -310,18 +341,20 @@ export function createKingdomServer({
 async function run() {
   const config = loadRuntimeConfig();
   const logger = createLogger({ level: config.logLevel });
-  const store = new SqliteIdentityStore(resolve(config.dataDir, "identity.sqlite"));
+  const identityStore = new SqliteIdentityStore(resolve(config.dataDir, "identity.sqlite"));
+  const vaultStore = new SqliteVaultStore(resolve(config.dataDir, "vault.sqlite"));
   const identityService = createIdentityService({
-    store,
+    store: identityStore,
     sessionTtlMs: config.sessionTtlHours * 60 * 60 * 1000
   });
-  const greatHallService = createGreatHallService({ identityService });
+  const vaultService = createVaultService({ store: vaultStore, mediaRoot: resolve(config.dataDir, "media", "vault") });
+  const greatHallService = createGreatHallService({ identityService, vaultService });
   const kingsAiClient = createKingsAiClient({
     baseUrl: config.kingsAiBaseUrl,
     accessToken: config.kingsAiToken,
     timeoutMs: config.kingsAiTimeoutMs
   });
-  const server = createKingdomServer({ config, logger, identityService, greatHallService, kingsAiClient });
+  const server = createKingdomServer({ config, logger, identityService, greatHallService, kingsAiClient, vaultService });
 
   server.on("error", (error) => {
     logger.error("server.error", { error });
@@ -339,7 +372,8 @@ async function run() {
         logger.error("server.shutdown_failed", { error });
         process.exitCode = 1;
       }
-      store.close();
+      identityStore.close();
+      vaultStore.close();
     });
   };
 
