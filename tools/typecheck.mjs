@@ -26,6 +26,8 @@ const contractFiles = [
   "apps/web/vault-media-http.mjs",
   "apps/web/public/vault-import-core.js",
   "apps/web/public/vault-import-ui.js",
+  "apps/web/public/vault-intake-core.js",
+  "apps/web/public/vault-intake-ui.js",
   "apps/web/public/voice.js",
   "apps/web/server.mjs"
 ];
@@ -40,4 +42,4 @@ for (const relative of contractFiles) {
 const entries = await readdir(resolve(root, "packages"), { withFileTypes: true });
 if (!entries.some((entry) => entry.isDirectory())) throw new Error("No package boundaries found.");
 
-console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, Vault, transactional import, Royal Intake Queue, secure media, and Kingdom voice boundaries.");
+console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, Vault, transactional import, Royal Intake Queue UI/API, secure media, and Kingdom voice boundaries.");
