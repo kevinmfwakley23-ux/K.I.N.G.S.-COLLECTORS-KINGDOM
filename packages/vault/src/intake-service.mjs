@@ -29,6 +29,14 @@ function cleanIdentifierType(value) {
   return result;
 }
 
+function knownIdentifierType(value) {
+  try {
+    return cleanIdentifierType(value);
+  } catch {
+    return null;
+  }
+}
+
 function cleanSourceType(value) {
   const sourceType = typeof value === "string" ? value.trim().toLowerCase() : "manual";
   if (!SOURCE_TYPES.has(sourceType)) throw new VaultError("invalid_intake_source", "Intake source must be manual or camera.");
@@ -109,8 +117,8 @@ function existingCandidates(vaultStore, ownerAccountId, item) {
   for (const treasure of candidates) {
     let matchedIdentifierType = null;
     for (const [key, value] of Object.entries(treasure.externalIdentifiers ?? {})) {
-      const normalizedKey = cleanIdentifierType(String(key).replace(/_/g, "-"));
-      if (!aliases.has(normalizedKey)) continue;
+      const normalizedKey = knownIdentifierType(String(key).replace(/_/g, "-"));
+      if (!normalizedKey || !aliases.has(normalizedKey)) continue;
       if (normalizedComparable(value, normalizedKey) === expected) {
         matchedIdentifierType = normalizedKey;
         break;
