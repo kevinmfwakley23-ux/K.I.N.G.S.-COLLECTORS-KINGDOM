@@ -57,6 +57,42 @@ async function withServer(run) {
       if (input.identifierValue === "provider-down") {
         throw new CatalogError("catalog_provider_unavailable", "Catalog evidence provider is unavailable.", { statusCode: 503 });
       }
+
+      if (input.identifierType === "upc") {
+        return Object.freeze({
+          identifierType: "upc",
+          identifierValue: input.identifierValue,
+          retrievedAt: "2026-09-05T10:20:00.000Z",
+          lookupMode: "review-only",
+          mutationPerformed: false,
+          providers: Object.freeze([Object.freeze({
+            providerId: "upcitemdb",
+            providerName: "UPCitemdb",
+            cached: false,
+            lookupUrl: "https://api.upcitemdb.com/prod/trial/lookup?upc=045496630584",
+            candidateCount: 1
+          })]),
+          providerFailures: Object.freeze([]),
+          candidates: Object.freeze([Object.freeze({
+            candidateId: "upcitemdb:045496630584",
+            providerId: "upcitemdb",
+            providerName: "UPCitemdb",
+            providerRecordId: "045496630584",
+            evidenceStrength: "provider-identifier-match",
+            reviewRequired: true,
+            matchReason: "Retail identifier evidence requires collector review.",
+            sourceUrl: "https://www.upcitemdb.com/",
+            fields: Object.freeze({
+              title: "Example Retail Collectible",
+              manufacturer: "Example Maker",
+              description: "Review-only provider metadata.",
+              providerCategory: "Collectibles"
+            }),
+            externalIdentifiers: Object.freeze({ upc: input.identifierValue, lookupCode: input.identifierValue })
+          })])
+        });
+      }
+
       return Object.freeze({
         identifierType: input.identifierType,
         identifierValue: input.identifierValue,
@@ -135,6 +171,17 @@ test("catalog candidate HTTP lookup is authenticated, review-only, and performs 
     assert.equal(lookup.body.result.candidates.length, 1);
     assert.equal(lookup.body.result.candidates[0].reviewRequired, true);
     assert.equal(lookup.body.result.candidates[0].fields.title, "Example Book");
+
+    const retailLookup = await json(baseUrl, "/api/catalog/candidates?identifierType=upc&identifierValue=045496630584", {
+      headers: { cookie }
+    });
+    assert.equal(retailLookup.response.status, 200);
+    assert.equal(retailLookup.body.result.lookupMode, "review-only");
+    assert.equal(retailLookup.body.result.mutationPerformed, false);
+    assert.equal(retailLookup.body.result.candidates.length, 1);
+    assert.equal(retailLookup.body.result.candidates[0].providerId, "upcitemdb");
+    assert.equal(retailLookup.body.result.candidates[0].fields.title, "Example Retail Collectible");
+    assert.doesNotMatch(JSON.stringify(retailLookup.body.result), /price|offer|merchant/i);
 
     const after = await json(baseUrl, "/api/vault", { headers: { cookie } });
     assert.equal(after.response.status, 200);
