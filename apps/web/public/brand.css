@@ -1,0 +1,70 @@
+.brand-crest {
+  display: block;
+  width: min(220px, 58vw);
+  height: auto;
+  margin: 0 auto 1.35rem;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 24px rgba(0, 0, 0, .12));
+}
+
+.brand-crest-large {
+  width: min(290px, 68vw);
+}
+
+.royal-brand-logo {
+  display: block;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 7px rgba(0, 0, 0, .12));
+}
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+}
+
+.install-kingdom-button[hidden] {
+  display: none !important;
+}
+
+.foundation.brand-foundation {
+  position: relative;
+  overflow: hidden;
+}
+
+.foundation.brand-foundation::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(177, 138, 48, .08), transparent 38%),
+    linear-gradient(118deg, transparent 0 58%, rgba(20, 20, 20, .035) 58.4%, transparent 59%);
+}
+
+.foundation.brand-foundation > * {
+  position: relative;
+}
+
+@media (max-width: 720px) {
+  .royal-brand-logo {
+    width: 46px;
+    height: 46px;
+    flex-basis: 46px;
+  }
+}
+
+@media (max-width: 520px) {
+  .brand-crest { width: min(190px, 68vw); }
+  .brand-crest-large { width: min(235px, 78vw); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-crest,
+  .royal-brand-logo {
+    filter: none;
+  }
+}
