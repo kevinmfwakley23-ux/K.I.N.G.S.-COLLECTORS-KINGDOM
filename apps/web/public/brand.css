@@ -20,6 +20,19 @@
   filter: drop-shadow(0 4px 7px rgba(0, 0, 0, .12));
 }
 
+.crown-mark {
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  border: 0;
+  border-radius: 0;
+  background: url("/assets/kingdom-official-logo.svg") center / contain no-repeat;
+  color: transparent;
+  font-size: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 4px 7px rgba(0, 0, 0, .12));
+}
+
 .brand-lockup {
   display: flex;
   align-items: center;
@@ -50,7 +63,8 @@
 }
 
 @media (max-width: 720px) {
-  .royal-brand-logo {
+  .royal-brand-logo,
+  .crown-mark {
     width: 46px;
     height: 46px;
     flex-basis: 46px;
@@ -64,7 +78,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .brand-crest,
-  .royal-brand-logo {
+  .royal-brand-logo,
+  .crown-mark {
     filter: none;
   }
 }
