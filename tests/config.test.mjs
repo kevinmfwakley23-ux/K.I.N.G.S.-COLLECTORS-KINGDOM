@@ -12,7 +12,8 @@ test("runtime configuration applies secure local defaults", () => {
     upcItemDbBaseUrl: "https://api.upcitemdb.com", upcItemDbUserKey: null, upcItemDbTimeoutMs: 5000, upcItemDbMinIntervalMs: 10000,
     pokemonTcgBaseUrl: "https://api.pokemontcg.io", pokemonTcgApiKey: null, pokemonTcgTimeoutMs: 5000, pokemonTcgMinIntervalMs: 5000,
     scryfallBaseUrl: "https://api.scryfall.com", scryfallTimeoutMs: 5000, scryfallMinIntervalMs: 150,
-    psaBaseUrl: "https://api.psacard.com/publicapi", psaAccessToken: null, psaTimeoutMs: 5000, psaMinIntervalMs: 1000
+    psaBaseUrl: "https://api.psacard.com/publicapi", psaAccessToken: null, psaTimeoutMs: 5000, psaMinIntervalMs: 1000,
+    cardApiBaseUrl: "https://www.thecardapi.com/api/v1", cardApiKey: null, cardApiTimeoutMs: 5000, cardApiMinIntervalMs: 250
   });
 });
 
@@ -69,6 +70,23 @@ test("runtime configuration validates PSA HTTPS transport, server-only token, an
   assert.throws(() => loadRuntimeConfig({ KINGDOM_PSA_ACCESS_TOKEN: "bad\ntoken" }), /PSA_ACCESS_TOKEN/);
   assert.throws(() => loadRuntimeConfig({ KINGDOM_PSA_TIMEOUT_MS: "0" }), /PSA_TIMEOUT_MS/);
   assert.throws(() => loadRuntimeConfig({ KINGDOM_PSA_MIN_INTERVAL_MS: "0" }), /PSA_MIN_INTERVAL_MS/);
+});
+
+test("runtime configuration validates The Card API HTTPS transport, server-only key, and resource limits", () => {
+  const config = loadRuntimeConfig({
+    KINGDOM_CARD_API_BASE_URL: "http://127.0.0.1:9940/api/v1/",
+    KINGDOM_CARD_API_KEY: "server-only-card-key",
+    KINGDOM_CARD_API_TIMEOUT_MS: "4400",
+    KINGDOM_CARD_API_MIN_INTERVAL_MS: "300"
+  });
+  assert.equal(config.cardApiBaseUrl, "http://127.0.0.1:9940/api/v1");
+  assert.equal(config.cardApiKey, "server-only-card-key");
+  assert.equal(config.cardApiTimeoutMs, 4400);
+  assert.equal(config.cardApiMinIntervalMs, 300);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_CARD_API_BASE_URL: "http://example.com/api/v1" }), /CARD_API_BASE_URL/);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_CARD_API_KEY: "bad\nkey" }), /CARD_API_KEY/);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_CARD_API_TIMEOUT_MS: "0" }), /CARD_API_TIMEOUT_MS/);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_CARD_API_MIN_INTERVAL_MS: "0" }), /CARD_API_MIN_INTERVAL_MS/);
 });
 
 test("runtime configuration rejects invalid ports, sessions, cookies, and KINGS AI settings", () => {
