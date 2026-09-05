@@ -1,3 +1,4 @@
+import { bestCalibrationForMedia, summarizePhysicalCalibration } from "./calibration.mjs";
 import { enumerateFindings } from "./findings.mjs";
 import { defectExtent } from "./measurement.mjs";
 
@@ -67,6 +68,9 @@ function latestReviews(reviews = []) {
 function mediaSideMap(records) {
   const result = new Map();
   for (const record of records) {
+    for (const calibration of record.analysis?.calibrationEvidence ?? []) {
+      if (SIDES.includes(calibration?.side) && calibration.sourceMediaId) result.set(calibration.sourceMediaId, calibration.side);
+    }
     for (const capture of record.analysis?.captureQuality ?? []) {
       const view = String(capture.view ?? "").toLowerCase();
       if (view.startsWith("front")) result.set(capture.sourceMediaId, "front");
@@ -109,6 +113,7 @@ function emptySummary(side, dimension, missingEvidence) {
     findings: Object.freeze([]),
     missingEvidence: Object.freeze(missingEvidence),
     limitations: Object.freeze(["No Kingdom advisory dimension range is produced until the minimum evidence for this dimension exists."]),
+    physicalMeasurementAvailable: false,
     officialSubgrade: false,
     affiliatedGraderSubgrade: false
   });
@@ -126,6 +131,7 @@ function centeringSummary(side, records) {
   const center = clamp(10 - Math.min(5, deviation * 0.2), 1, 10);
   const confidence = clamp(Number(measurement.confidence ?? 0), 0, 1);
   const uncertainty = clamp(0.5 + (1 - confidence) * 2, 0.5, 2.5);
+  const calibration = record.sourceMediaIds.map((mediaId) => bestCalibrationForMedia(records, mediaId)).find(Boolean)?.calibration ?? null;
   return Object.freeze({
     side,
     dimension: "centering",
@@ -141,8 +147,13 @@ function centeringSummary(side, records) {
     uncertainFindingIds: Object.freeze([]),
     unreviewedFindingIds: Object.freeze([]),
     findings: Object.freeze([]),
-    missingEvidence: Object.freeze([]),
-    limitations: Object.freeze(["Centering is one condition dimension only. This range is Kingdom advisory evidence and not an official third-party subgrade."]),
+    missingEvidence: Object.freeze(calibration ? [] : [`${side}:independent-physical-scale-reference`]),
+    limitations: Object.freeze([
+      "Centering is one condition dimension only. This range is Kingdom advisory evidence and not an official third-party subgrade.",
+      calibration ? "Physical card-size comparison is available from an independent in-frame calibration reference." : "Physical millimeter measurement remains unavailable until a known-size reference is captured with the card."
+    ]),
+    physicalMeasurementAvailable: Boolean(calibration),
+    calibrationSourceMediaId: calibration?.sourceMediaId ?? null,
     officialSubgrade: false,
     affiliatedGraderSubgrade: false
   });
@@ -170,6 +181,7 @@ function evidenceDimensionSummary({ side, dimension, records, findings, reviewMa
   const interpreted = relevant.map((finding) => {
     const review = reviewMap.get(finding.findingHash) ?? null;
     const interpretation = findingInterpretation(review);
+    const calibration = bestCalibrationForMedia(records, finding.defect.sourceMediaId)?.calibration ?? null;
     return Object.freeze({
       findingHash: finding.findingHash,
       sourceAnalysisId: finding.sourceAnalysisId,
@@ -179,8 +191,9 @@ function evidenceDimensionSummary({ side, dimension, records, findings, reviewMa
       detectorConfidence: finding.defect.confidence,
       reviewDecision: interpretation.decision,
       reviewId: review?.id ?? null,
-      extent: defectExtent(finding.defect).extent,
-      rawEvidencePreserved: true
+      extent: defectExtent(finding.defect, calibration).extent,
+      rawEvidencePreserved: true,
+      physicalMeasurementAvailable: Boolean(calibration)
     });
   });
 
@@ -205,6 +218,8 @@ function evidenceDimensionSummary({ side, dimension, records, findings, reviewMa
     : dimension === "corners"
       ? [`${side}:macro-corner-detail`]
       : [`${side}:edge-color-whitening-detail`];
+  const physicalCalibrationAvailable = relevant.some((finding) => bestCalibrationForMedia(records, finding.defect.sourceMediaId));
+  if (!physicalCalibrationAvailable) detailMissing.push(`${side}:independent-physical-scale-reference`);
   const averageFindingConfidence = confidenceValues.length ? confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length : 0.8;
   const completeness = rounded(baseCompleteness);
   const evidenceConfidence = rounded(clamp(averageFindingConfidence * 0.75 + 0.2, 0, 0.9));
@@ -232,10 +247,14 @@ function evidenceDimensionSummary({ side, dimension, records, findings, reviewMa
     missingEvidence: Object.freeze(detailMissing),
     limitations: Object.freeze([
       "Detector findings are advisory image evidence. Reviewer decisions change interpretation but never delete or rewrite the original detector evidence.",
+      physicalCalibrationAvailable
+        ? "Approximate millimeter spans are shown only where the source capture has a validated independent scale reference."
+        : "Defect spans stay normalized-only until an independent known-size reference passes physical calibration.",
       dimension === "surface"
         ? "Paired raking-light analysis does not replace macro, UV/spectral or hands-on surface inspection when those are needed."
         : "Whole-card contour evidence does not fully resolve microscopic whitening, layering or fine physical wear without closer capture."
     ]),
+    physicalMeasurementAvailable: physicalCalibrationAvailable,
     officialSubgrade: false,
     affiliatedGraderSubgrade: false
   });
@@ -256,10 +275,13 @@ export function buildExplainableGradingReport(records = [], reviews = []) {
     }
     Object.freeze(dimensions[side]);
   }
+  const physicalMeasurement = summarizePhysicalCalibration(stored);
 
   return Object.freeze({
-    reportVersion: "kingdom-explainable-grading-report-v1",
+    reportVersion: "kingdom-explainable-grading-report-v2",
+    previousReportVersion: "kingdom-explainable-grading-report-v1",
     dimensions: Object.freeze(dimensions),
+    physicalMeasurement,
     sourceAnalysisCount: stored.length,
     rawFindingCount: findings.length,
     reviewedFindingCount: findings.filter((finding) => reviewMap.has(finding.findingHash)).length,
@@ -270,7 +292,7 @@ export function buildExplainableGradingReport(records = [], reviews = []) {
     affiliatedGraderReport: false,
     physicalAuthentication: false,
     mutatesTreasure: false,
-    disclaimer: "Kingdom dimension ranges are advisory evidence summaries. They are not PSA, BGS, CGC, SGC or other professional grader subgrades and do not authenticate the physical card."
+    disclaimer: "Kingdom dimension ranges are advisory evidence summaries. They are not PSA, BGS, CGC, SGC or other professional grader subgrades and do not authenticate the physical card. Physical millimeter measurements require an independent in-frame calibration reference."
   });
 }
 
