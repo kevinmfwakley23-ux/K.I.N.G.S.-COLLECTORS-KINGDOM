@@ -32,7 +32,7 @@ const SECURITY_HEADERS = Object.freeze({
   "Referrer-Policy": "no-referrer",
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
-  "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
+  "Permissions-Policy": "camera=(), microphone=(self), geolocation=(), on-device-speech-recognition=(self)"
 });
 
 const DEFAULT_MAX_JSON_BYTES = 64 * 1024;
