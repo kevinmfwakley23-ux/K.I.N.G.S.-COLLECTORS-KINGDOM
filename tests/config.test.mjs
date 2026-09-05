@@ -24,7 +24,11 @@ test("runtime configuration applies secure local defaults", () => {
     upcItemDbBaseUrl: "https://api.upcitemdb.com",
     upcItemDbUserKey: null,
     upcItemDbTimeoutMs: 5000,
-    upcItemDbMinIntervalMs: 10000
+    upcItemDbMinIntervalMs: 10000,
+    pokemonTcgBaseUrl: "https://api.pokemontcg.io",
+    pokemonTcgApiKey: null,
+    pokemonTcgTimeoutMs: 5000,
+    pokemonTcgMinIntervalMs: 5000
   });
 });
 
@@ -45,6 +49,24 @@ test("explicit KINGS AI base URL takes precedence over private hostport", () => 
   });
 
   assert.equal(config.kingsAiBaseUrl, "https://router.example.test/v1");
+});
+
+test("runtime configuration validates Pokemon TCG provider URL, key, and resource limits", () => {
+  const config = loadRuntimeConfig({
+    KINGDOM_POKEMON_TCG_BASE_URL: "http://127.0.0.1:9913/",
+    KINGDOM_POKEMON_TCG_API_KEY: "server-only-key",
+    KINGDOM_POKEMON_TCG_TIMEOUT_MS: "4000",
+    KINGDOM_POKEMON_TCG_MIN_INTERVAL_MS: "4500"
+  });
+  assert.equal(config.pokemonTcgBaseUrl, "http://127.0.0.1:9913");
+  assert.equal(config.pokemonTcgApiKey, "server-only-key");
+  assert.equal(config.pokemonTcgTimeoutMs, 4000);
+  assert.equal(config.pokemonTcgMinIntervalMs, 4500);
+
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_POKEMON_TCG_BASE_URL: "http://example.com" }), /POKEMON_TCG_BASE_URL/);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_POKEMON_TCG_API_KEY: "bad\nkey" }), /POKEMON_TCG_API_KEY/);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_POKEMON_TCG_TIMEOUT_MS: "0" }), /POKEMON_TCG_TIMEOUT_MS/);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_POKEMON_TCG_MIN_INTERVAL_MS: "0" }), /POKEMON_TCG_MIN_INTERVAL_MS/);
 });
 
 test("runtime configuration rejects invalid ports, sessions, cookies, and KINGS AI settings", () => {
