@@ -103,7 +103,7 @@ function prefillCatalogCandidate(item, candidate, status) {
 
   const editorStatus = document.querySelector("#treasure-status");
   if (editorStatus) {
-    editorStatus.textContent = `${candidate.providerName || "Catalog provider"} candidate copied into this unsaved editor. Review title, set/edition, exact physical variant or parallel, maker/publisher, condition, grade, category, and every identifier before saving. No Vault record has been written and no provider price was applied.`;
+    editorStatus.textContent = `${candidate.providerName || "Catalog provider"} candidate copied into this unsaved editor. Review title, set/edition, exact physical variant or finish, including any sports-card physical variant or parallel, maker/publisher, condition, grade, category, and every identifier before saving. No Vault record has been written and no provider price was applied.`;
   }
   titleField?.focus();
   document.querySelector("#treasure-editor")?.scrollIntoView({ behavior: "smooth", block: "start" });
