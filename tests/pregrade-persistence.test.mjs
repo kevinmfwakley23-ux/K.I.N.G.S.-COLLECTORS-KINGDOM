@@ -94,7 +94,7 @@ test("pre-grade service refuses client-manufactured overall grades and owner-cro
   });
 });
 
-test("defect/capture evidence may reference only private media explicitly linked to the same treasure", async () => {
+test("capture, defect and paired detector evidence may reference only private media explicitly linked to the same treasure", async () => {
   await withRuntime(async ({ vaultService, mediaRepository, service }) => {
     const identity = { id: "owner-a" };
     const treasure = vaultService.createTreasure(identity, { title: "Media-linked Card", category: "Trading Card" });
@@ -109,6 +109,17 @@ test("defect/capture evidence may reference only private media explicitly linked
       contentType: "image/png",
       sizeBytes: 1024,
       createdAt: "2026-09-05T16:02:00.000Z"
+    });
+    const companion = mediaRepository.create({
+      id: "media-card-raking-2",
+      ownerAccountId: identity.id,
+      treasureId: treasure.id,
+      mediaKind: "image",
+      storageKey: "test/media-card-raking-2.png",
+      originalName: "raking-2.png",
+      contentType: "image/png",
+      sizeBytes: 1024,
+      createdAt: "2026-09-05T16:02:01.000Z"
     });
     mediaRepository.create({
       id: "media-other-card",
@@ -125,7 +136,7 @@ test("defect/capture evidence may reference only private media explicitly linked
     const created = service.append(identity, treasure.id, {
       standardProfile: "bgs",
       cardSizeProfile: "standard-western",
-      sourceMediaIds: [media.id],
+      sourceMediaIds: [media.id, companion.id],
       captureQuality: [{
         sourceMediaId: media.id,
         view: "front-straight-on",
@@ -137,23 +148,42 @@ test("defect/capture evidence may reference only private media explicitly linked
         analyzerConfidence: 0.92,
         warnings: []
       }],
-      defects: [{
-        type: "corner-whitening",
-        region: "top-left",
-        severity: 0.2,
-        confidence: 0.78,
-        sourceMediaId: media.id,
-        note: "Possible whitening signal; close-up review recommended."
-      }]
+      defects: [
+        {
+          type: "corner-contour-anomaly",
+          region: "top-left",
+          severity: 0.2,
+          confidence: 0.78,
+          sourceMediaId: media.id,
+          note: "Possible contour anomaly; close-up review recommended."
+        },
+        {
+          type: "surface-reflectance-anomaly",
+          region: "front-surface-linear",
+          severity: 0.18,
+          confidence: 0.72,
+          sourceMediaId: media.id,
+          comparisonMediaId: companion.id,
+          boundingBox: { x: 0.2, y: 0.3, width: 0.1, height: 0.2 },
+          note: "Paired reflectance anomaly; physical cause is not confirmed."
+        }
+      ]
     });
-    assert.deepEqual(created.sourceMediaIds, [media.id]);
+    assert.deepEqual(created.sourceMediaIds, [media.id, companion.id]);
     assert.equal(created.analysis.captureQuality[0].sourceMediaId, media.id);
-    assert.equal(created.analysis.defects[0].sourceMediaId, media.id);
+    assert.equal(created.analysis.defects[1].comparisonMediaId, companion.id);
 
     assert.throws(
       () => service.append(identity, treasure.id, {
-        sourceMediaIds: [],
-        defects: [{ type: "edge-chipping", region: "left-edge", severity: 0.1, confidence: 0.5, sourceMediaId: media.id }]
+        sourceMediaIds: [media.id],
+        defects: [{
+          type: "surface-reflectance-anomaly",
+          region: "front-surface-linear",
+          severity: 0.1,
+          confidence: 0.5,
+          sourceMediaId: media.id,
+          comparisonMediaId: companion.id
+        }]
       }),
       (error) => error instanceof VaultError && error.code === "pregrade_evidence_media_not_linked"
     );
