@@ -9,6 +9,8 @@ import { createKingsAiClient } from "../../packages/kings-ai/src/client.mjs";
 import { createLogger } from "../../packages/observability/src/logger.mjs";
 import { createVaultDuplicateSummaryService } from "../../packages/vault/src/duplicate-summaries.mjs";
 import { createVaultEvidenceService } from "../../packages/vault/src/evidence.mjs";
+import { createVaultImprovementService } from "../../packages/vault/src/improvements.mjs";
+import { handleVaultImprovementRequest } from "../../packages/vault/src/improvements-http.mjs";
 import { createVaultIntelligence } from "../../packages/vault/src/intelligence.mjs";
 import { createVaultMarketplaceReadinessService } from "../../packages/vault/src/marketplace-readiness.mjs";
 import { handleVaultMarketplaceReadinessRequest } from "../../packages/vault/src/marketplace-readiness-http.mjs";
@@ -55,8 +57,12 @@ function recommendationRoute(pathname) {
   return /^\/api\/vault\/treasures\/[^/]+\/tag-recommendations$/.test(pathname);
 }
 
+function improvementRoute(pathname) {
+  return pathname === "/api/vault/improvements";
+}
+
 function extensionRoute(pathname) {
-  return setRoute(pathname) || marketplaceReadinessRoute(pathname) || recommendationRoute(pathname);
+  return setRoute(pathname) || marketplaceReadinessRoute(pathname) || recommendationRoute(pathname) || improvementRoute(pathname);
 }
 
 function requireIdentity(identityService, request) {
@@ -73,6 +79,7 @@ export function installVaultSetRoutes({
   summaryService = null,
   marketplaceReadinessService = null,
   recommendationService = null,
+  improvementService = null,
   logger = createLogger({ level: "info" })
 } = {}) {
   if (!server || typeof server.listeners !== "function") throw new TypeError("A Kingdom HTTP server is required.");
@@ -116,13 +123,21 @@ export function installVaultSetRoutes({
           identity,
           readinessService: marketplaceReadinessService
         });
-      } else {
+      } else if (recommendationRoute(requestUrl.pathname)) {
         result = handleVaultRecommendationRequest({
           request,
           pathname: requestUrl.pathname,
           searchParams: requestUrl.searchParams,
           identity,
           recommendationService
+        });
+      } else {
+        result = handleVaultImprovementRequest({
+          request,
+          pathname: requestUrl.pathname,
+          searchParams: requestUrl.searchParams,
+          identity,
+          improvementService
         });
       }
       if (result === null) return sendJson(response, 405, { error: "method_not_allowed" }, method);
@@ -155,6 +170,11 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
   const vaultSetService = createVaultSetService({ filename: vaultDatabasePath });
   const vaultSetSummaryService = createVaultSetSummaryService({ filename: vaultDatabasePath });
   const vaultMarketplaceReadinessService = createVaultMarketplaceReadinessService({ filename: vaultDatabasePath });
+  const vaultImprovementService = createVaultImprovementService({
+    filename: vaultDatabasePath,
+    setSummaryService: vaultSetSummaryService,
+    duplicateSummaryService: vaultDuplicateSummaryService
+  });
   const identityService = createIdentityService({
     store: identityStore,
     sessionTtlMs: config.sessionTtlHours * 60 * 60 * 1000
@@ -171,7 +191,8 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
     attributeService: vaultOwnershipService.attributeService,
     setSummaryService: vaultSetSummaryService,
     recommendationService: vaultRecommendationService,
-    duplicateSummaryService: vaultDuplicateSummaryService
+    duplicateSummaryService: vaultDuplicateSummaryService,
+    improvementService: vaultImprovementService
   });
   const greatHallService = createGreatHallService({ identityService, vaultService: vaultIntelligence });
   const kingsAiClient = createKingsAiClient({
@@ -197,6 +218,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
     summaryService: vaultSetSummaryService,
     marketplaceReadinessService: vaultMarketplaceReadinessService,
     recommendationService: vaultRecommendationService,
+    improvementService: vaultImprovementService,
     logger
   });
 
@@ -208,6 +230,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
   function closeServices() {
     identityStore.close();
     vaultEvidenceService.close();
+    vaultImprovementService.close();
     vaultMarketplaceReadinessService.close();
     vaultSetSummaryService.close();
     vaultSetService.close();
@@ -229,6 +252,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
       vaultSearchService,
       vaultRecommendationService,
       vaultDuplicateSummaryService,
+      vaultImprovementService,
       vaultEvidenceService,
       vaultSetService,
       vaultSetSummaryService,
@@ -260,6 +284,7 @@ async function run() {
       marketplaceReadiness: true,
       tagRecommendations: true,
       boundedDuplicateContext: true,
+      collectionImprovements: true,
       vaultPerformanceIndexes: runtime.services.vaultPerformanceIndexes.installed.length
     });
   });
