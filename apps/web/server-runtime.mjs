@@ -12,6 +12,7 @@ import { createVaultIntelligence } from "../../packages/vault/src/intelligence.m
 import { createVaultMarketplaceReadinessService } from "../../packages/vault/src/marketplace-readiness.mjs";
 import { handleVaultMarketplaceReadinessRequest } from "../../packages/vault/src/marketplace-readiness-http.mjs";
 import { createVaultOwnershipService } from "../../packages/vault/src/ownership.mjs";
+import { ensureVaultPerformanceIndexes } from "../../packages/vault/src/performance-indexes.mjs";
 import { createVaultSearchService } from "../../packages/vault/src/search.mjs";
 import { createVaultSetSummaryService } from "../../packages/vault/src/set-summaries.mjs";
 import { createVaultSetService } from "../../packages/vault/src/sets.mjs";
@@ -126,6 +127,8 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
   const vaultDatabasePath = resolve(config.dataDir, "vault.sqlite");
   const vaultMediaRoot = resolve(config.dataDir, "media", "vault");
   const vaultStore = new SqliteVaultStore(vaultDatabasePath);
+  const vaultPerformanceIndexes = ensureVaultPerformanceIndexes({ filename: vaultDatabasePath });
+  if (!vaultPerformanceIndexes.complete) throw new Error("Royal Vault performance indexes could not be installed completely.");
   const vaultOwnershipService = createVaultOwnershipService({ filename: vaultDatabasePath });
   const vaultSearchService = createVaultSearchService({ filename: vaultDatabasePath });
   const vaultSetService = createVaultSetService({ filename: vaultDatabasePath });
@@ -202,6 +205,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
       vaultSetService,
       vaultSetSummaryService,
       vaultMarketplaceReadinessService,
+      vaultPerformanceIndexes,
       greatHallService,
       kingsAiClient
     })
@@ -225,7 +229,8 @@ async function run() {
       port: config.port,
       version: config.version,
       collectionSets: true,
-      marketplaceReadiness: true
+      marketplaceReadiness: true,
+      vaultPerformanceIndexes: runtime.services.vaultPerformanceIndexes.installed.length
     });
   });
 
