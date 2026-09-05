@@ -105,3 +105,19 @@ test("preview warns about duplicate rows but never merges them automatically", a
     assert.ok(preview.rows.every((row) => row.warnings?.some((warning) => /auto-merged/.test(warning))));
   });
 });
+
+test("duplicate preview keeps similarly named variants separate", async () => {
+  await withVault(async ({ portable }) => {
+    const csv = [
+      "title,category,series,manufacturer,year",
+      "Charizard,Trading Cards,Base Set,Wizards of the Coast,1999",
+      "Charizard,Trading Cards,Expedition,Wizards of the Coast,2002",
+      "Charizard,Trading Cards,Base Set,Wizards of the Coast,1999"
+    ].join("\n");
+    const preview = await portable.previewCsv(collector, csv);
+    const [baseOne, expedition, baseTwo] = preview.rows;
+    assert.ok(baseOne.warnings?.some((warning) => /auto-merged/.test(warning)));
+    assert.equal(expedition.warnings?.some((warning) => /auto-merged/.test(warning)) ?? false, false);
+    assert.ok(baseTwo.warnings?.some((warning) => /auto-merged/.test(warning)));
+  });
+});
