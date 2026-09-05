@@ -35,6 +35,10 @@ const required = [
   "dist/apps/web/public/vault-provenance-core.js",
   "dist/apps/web/public/vault-provenance-ui.js",
   "dist/apps/web/public/vault-provenance.css",
+  "dist/apps/web/public/vault-reorganization-core.js",
+  "dist/apps/web/public/vault-reorganization-ui.js",
+  "dist/apps/web/public/vault-reorganization.css",
+  "dist/apps/web/public/vault-extras.js",
   "dist/apps/web/public/styles.css",
   "dist/apps/web/public/world.css",
   "dist/apps/web/public/assets/keeper.svg",
@@ -72,4 +76,4 @@ const required = [
 for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
 if (manifest.phase !== "IMP-005-ROYAL-VAULT-PHASE-1") throw new Error("Unexpected build phase in manifest.");
-console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1, cycle-safe collection/location reorganization API, append-only provenance API/UI, review-only ISBN/UPC/EAN catalog candidates, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice output.");
+console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1, cycle-safe collection/location reorganization API/UI, append-only provenance API/UI, review-only ISBN/UPC/EAN catalog candidates, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice output.");
