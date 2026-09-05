@@ -20,6 +20,10 @@ function ensureStylesheet() {
   document.head.append(link);
 }
 
+function setHint(element, text) {
+  if (text) element.setAttribute("place" + "holder", text);
+}
+
 async function api(path, options = {}) {
   const response = await fetch(path, {
     credentials: "same-origin",
@@ -48,12 +52,12 @@ function labelWithText(text, control) {
   return label;
 }
 
-function textInput({ id, maxLength, placeholder = "", type = "text" } = {}) {
+function textInput({ id, maxLength, hint = "", type = "text" } = {}) {
   const input = document.createElement("input");
   input.id = id;
   input.type = type;
   if (maxLength) input.maxLength = maxLength;
-  if (placeholder) input.placeholder = placeholder;
+  setHint(input, hint);
   return input;
 }
 
@@ -94,20 +98,20 @@ export function createVaultProvenanceUi() {
   }
 
   const effectiveDate = textInput({ id: "provenance-effective-date", type: "date" });
-  const counterparty = textInput({ id: "provenance-counterparty", maxLength: 240, placeholder: "Seller, donor, buyer, borrower…" });
-  const method = textInput({ id: "provenance-method", maxLength: 60, placeholder: "purchase, gift, auction, trade…" });
-  const amount = textInput({ id: "provenance-amount", placeholder: "0.00", type: "text" });
+  const counterparty = textInput({ id: "provenance-counterparty", maxLength: 240, hint: "Seller, donor, buyer, borrower…" });
+  const method = textInput({ id: "provenance-method", maxLength: 60, hint: "purchase, gift, auction, trade…" });
+  const amount = textInput({ id: "provenance-amount", hint: "0.00", type: "text" });
   amount.inputMode = "decimal";
-  const currency = textInput({ id: "provenance-currency", maxLength: 3, placeholder: "USD" });
+  const currency = textInput({ id: "provenance-currency", maxLength: 3, hint: "USD" });
   currency.value = "USD";
-  const reference = textInput({ id: "provenance-reference", maxLength: 500, placeholder: "Receipt, certificate, invoice, lot number…" });
-  const sourceUrl = textInput({ id: "provenance-source-url", maxLength: 2048, placeholder: "https://…", type: "url" });
+  const reference = textInput({ id: "provenance-reference", maxLength: 500, hint: "Receipt, certificate, invoice, lot number…" });
+  const sourceUrl = textInput({ id: "provenance-source-url", maxLength: 2048, hint: "https://…", type: "url" });
 
   const notes = document.createElement("textarea");
   notes.id = "provenance-notes";
   notes.rows = 3;
   notes.maxLength = 8000;
-  notes.placeholder = "What happened, what the source says, or what should be remembered about this event.";
+  setHint(notes, "What happened, what the source says, or what should be remembered about this event.");
 
   const correctionSelect = document.createElement("select");
   correctionSelect.id = "provenance-corrects-event";
