@@ -7,6 +7,7 @@ import { VaultError } from "./service.mjs";
 const SEARCH_SCHEMA_VERSION = 3;
 const MAX_QUERY_TOKENS = 16;
 const SORTS = new Set(["updated-desc", "updated-asc", "created-desc", "title-asc", "title-desc", "value-desc", "year-desc"]);
+const FAVORITE_TERMS = new Set(["favorite", "favorites", "favourite", "favourites"]);
 const STOPWORDS = new Set([
   "a", "an", "and", "are", "can", "collection", "do", "everything", "find", "for", "from", "have",
   "i", "in", "is", "it", "me", "my", "of", "please", "show", "that", "the", "to", "vault", "what",
@@ -63,8 +64,15 @@ function queryTokens(query) {
   return [...new Set(selected)].slice(0, MAX_QUERY_TOKENS);
 }
 
-function ftsQuery(query) {
-  return queryTokens(query).map((token) => `"${token.replaceAll('"', '""')}"*`).join(" AND ");
+function ftsQueryFromTokens(tokens) {
+  return tokens.map((token) => `"${token.replaceAll('"', '""')}"*`).join(" AND ");
+}
+
+function queryPlan(query) {
+  const tokens = queryTokens(query);
+  const favoritesOnly = tokens.some((token) => FAVORITE_TERMS.has(token));
+  const textTokens = favoritesOnly ? tokens.filter((token) => !FAVORITE_TERMS.has(token)) : tokens;
+  return { tokens, favoritesOnly, expression: ftsQueryFromTokens(textTokens) };
 }
 
 function tableExists(database, tableName) {
@@ -119,6 +127,34 @@ function contentExpression(database) {
       FROM vault_ownership_history o WHERE o.account_id = t.account_id AND o.treasure_id = t.id), '') || ' ' ||
     ${evidenceContent}
   )`;
+}
+
+function filterClauses(options, values) {
+  const clauses = [];
+  const category = cleanOptionalText(options.category, "category", 120);
+  const folderId = cleanOptionalText(options.folderId, "folder_id", 200);
+  const locationId = cleanOptionalText(options.locationId, "location_id", 200);
+  const tag = cleanOptionalText(options.tag, "tag", 60)?.toLowerCase() ?? null;
+  if (category) { clauses.push("t.category = ? COLLATE NOCASE"); values.push(category); }
+  if (folderId) { clauses.push("t.folder_id = ?"); values.push(folderId); }
+  if (locationId) { clauses.push("t.location_id = ?"); values.push(locationId); }
+  if (tag) {
+    clauses.push("EXISTS (SELECT 1 FROM vault_tags tg WHERE tg.treasure_id = t.id AND tg.tag = ? COLLATE NOCASE)");
+    values.push(tag);
+  }
+  return clauses;
+}
+
+function orderBy(sort) {
+  return {
+    "updated-desc": "t.updated_at DESC",
+    "updated-asc": "t.updated_at ASC",
+    "created-desc": "t.created_at DESC",
+    "title-asc": "t.title COLLATE NOCASE ASC",
+    "title-desc": "t.title COLLATE NOCASE DESC",
+    "value-desc": "COALESCE(t.estimated_value_cents, -1) DESC, t.title COLLATE NOCASE ASC",
+    "year-desc": "COALESCE(t.year, -1) DESC, t.title COLLATE NOCASE ASC"
+  }[sort];
 }
 
 export function createVaultSearchService({ filename } = {}) {
@@ -246,45 +282,43 @@ export function createVaultSearchService({ filename } = {}) {
 
   function search(identity, query, options = {}) {
     const collector = requireIdentity(identity);
-    const expression = ftsQuery(query);
+    const plan = queryPlan(query);
     const limit = integer(options.limit ?? 50, "search_limit", { min: 1, max: 200 });
     const offset = integer(options.offset ?? 0, "search_offset", { min: 0, max: 10_000_000 });
-    if (!expression) return { ids: [], limit, offset, hasMore: false, searchApplied: false, queryTokens: [] };
-    synchronize(collector);
-
-    const category = cleanOptionalText(options.category, "category", 120);
-    const folderId = cleanOptionalText(options.folderId, "folder_id", 200);
-    const locationId = cleanOptionalText(options.locationId, "location_id", 200);
-    const tag = cleanOptionalText(options.tag, "tag", 60)?.toLowerCase() ?? null;
     const sort = typeof options.sort === "string" && SORTS.has(options.sort) ? options.sort : "updated-desc";
-    const clauses = ["vault_extended_search MATCH ?", "s.account_id = ?"];
-    const values = [expression, collector.id];
-    if (category) { clauses.push("t.category = ? COLLATE NOCASE"); values.push(category); }
-    if (folderId) { clauses.push("t.folder_id = ?"); values.push(folderId); }
-    if (locationId) { clauses.push("t.location_id = ?"); values.push(locationId); }
-    if (tag) {
-      clauses.push("EXISTS (SELECT 1 FROM vault_tags tg WHERE tg.treasure_id = t.id AND tg.tag = ? COLLATE NOCASE)");
-      values.push(tag);
+    if (!plan.expression && !plan.favoritesOnly) return { ids: [], limit, offset, hasMore: false, searchApplied: false, queryTokens: [] };
+    if (plan.favoritesOnly && !tableExists(database, "vault_favorites")) {
+      return { ids: [], limit, offset, hasMore: false, searchApplied: true, queryTokens: plan.tokens, favoriteFilterApplied: true };
     }
-    const orderBy = {
-      "updated-desc": "t.updated_at DESC",
-      "updated-asc": "t.updated_at ASC",
-      "created-desc": "t.created_at DESC",
-      "title-asc": "t.title COLLATE NOCASE ASC",
-      "title-desc": "t.title COLLATE NOCASE DESC",
-      "value-desc": "COALESCE(t.estimated_value_cents, -1) DESC, t.title COLLATE NOCASE ASC",
-      "year-desc": "COALESCE(t.year, -1) DESC, t.title COLLATE NOCASE ASC"
-    }[sort];
-    const rows = database.prepare(`SELECT s.treasure_id FROM vault_extended_search s
-      JOIN vault_treasures t ON t.account_id = s.account_id AND t.id = s.treasure_id
-      WHERE ${clauses.join(" AND ")} ORDER BY ${orderBy} LIMIT ? OFFSET ?`).all(...values, limit + 1, offset);
+
+    const values = [];
+    const clauses = [];
+    let from;
+    if (plan.expression) {
+      synchronize(collector);
+      from = "vault_extended_search s JOIN vault_treasures t ON t.account_id = s.account_id AND t.id = s.treasure_id";
+      clauses.push("vault_extended_search MATCH ?", "s.account_id = ?");
+      values.push(plan.expression, collector.id);
+    } else {
+      from = "vault_treasures t";
+      clauses.push("t.account_id = ?");
+      values.push(collector.id);
+    }
+    if (plan.favoritesOnly) {
+      clauses.push("EXISTS (SELECT 1 FROM vault_favorites vf WHERE vf.account_id = t.account_id AND vf.treasure_id = t.id)");
+    }
+    clauses.push(...filterClauses(options, values));
+
+    const rows = database.prepare(`SELECT t.id AS treasure_id FROM ${from}
+      WHERE ${clauses.join(" AND ")} ORDER BY ${orderBy(sort)} LIMIT ? OFFSET ?`).all(...values, limit + 1, offset);
     return {
       ids: rows.slice(0, limit).map((row) => row.treasure_id),
       limit,
       offset,
       hasMore: rows.length > limit,
       searchApplied: true,
-      queryTokens: queryTokens(query)
+      queryTokens: plan.tokens,
+      favoriteFilterApplied: plan.favoritesOnly
     };
   }
 
