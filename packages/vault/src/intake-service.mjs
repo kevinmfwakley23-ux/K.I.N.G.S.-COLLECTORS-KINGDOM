@@ -3,12 +3,15 @@ import { VaultError } from "./service.mjs";
 
 const IDENTIFIER_TYPES = new Set([
   "barcode", "upc", "ean", "isbn", "catalog", "serial", "sku", "custom",
-  "pokemon-card-id", "pokemon-set-number", "mtg-scryfall-id", "mtg-set-number", "psa-cert"
+  "pokemon-card-id", "pokemon-set-number", "mtg-scryfall-id", "mtg-set-number", "psa-cert",
+  "sports-card-ucid", "sports-card-set-number"
 ]);
 const SOURCE_TYPES = new Set(["manual", "camera"]);
 const POKEMON_TYPES = new Set(["pokemon-card-id", "pokemon-set-number"]);
 const MTG_TYPES = new Set(["mtg-scryfall-id", "mtg-set-number"]);
+const SPORTS_CARD_TYPES = new Set(["sports-card-ucid", "sports-card-set-number"]);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const TYPED_CARD_ID_RE = /^(UC|US)[A-Z0-9]{11}$/;
 
 function requireCollector(identity) {
   if (!identity?.id) throw new VaultError("unauthorized", "Authentication is required.", 401);
@@ -23,13 +26,15 @@ function cleanIdentifierType(value) {
     "isbn-10": "isbn", "isbn-13": "isbn", "catalog-number": "catalog", "serial-number": "serial",
     "pokemon-card": "pokemon-set-number", "pokemon-tcg": "pokemon-set-number",
     "magic-card": "mtg-set-number", "magic-the-gathering": "mtg-set-number", mtg: "mtg-set-number",
-    psa: "psa-cert", "psa-certification": "psa-cert"
+    psa: "psa-cert", "psa-certification": "psa-cert",
+    "the-card-api-ucid": "sports-card-ucid", "sports-ucid": "sports-card-ucid",
+    "the-card-api-set-number": "sports-card-set-number"
   };
   const result = aliases[normalized] ?? normalized;
   if (!IDENTIFIER_TYPES.has(result)) {
     throw new VaultError(
       "invalid_intake_identifier_type",
-      "Identifier type must be barcode, UPC, EAN, ISBN, Pokémon card ID, Pokémon set/card number, Magic Scryfall ID, Magic set/collector number, PSA certification number, catalog, serial, SKU, or custom."
+      "Identifier type must be barcode, UPC, EAN, ISBN, Pokémon card ID, Pokémon set/card number, Magic Scryfall ID, Magic set/collector number, PSA certification number, sports-card UCID, sports-card set/card number, catalog, serial, SKU, or custom."
     );
   }
   return result;
@@ -96,6 +101,36 @@ function cleanPsaCert(value) {
   return cleaned;
 }
 
+function cleanSportsTypedId(value, prefix, label) {
+  const cleaned = String(value ?? "").normalize("NFKC").trim().toUpperCase().replace(/-/g, "");
+  if (!TYPED_CARD_ID_RE.test(cleaned) || !cleaned.startsWith(prefix) || cleaned.length !== 13) {
+    throw new VaultError("invalid_intake_identifier", `${label} must be a valid ${prefix}- typed identifier.`);
+  }
+  const body = cleaned.slice(2);
+  return `${prefix}-${body.slice(0, 5)}-${body.slice(5, 10)}-${body.slice(10)}`;
+}
+
+function cleanSportsCardNumber(value) {
+  const cleaned = String(value ?? "").normalize("NFKC").trim().replace(/^#\s*/, "");
+  if (!cleaned || cleaned.length > 80 || /[/:]/.test(cleaned) || /[^\x20-\x7E]/.test(cleaned)) {
+    throw new VaultError("invalid_intake_identifier", "Sports-card printed card number must contain 1 to 80 printable characters and may not contain slash or colon.");
+  }
+  return cleaned;
+}
+
+function parseSportsCardSetNumber(value) {
+  const cleaned = String(value ?? "").normalize("NFKC").trim();
+  const slash = cleaned.indexOf("/");
+  const colon = cleaned.indexOf(":");
+  const separatorIndex = slash >= 0 ? slash : colon;
+  if (separatorIndex < 0 || cleaned.indexOf("/", separatorIndex + 1) >= 0 || cleaned.indexOf(":", separatorIndex + 1) >= 0) {
+    throw new VaultError("invalid_intake_identifier", "Sports-card set/card lookup requires exactly one set USID and printed card number, for example US-J28FC-5H09C-4/27.");
+  }
+  const setUsid = cleanSportsTypedId(cleaned.slice(0, separatorIndex), "US", "Sports-card set USID");
+  const cardNumber = cleanSportsCardNumber(cleaned.slice(separatorIndex + 1));
+  return Object.freeze({ setUsid, cardNumber, normalized: `${setUsid}/${cardNumber}` });
+}
+
 function cleanIdentifierValue(value, type) {
   if (!["string", "number"].includes(typeof value)) throw new VaultError("invalid_intake_identifier", "An identifier value is required.");
   const cleaned = String(value).normalize("NFKC").trim();
@@ -118,6 +153,8 @@ function cleanIdentifierValue(value, type) {
     return `${parsed.setCode}/${parsed.collectorNumber}`;
   }
   if (type === "psa-cert") return cleanPsaCert(cleaned);
+  if (type === "sports-card-ucid") return cleanSportsTypedId(cleaned, "UC", "Sports-card UCID");
+  if (type === "sports-card-set-number") return parseSportsCardSetNumber(cleaned).normalized;
   return cleaned;
 }
 
@@ -131,6 +168,11 @@ function normalizeIdentifier(value, type) {
     return `${parsed.setCode.toUpperCase()}/${parsed.collectorNumber.toUpperCase()}`;
   }
   if (type === "psa-cert") return cleanPsaCert(value);
+  if (type === "sports-card-ucid") return cleanSportsTypedId(value, "UC", "Sports-card UCID");
+  if (type === "sports-card-set-number") {
+    const parsed = parseSportsCardSetNumber(value);
+    return `${parsed.setUsid}/${parsed.cardNumber.toUpperCase()}`;
+  }
   return value.replace(/\s+/g, " ").trim().toUpperCase();
 }
 
@@ -165,6 +207,7 @@ function aliasKeys(type) {
   if (type === "serial") aliases.add("catalog");
   if (POKEMON_TYPES.has(type)) { aliases.add("catalog"); aliases.add("pokemon-card-id"); aliases.add("pokemon-set-number"); }
   if (MTG_TYPES.has(type)) { aliases.add("catalog"); aliases.add("mtg-scryfall-id"); aliases.add("mtg-set-number"); }
+  if (SPORTS_CARD_TYPES.has(type)) { aliases.add("catalog"); aliases.add("sports-card-ucid"); aliases.add("sports-card-set-number"); }
   return aliases;
 }
 
@@ -178,9 +221,15 @@ function mtgCatalogComparable(value) {
   catch { try { return normalizeIdentifier(String(value ?? ""), "mtg-set-number"); } catch { return null; } }
 }
 
+function sportsCatalogComparable(value) {
+  try { return normalizeIdentifier(String(value ?? ""), "sports-card-ucid"); }
+  catch { try { return normalizeIdentifier(String(value ?? ""), "sports-card-set-number"); } catch { return null; } }
+}
+
 function normalizedComparable(value, type, requestedType) {
   if (type === "catalog" && POKEMON_TYPES.has(requestedType)) return pokemonCatalogComparable(value);
   if (type === "catalog" && MTG_TYPES.has(requestedType)) return mtgCatalogComparable(value);
+  if (type === "catalog" && SPORTS_CARD_TYPES.has(requestedType)) return sportsCatalogComparable(value);
   return normalizeIdentifier(String(value ?? ""), type);
 }
 

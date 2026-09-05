@@ -11,6 +11,8 @@ export function intakeTypeLabel(type) {
     "pokemon-set-number": "Pokémon set + card number",
     "mtg-scryfall-id": "Magic Scryfall printing ID",
     "mtg-set-number": "Magic set + collector number",
+    "sports-card-ucid": "Sports-card UCID",
+    "sports-card-set-number": "Sports-card set + card number",
     "psa-cert": "PSA certification number",
     catalog: "Catalog number",
     serial: "Serial number",
