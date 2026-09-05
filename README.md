@@ -6,9 +6,11 @@ A place for collectors to keep inventory logs of their treasures, get A.I.-assis
 
 Active milestone: **IMP-005 — Royal Vault, Phase 1**.
 
-**IMP-004 — Great Hall & Navigation is implemented and committed.** The repository currently contains the production foundation, persistent identity/session core, the server-side K.I.N.G.S. AI application boundary, authenticated Great Hall, castle-and-grounds navigation, persistent room-aware Keeper, Royal Vault entrance, Kingdom Street Market entrance, and current Render deployment wiring.
+**Latest verified checkpoint:** the first authoritative Royal Vault foundation is implemented and passing the repository quality gate. The Vault now has persistent owner-scoped treasure records, collection groups, arbitrary-depth physical locations, search/filter/sort, condition/variant/acquisition data, duplicate candidates, treasure history, real statistics, currency-separated recorded purchase totals, complete JSON export, non-mutating import validation, authenticated APIs, Great Hall integration, and a functional responsive `/vault.html` workspace.
 
-The next product build is the first real authoritative Royal Vault collection-management domain. Do not rebuild IMP-004 unless a regression is discovered.
+**IMP-004 — Great Hall & Navigation remains complete.** Do not rebuild earlier milestones unless a verified regression requires it.
+
+The next validated IMP-005 work is the secure treasure image/document media pipeline, followed by transactional validated import/bulk intake. Camera/barcode scanning, external recognition/catalog providers, and evidence-backed market valuation are not yet claimed as live.
 
 ## Durable mission progress ledger
 
@@ -39,7 +41,7 @@ Fresh research is mandatory before meaningful build sessions, but external produ
 ## Core engineering rules
 
 - Build real, executable, production-oriented functionality. Do not substitute simulated integrations, decorative-only functionality presented as complete, or nonfunctional UI for required behavior.
-- Validate changes with the strongest available build, type-check, lint, and test commands before treating work as complete.
+- Validate changes with the strongest available build, type-check, lint, test, production-build, and dependency-audit checks before treating work as complete.
 - Keep architecture, implementation status, and build instructions documented as the application grows.
 - Update `docs/MISSION-PROGRESS.md` after every substantial implementation commit or verified milestone.
 - Prefer small, reviewable commits with clear verification evidence.
@@ -68,15 +70,33 @@ IMP-004 established the authenticated central Kingdom experience:
 - room-aware Keeper continuity at Kingdom entrances;
 - responsive mobile, tablet, Chromebook, and desktop layouts.
 
-Collection totals, marketplace highlights, and notification counts remain explicitly unavailable until their authoritative services are implemented. The Great Hall does not fabricate those values.
+With the authoritative Vault service wired, the Great Hall now opens the Vault entrance and shows real Vault record/unit counts. Marketplace highlights, notifications, and evidence-backed market value remain unavailable until their real services exist; the Great Hall does not fabricate them.
 
 ## Royal Vault — active build
 
-IMP-005 begins the first real authoritative collection domain.
+The Royal Vault now establishes one permanent treasure identity that later Kingdom services can reuse rather than duplicating item records.
 
-The Vault must establish a permanent treasure identity that later Kingdom services can reuse rather than duplicating item records. Phase 1 targets real treasure CRUD, collection grouping, extensible collectible types, search/filter/sort, condition and variant handling, media foundations, duplicate detection, import/export foundations, physical storage location, real collection statistics, change history, collector authorization, and The Keeper as Royal Curator.
+### Verified current capability
 
-Competitive research remains mandatory before and during this milestone so strong collector workflows can be adopted as Kingdom-native improvements rather than copied superficially.
+- persistent owner-scoped treasure records;
+- create, read, update, and archive behavior;
+- collection grouping;
+- arbitrary-depth physical storage locations such as room → safe → shelf → binder → page → pocket;
+- broad categories plus custom attributes and provider-independent external identifiers;
+- normalized accent-tolerant search, filters, and sorting;
+- condition, variant, quantity, acquisition date, and recorded purchase cost;
+- duplicate candidates without automatic destructive merging;
+- treasure change history;
+- real statistics based only on stored records;
+- purchase-cost totals kept separate by currency;
+- versioned JSON export including archived records;
+- validation-only JSON import preview;
+- authenticated Vault APIs;
+- functional responsive Royal Vault browser workspace;
+- The Keeper acting as Royal Curator;
+- media persistence schema ready for the next implementation step, without pretending file uploads are already live.
+
+Current Vault competitive research is recorded under `docs/research/2026-09-05-IMP-005-VAULT-COMPETITIVE-RECON.md`.
 
 ## Product direction
 
@@ -97,6 +117,8 @@ npm ci
 npm run verify
 ```
 
-`npm run verify` runs repository policy/syntax checks, module-contract checks, automated tests, the production build, and artifact verification. GitHub Actions is the required remote quality gate before a milestone is treated as verified.
+`npm run verify` runs repository policy/syntax checks, module-contract checks, automated tests, the production build, and artifact verification. GitHub Actions also audits production dependencies and is the required remote quality gate before a milestone is treated as verified.
+
+Latest verified Vault foundation quality run: **Kingdom Quality Gates #286**, verify job passed after the normalized-search correction.
 
 Architecture notes live in `docs/architecture/`.
