@@ -1,4 +1,5 @@
 import { createKeeperController } from "./keeper.js";
+import { createProvenanceSection } from "./vault-provenance.js";
 
 const state = {
   folders: [],
@@ -504,15 +505,17 @@ async function openDetail(id) {
     detailField("Collector notes", treasure.notes, { full: true })
   );
 
+  fields.append(await createProvenanceSection(treasure.id));
+
   const history = element("section", "detail-history");
-  history.append(element("h3", "", "Vault history"));
+  history.append(element("h3", "", "Vault audit history"));
   const historyList = element("ul", "detail-history-list");
   for (const event of historyResult.history) {
     const item = element("li");
     item.append(element("span", "", event.eventType.replace(/^vault\./, "").replaceAll("_", " ")), element("time", "", formatDate(event.createdAt)));
     historyList.append(item);
   }
-  if (!historyResult.history.length) historyList.append(element("li", "", "No audit history recorded."));
+  if (!historyResult.history.length) historyList.append(element("li", "", "No technical audit history recorded."));
   history.append(historyList);
   fields.append(history);
   layout.append(gallery, fields);
