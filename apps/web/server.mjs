@@ -41,6 +41,11 @@ const SECURITY_HEADERS = Object.freeze({
   "Permissions-Policy": "camera=(), microphone=(self), geolocation=(), on-device-speech-recognition=(self)"
 });
 
+const VAULT_STATIC_SECURITY_HEADERS = Object.freeze({
+  ...SECURITY_HEADERS,
+  "Permissions-Policy": "camera=(self), microphone=(self), geolocation=(), on-device-speech-recognition=(self)"
+});
+
 const DEFAULT_MAX_JSON_BYTES = 64 * 1024;
 
 class HttpError extends Error {
@@ -70,6 +75,10 @@ function normalizeStaticPath(urlPathname) {
   return relative;
 }
 
+function staticSecurityHeaders(pathname) {
+  return pathname === "/vault.html" ? VAULT_STATIC_SECURITY_HEADERS : SECURITY_HEADERS;
+}
+
 async function sendStatic(response, method, pathname, publicRoot) {
   const relative = normalizeStaticPath(pathname);
   if (!relative) return false;
@@ -83,7 +92,7 @@ async function sendStatic(response, method, pathname, publicRoot) {
     if (!fileStat.isFile()) return false;
 
     response.writeHead(200, {
-      ...SECURITY_HEADERS,
+      ...staticSecurityHeaders(pathname),
       "Content-Type": CONTENT_TYPES[extname(filePath)] ?? "application/octet-stream",
       "Content-Length": fileStat.size,
       "Cache-Control": pathname === "/" ? "no-cache" : "public, max-age=300"
@@ -294,9 +303,11 @@ async function handleVaultRoute({
       intake: {
         available: Boolean(vaultIntakeService),
         ...(vaultIntakeService ? vaultIntakeService.stats(identity) : { pendingCount: null, pendingCaptureCount: null }),
-        cameraAvailable: false,
+        cameraAvailable: Boolean(vaultIntakeService),
+        cameraRequiresSecureContext: Boolean(vaultIntakeService),
+        cameraDetectionProvider: vaultIntakeService ? "browser-native-barcode-detector" : null,
         message: vaultIntakeService
-          ? "The Royal Intake Queue stores rapid identifier captures server-side for cross-device review. Capture does not assert exact collectible identity."
+          ? "The Royal Intake Queue stores rapid identifier captures server-side for cross-device review. Progressive camera barcode capture is offered on secure browsers that expose native BarcodeDetector support; manual intake remains available everywhere. Captures do not assert exact collectible identity."
           : "The Royal Intake Queue is unavailable until its service is wired."
       }
     }, method);
