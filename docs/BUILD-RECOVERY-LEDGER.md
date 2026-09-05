@@ -1,56 +1,91 @@
 # K.I.N.G.S. Collector's Kingdom — Build Recovery Ledger
 
-**Purpose:** persistent engineering recovery record for power loss, browser/session loss, machine failure, new-chat continuation, or contributor handoff.
+**Purpose:** durable engineering recovery state for power loss, browser/session loss, machine failure, new-chat continuation, or contributor handoff.
 
-This file is a living checkpoint. Update it at every meaningful verified milestone, whenever the active plan changes, and whenever research produces a decision that materially affects implementation.
+Update this file after every meaningful green/red checkpoint, architecture-plan change, or research decision that materially changes implementation.
 
 ## Recovery authority order
 
-When resuming work, use this order:
-
 1. Locked **K.I.N.G.S. Collector's Kingdom Construction Documents**.
-2. This recovery ledger plus the current repository architecture/tests/verification records.
-3. The current branch/PR and latest green GitHub Actions evidence.
+2. This ledger + current verified repository architecture/tests/verification records.
+3. Current branch/PR state and exact-head CI evidence.
 4. Fresh competitor, GitHub, app-store, standards, API, and web research.
 
-Research may improve implementation but may not silently override the locked Construction Documents.
+Research improves implementation; it never silently overrides locked product architecture.
 
-## Current recovery checkpoint — 2026-09-05
+---
+
+## Current checkpoint — 2026-09-05
+
+### Working branch
 
 - Repository: `kevinmfwakley23-ux/K.I.N.G.S.-COLLECTORS-KINGDOM`
-- Active branch: `build/imp-005-vault-phase1`
-- Draft PR: `#7 — IMP-005: build Royal Vault Phase 1`
-- Base branch: `main`
-- Base commit: `8e5fd453e477997b9257977f8ace07e617e7fc7a`
-- Current verified candidate commit: `d9491394db8e9e796726e684f43dadfb32698957`
-- Latest fully green CI: **Kingdom Quality Gates run #251 — SUCCESS**
-- Previous broad baseline: commit `6eaae868f24eb350d101830bee8771c55f859b03`, run #244 — SUCCESS.
-- Latest red event: run #250 on descendant head `dde8438e1fd6ea224357e1b586aa7249aa0cc955` failed one new improvement test because `setSummaryService.list()` was called before the optional `vault_collection_sets` schema existed in that partial fixture.
-- Repair: collection-set improvement signals now activate only when both the summary service is present **and** the `vault_collection_sets` table actually exists. This preserves optional-enrichment startup behavior.
-- Repair verification: run #251 passed quality gates and production dependency audit.
-- Current next work is **not yet verified**: authenticated HTTP/runtime/Keeper/UI integration for the now-green collection-improvement authority.
-- PR remains **DRAFT**.
+- Product branch: `build/imp-005-vault-phase1`
+- Product integration PR: **#7 — IMP-005: build Royal Vault Phase 1** — DRAFT
+- Exact verified product-branch commit: `cc8c41d761205565ff70ffc57d5338ef65b95ae5`
+- Exact-head CI: **Kingdom Quality Gates run #276 — SUCCESS**
+- CI verified: strict lint/policy, module contracts, complete automated tests, production build/artifact verification, production dependency audit.
+
+### CI-only verification lane
+
+`main` is currently receiving a separate concurrent Kingdom build stream and conflicts with PR #7. Because a conflicting PR cannot generate a trustworthy merge-ref CI run, a temporary verification lane exists:
+
+- stable base branch: `verification/imp-005-ci-base`
+- base commit: `8e5fd453e477997b9257977f8ace07e617e7fc7a` (verified IMP-004 merge)
+- CI-only draft PR: **#8 — CI verification only: IMP-005 branch against locked IMP-004 base**
+- never merge PR #8; it exists only to trigger exact-head `pull_request` CI while `main` is moving.
+
+Run #276 was triggered through this lane and proves commit `cc8c41d...` directly.
+
+### Concurrent `main` state
+
+At this checkpoint, `main` has advanced independently from the IMP-004 merge base with:
+
+- Render/private-network K.I.N.G.S. routing configuration work;
+- `docs/MISSION-PROGRESS.md` durable progress governance;
+- a separate early IMP-005 Vault implementation touching `server.mjs`, Vault store/service/tests, Great Hall wiring, and a Vault page shell.
+
+Do **not** force-reset, overwrite, blindly rebase, or blindly merge this branch over `main`.
+
+Safe reconciliation rule:
+
+1. wait for or detect a stable `main` point;
+2. inventory main-only changes;
+3. retain the richer verified implementation when both branches implement the same Vault responsibility;
+4. selectively preserve useful main-only infrastructure/governance improvements;
+5. create an explicit resolved integration commit/branch;
+6. run the full gate on the combined tree;
+7. only then restore PR #7 to mergeable review status.
+
+A known useful main-only improvement already identified is support for `KINGDOM_KINGS_AI_HOSTPORT`, which allows portable private-network K.I.N.G.S. routing (useful on Render without hard-coding Render into domain code).
+
+---
 
 ## Current milestone
 
 **IMP-005 — Royal Vault Phase 1**
 
-IMP-004 Great Hall & Navigation is merged and verified on `main`.
+IMP-004 Great Hall & Navigation is verified and forms the original base of this branch.
 
-IMP-005 is substantially implemented and automated-hardened. It is intentionally not considered complete or merge-ready until the manual accessibility/cross-device acceptance matrix is executed and any resulting defects are repaired and regression-protected.
+IMP-005 is substantially implemented and automated-hardened. It is not complete or merge-ready until required manual accessibility/cross-device acceptance is performed and concurrent-main integration is reconciled safely.
+
+---
 
 ## Non-negotiable engineering rules
 
-- No fake code, simulated integrations presented as real, decorative success paths, fake data, fake AI identification, fake valuations, fake verification, or fake Marketplace behavior.
-- No feature is called verified until the exact relevant head passes the strongest available lint, contract, test, build/artifact, and dependency-audit gates.
-- Business rules belong behind service/domain boundaries, not scattered browser logic.
-- Collector identity/ownership boundaries fail closed.
-- AI can explain, recommend, retrieve, and reason over authorized context; Collector's Kingdom remains the authority for product mutations.
-- Never auto-merge duplicate records.
-- Never self-promote collector-entered authentication/certification references to externally verified.
-- Estimated value remains source/as-of evidence, never guaranteed sale value.
+- No fake code, fake integrations, fake data, fake success paths, fake valuations, fake verification, fake Vision identification, or fake Marketplace commerce.
+- A capability is not called verified unless its exact relevant head passes the strongest available automated gates.
+- Collector data/identity boundaries fail closed.
+- Business rules stay in service/domain boundaries, not scattered browser code.
+- AI may retrieve, explain, recommend, and reason over authorized context; Collector's Kingdom authorizes and executes product mutations.
+- Never auto-merge or auto-delete duplicate treasures.
+- Never auto-apply recommended tags or collection-improvement suggestions.
+- Collector-entered certification/authentication references remain `not-checked` until a real external verifier confirms them.
+- Estimated values remain evidence/source/as-of estimates, not guaranteed sale values.
 - Preserve unrestricted lawful custom collectible categories.
-- Prefer future-ready provider-independent seams over hard-coded vendor coupling.
+- Favor provider-independent seams and portable deployment boundaries.
+
+---
 
 ## K.I.N.G.S. parent rule
 
@@ -58,233 +93,258 @@ K.I.N.G.S. AI is the parent intelligence platform for Collector's Kingdom and Au
 
 During Kingdom work:
 
-- **Do not modify K.I.N.G.S. AI. Treat it as read-only.**
-- Proven deterministic K.I.N.G.S. logic may be copied/pinned into the Kingdom when appropriate.
-- Privileged model-provider credentials/routing/web execution remain centralized behind K.I.N.G.S. runtime boundaries rather than being copied into the browser or duplicated casually.
-- Kingdom owns collector records, Vault truth, product permissions, Marketplace domain decisions, and collector-authorized mutations.
+- **K.I.N.G.S. AI is read-only. Do not modify it.**
+- Proven deterministic parent logic may be copied/pinned into Kingdom when appropriate.
+- Provider credentials, privileged model routing, and governed external execution remain behind K.I.N.G.S. runtime boundaries.
+- Kingdom owns collector records, Vault truth, product permissions, Marketplace domain actions, and collector-authorized mutations.
 
-K.I.N.G.S.-derived deterministic utilities already pinned/copied into the Kingdom include memory-context selection, memory relevance, knowledge retrieval, context optimization, and budget enforcement.
+Pinned/adapted deterministic K.I.N.G.S. concepts currently present in Kingdom include:
+
+- memory-context selection;
+- memory relevance;
+- knowledge retrieval;
+- context optimization;
+- budget enforcement.
+
+---
 
 ## Deployment note
 
-Render is a **possible future deployment target**. Do not introduce Render-specific lock-in unless the owner explicitly selects it. Keep storage/runtime contracts portable so the Kingdom can be deployed elsewhere if needed.
+Render is a possible deployment target. Keep product/storage/service contracts portable; do not create unnecessary Render lock-in.
 
-## Verified IMP-005 capability inventory
+Main's `KINGDOM_KINGS_AI_HOSTPORT` configuration pattern is approved for eventual reconciliation because it is generic private-network support rather than Render-specific domain coupling.
 
-The following capabilities were automated-verified on or before the current #251 checkpoint.
+---
 
-### Vault data and organization
+## Verified IMP-005 capability inventory at `cc8c41d...`
 
-- owner-scoped SQLite persistence with WAL/foreign keys;
+### Vault authority and organization
+
+- owner-scoped persistent SQLite Vault with WAL/foreign keys;
 - nested conceptual collection folders;
-- nested physical locations such as room/safe/cabinet/display-case/shelf/binder/page/pocket/box/row/divider/container;
-- flexible multi-category taxonomy plus unrestricted lawful custom categories;
-- category-specific extensible treasure attributes with source/verification state;
+- nested physical locations (room/safe/cabinet/display-case/shelf/binder/page/pocket/box/row/divider/container/other);
+- flexible multi-category taxonomy plus lawful custom categories;
+- category-specific extensible attributes with source and verification state;
 - explicit Favorites;
 - structured ownership/provenance history separate from technical audit history;
-- collection statistics;
-- conservative possible-duplicate detection with no automatic merge.
+- authoritative statistics;
+- conservative possible-duplicate detection.
 
-### Search and navigation
+### Search, views, and scale
 
 - dirty-tracked incremental FTS search;
-- searchable core fields, tags, organization, category attributes, provenance, evidence metadata, and private Marketplace-preparation text;
-- natural-query cleanup and Favorite-aware queries;
-- structured category/folder/location/tag filtering;
-- pagination and saved searches/views;
-- Grid, List, Binder, Gallery modes;
-- system views: All Treasures, Recently Added, Recently Updated, Favorites, Possible Duplicates, Incomplete Sets, Marketplace Ready;
-- account-scoped query-plan-verified indexes for high-value collection sorts/views.
+- search across core record data, tags, organization, category fields, provenance, evidence metadata, and private Marketplace-preparation text;
+- natural-query cleanup and Favorite-aware natural queries;
+- structured filters, sorts, pagination;
+- Saved Vault Views;
+- Grid/List/Binder/Gallery;
+- All Treasures, Recently Added, Recently Updated, Favorites, Possible Duplicates, Incomplete Sets, Marketplace Ready;
+- account-scoped collection-view indexes verified through SQLite query plans.
 
-### Collection sets
+### Collection Sets
 
-- explicit Set -> Expected Entry -> collector-selected Owned Treasure link model;
-- quantity-aware completion/missing counts;
+- explicit `Set -> Expected Entry -> collector-selected Owned Treasure` model;
+- quantity-aware owned/missing counts;
 - derived completion percentage;
 - real Incomplete Sets workflow;
-- aggregate summary path so sidebars/Keeper do not load complete checklist graphs;
+- scalable aggregate set summaries;
 - no title-based auto-completion.
 
-### Media/evidence/recovery
+### Media, evidence, portability, recovery
 
-- authenticated item-image upload/retrieval;
-- JPEG/PNG/WebP/HEIC/HEIF byte-signature validation before storage;
+- authenticated image intake/retrieval;
+- JPEG/PNG/WebP/HEIC/HEIF signature validation before storage;
 - SHA-256 media integrity metadata;
-- protected supporting documents/evidence with MIME/signature validation and trust state;
-- CSV preview-before-commit import with exact-file fingerprint and rollback;
+- protected supporting evidence documents with MIME/signature validation and explicit trust state;
+- preview-before-commit CSV import with exact-file fingerprint, validation, rollback, and no auto-merge;
 - portable CSV export;
-- verified Vault snapshot/restore primitive covering `vault.sqlite` plus referenced media/evidence;
-- SQLite integrity, foreign-key, file-size, and SHA-256 verification during recovery.
+- verified snapshot/restore primitive covering `vault.sqlite` plus referenced media/evidence;
+- SQLite integrity, foreign-key, file-size, and SHA-256 recovery verification.
 
 ### Marketplace handoff foundation
 
-- private buyer-facing description draft;
+- private listing-description draft;
 - private condition disclosure;
-- transparent derived `Marketplace Ready` handoff state;
-- readiness based on current Vault truth, not an AI score;
-- no false claim of listing, shipping, merchant approval, payment, offer, or sale capability.
+- transparent derived Marketplace handoff readiness;
+- readiness based on real title/category/condition/photo/draft/disclosure state;
+- no false claim of listing publication, pricing, shipping, merchant approval, payment, offer, or sale capability.
 
-### The Keeper / Royal Curator
+### Royal Curator intelligence
 
-- query-grounded retrieval from the collector's real Vault;
-- bounded recent/query treasure summaries;
-- category-specific metadata with trust/source labels;
+- query-grounded retrieval from collector's actual Vault;
+- bounded recent/query treasure context;
+- category metadata with trust/source labels;
 - bounded incomplete-set summaries;
 - collector-only grounded tag recommendations;
-- bounded possible-duplicate summaries;
-- no certificate/reference strings in default context;
-- no checklist graph leakage;
-- no automatic tag application;
-- no automatic duplicate merge/delete;
+- bounded possible-duplicate groups;
+- bounded grounded collection-improvement recommendations;
+- no certificate/reference leakage in default context;
+- no full set graph or private document bytes in AI context;
+- no automatic collection mutation;
 - no Vault context outside the Vault room.
 
-### Grounded collection-improvement core
+### Grounded collection stewardship — newly verified in #276
 
-The deterministic improvement authority itself is now **verified by run #251**. It derives recommendations from authenticated collector-owned Vault state and does not mutate records.
+`packages/vault/src/improvements.mjs` + HTTP/runtime/Keeper/UI integration are now fully wired and verified.
 
-Current verified signals:
+Signals are derived from authenticated collector-owned Vault state:
 
 - missing physical storage location;
 - missing actual-item photographs;
 - missing recorded condition;
-- missing category-specific details when that optional table exists;
-- missing ownership/provenance history when that optional table exists;
-- valued/purchase-recorded treasures lacking attached supporting evidence when that optional table exists;
-- incomplete Collection Sets when the set schema/service exists;
+- missing category-specific details;
+- missing ownership/provenance history;
+- valued/purchase-recorded treasures without supporting evidence;
+- explicit incomplete Collection Sets;
 - possible duplicate groups;
-- Marketplace preparation already started by the collector but still incomplete when that optional table exists.
+- Marketplace preparation already started by the collector but still incomplete.
 
-Recommendation contract:
+Trust/behavior contract:
 
 - deterministic recommendation ID;
 - priority;
-- affected-record count;
-- at most three collector-owned example records;
+- affected count;
+- bounded collector-owned examples;
 - plain-language reason;
-- concrete next action;
+- concrete suggested next action;
 - `basis: authenticated-collector-vault-state`;
 - `automaticApplication: false`;
 - no cross-collector learning;
-- no model-generated opaque health score;
+- no opaque model-generated collection-health score;
 - no invented provenance/condition/verification facts.
 
-### Accessibility / responsive hardening
+Production-schema activation was explicitly tested against:
 
-Automated safeguards include:
+- `vault_evidence_documents` for evidence state;
+- `vault_marketplace_preparation.listing_description` / `condition_disclosure` for Marketplace preparation;
+- real image records;
+- real set schema;
+- real ownership/attribute tables when available.
 
-- semantic document structure and skip navigation;
+The visible Vault sidebar now includes a **Collection stewardship** panel with priority, affected count, examples, explanation, next action, explicit advisory language, manual Refresh, and no mutation API.
+
+### Accessibility/responsive automated hardening
+
+- semantic structure and skip navigation;
 - explicit dialog accessible names;
-- deliberate modal initial focus;
-- invoker focus restoration;
+- deliberate modal initial focus and invoker restoration;
 - keyboard-operable treasure cards;
-- status/live regions and loading semantics;
-- meaningful treasure image alternative text;
-- visible focus, file-input focus-within treatment;
-- reduced-motion handling;
-- forced-colors handling;
+- live/status/loading semantics;
+- meaningful treasure-image alt text;
+- visible focus and styled file-input focus behavior;
+- reduced-motion support;
+- forced-colors support;
 - critical text-token contrast tests;
-- responsive breakpoints and production artifact requirements.
+- responsive breakpoints and release-required accessibility assets.
 
-## Current unverified work — collection improvement integration
+---
 
-The core `packages/vault/src/improvements.mjs` service has passed CI. The next slice is to make that capability real in the running product while retaining its read-only/advisory contract.
+## Important recent failures and fixes
 
-### Next exact steps
+### Run #250 — FAIL
 
-1. Replace the temporary HTTP guard test with a real authenticated read-only improvement HTTP contract.
-2. Add a bounded endpoint such as `GET /api/vault/improvements` with explicit maximum-result metadata/policy.
-3. Instantiate `createVaultImprovementService` in `server-runtime.mjs` after dependent Vault services exist.
-4. Include the service in runtime lifecycle/close handling.
-5. Give Royal Curator only a bounded sanitized improvement summary—no raw SQL state, notes, documents, or mutation authority.
-6. Add a visible Vault “Curator recommendations / improve my collection” section with counts, examples, explanation, and next action.
-7. Make UI language explicit that recommendations are advisory and nothing is changed automatically.
-8. Add owner-isolation HTTP/runtime tests, Keeper context bounds tests, browser wiring tests, and production artifact/type-contract requirements.
-9. Run the complete repository gate on the fully wired head.
-10. Update this ledger, `docs/verification/IMP-005-ACCEPTANCE.md`, `docs/architecture/VAULT.md`, README summary if material, and PR #7 body.
+Cause: collection-improvement service called set-summary logic in a partial fixture before optional set schema existed.
 
-## Fresh research lessons currently adopted
+Fix: set signal activates only when both service + `vault_collection_sets` table exist.
 
-Research records are stored under `docs/research/`; do not rely only on this summary.
+Verification: #251 — SUCCESS.
 
-Useful patterns adopted/improved from current collector/inventory products:
+### Pre-#276 schema audit
 
-- multi-field and saved filtering/views;
-- explicit collection/set completion and missing-item checklists;
-- strong custom-field flexibility instead of rigid hobby-only schemas;
-- hierarchical locations and reusable organization layers;
-- bulk-friendly architecture without silent mass mutation;
-- evidence-backed valuation/history rather than opaque single-number truth;
-- actual-item photos and transparent condition/disclosure for Marketplace handoff;
-- persistent cross-device state as a product goal;
-- advisory AI/coaching only when grounded in actual collection state.
+Found two silent-skip risks before release:
 
-Kingdom-specific improvements over common competitor patterns:
+1. evidence signal looked for `vault_evidence` instead of real `vault_evidence_documents`;
+2. Marketplace signal referenced `description_draft` instead of real `listing_description`.
 
-- one multi-hobby Vault rather than separate hobby silos;
-- category depth without schema redesign;
-- provenance/evidence trust state separated from collector claims;
-- explicit physical-location hierarchy;
-- no auto-merge duplicates;
-- bounded AI context with collector ownership protections;
-- suggestions are explainable and never silently applied;
-- Marketplace handoff remains distinct from commerce publication;
-- recovery is verified rather than assumed.
+Both were corrected and production-schema activation/removal tests added.
 
-## Explicitly deferred / later-phase boundaries
+Verification: exact head `cc8c41d...`, #276 — SUCCESS.
 
-Do not pull these into IMP-005 unless the locked documents require only a seam:
+---
+
+## Current next engineering targets
+
+### A. Keep recovery docs honest
+
+After each substantial change:
+
+- update this ledger;
+- update README short status only when materially needed;
+- reconcile `docs/verification/IMP-005-ACCEPTANCE.md` and `docs/architecture/VAULT.md` when capability boundaries change;
+- update PR #7 after a stable integration checkpoint.
+
+### B. Monitor and reconcile concurrent `main`
+
+Do not race main commit-for-commit. Periodically inventory main once it stops moving rapidly.
+
+Known categories to reconcile:
+
+- generic private K.I.N.G.S. host configuration;
+- `docs/MISSION-PROGRESS.md` governance vs this ledger (converge to one clearly authoritative recovery path rather than two drifting ledgers);
+- any genuinely stronger test/config/deployment changes;
+- parallel Vault code only after capability-level comparison.
+
+### C. Finish remaining locked IMP-005 product-gap audit
+
+Before adding unrelated features, re-read PRD-002 + IMP-005 for remaining Phase-1 requirements such as custom labels/project tracking/grading/auth foundations/sale-history/legacy semantics and decide which are true IMP-005 acceptance requirements versus future-ready seams.
+
+### D. Manual acceptance blockers
+
+PR #7 must remain draft until:
+
+1. keyboard-only pass on built application;
+2. screen-reader/assistive-technology pass;
+3. real-browser/device responsive pass: small phone, large phone, tablet portrait, tablet landscape, Chromebook/laptop, large desktop;
+4. defects found are fixed and regression-protected;
+5. final combined integration tree passes full automated gates.
+
+---
+
+## Explicit later-phase boundaries
+
+Do not pull these into IMP-005 beyond future-ready seams unless locked docs require otherwise:
 
 - real external market valuation providers/history ingestion;
-- real certification-provider verification;
-- Vision identification / AI grading;
+- real external certification verification;
+- AI grading;
+- Vision identification;
 - payments;
 - shipping orchestration;
 - offers;
 - listing publication;
 - Marketplace transactions;
 - automated off-site backup scheduling;
-- true infrastructure point-in-time recovery logs;
+- infrastructure point-in-time log recovery;
 - distributed disaster-recovery orchestration;
-- final notification service;
-- full Observatory/War Room/Treasury/Library phase functionality.
+- full Notification/Observatory/War Room/Treasury/Library implementations.
 
-## Remaining IMP-005 merge blockers
+---
 
-The automated product is substantially hardened. PR #7 must remain draft until these are closed:
-
-1. Manual keyboard-only acceptance on the built app.
-2. Manual screen-reader/assistive-technology pass.
-3. Real browser/device responsive pass covering small phone, large phone, tablet portrait, tablet landscape, Chromebook/laptop, and large desktop.
-4. Fix and regression-protect defects discovered by those passes.
-5. Run the complete automated gate on the repaired final head.
-6. Reconcile `docs/verification/IMP-005-ACCEPTANCE.md` and `docs/verification/IMP-005-ACCESSIBILITY-CROSS-DEVICE.md`.
-7. Only then mark PR #7 ready for review/merge.
-
-## Recovery/startup procedure after interruption
-
-When resuming after a power outage or lost chat/session:
+## Recovery procedure after interruption
 
 1. Read `docs/MISSION-STATEMENT.md`.
-2. Read this `docs/BUILD-RECOVERY-LEDGER.md` completely.
+2. Read this file completely.
 3. Read `docs/verification/IMP-005-ACCEPTANCE.md`.
-4. Read `docs/architecture/VAULT.md` for the current service boundaries.
-5. Inspect PR #7 head and verify it still matches this ledger's recorded checkpoint or note the newer commits.
-6. Find the latest GitHub Actions run for the actual head.
-7. Never assume the latest candidate is green merely because an earlier commit was green.
-8. Read the newest applicable file under `docs/research/` before starting a meaningful new build slice.
-9. Continue from the `Next exact steps` section above.
-10. After the next meaningful green/red checkpoint, update this ledger before moving to another major capability.
+4. Read `docs/architecture/VAULT.md`.
+5. Inspect PR #7 head and current `main` head; do not assume this recorded concurrency state is unchanged.
+6. Inspect PR #8 only for exact-head CI history; never merge it.
+7. Find the newest CI run for the exact working head.
+8. Never infer current green status from an older run.
+9. Read the newest relevant file under `docs/research/` before a meaningful new build slice.
+10. Continue from **Current next engineering targets**.
+11. Update this ledger again after the next meaningful green/red checkpoint.
 
-## Ledger maintenance rule
+## Ledger maintenance requirement
 
-Every meaningful build session should leave enough durable information here that another engineer—or a fresh ChatGPT session with repository access—can determine within minutes:
+A fresh engineer/session should be able to determine within minutes:
 
 - what is being built;
-- why it is being built;
-- which requirements control it;
-- what is already verified;
+- the exact branch/commit under work;
+- the latest proven green checkpoint;
+- recent failures and fixes;
 - what is only candidate work;
-- what failed most recently and why;
-- the exact next engineering step;
-- which research decisions are active;
+- controlling requirements;
+- current research decisions;
+- concurrent-branch hazards;
+- exact next actions;
 - what must not be changed or falsely claimed.
