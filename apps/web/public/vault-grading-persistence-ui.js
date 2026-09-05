@@ -92,6 +92,20 @@ function contourEvidence(snapshot, mediaId) {
   }));
 }
 
+function contourCoverage(snapshot, mediaId, side) {
+  if (!snapshot?.contour?.analyzed) return null;
+  return {
+    detector: "contour",
+    side,
+    sourceMediaIds: [mediaId],
+    completed: true,
+    usableForConditionInference: snapshot.contour.usable === true,
+    reviewCandidateCount: snapshot.contour.signals?.length ?? 0,
+    method: snapshot.contour.method ?? "contrast-silhouette-contour-v1",
+    note: "Browser contour detector completion record. A zero candidate count means the detector ran and isolated no review candidates at this capture quality; it does not prove flawless corners or edges."
+  };
+}
+
 function surfaceEvidence(snapshot, primaryMediaId, companionMediaId, side) {
   if (!snapshot?.surface?.analyzed) return [];
   return (snapshot.surface.signals ?? []).map((signal) => ({
@@ -104,6 +118,20 @@ function surfaceEvidence(snapshot, primaryMediaId, companionMediaId, side) {
     boundingBox: signal.boundingBox,
     note: signal.note
   }));
+}
+
+function surfaceCoverage(snapshot, primaryMediaId, companionMediaId, side) {
+  if (!snapshot?.surface?.analyzed) return null;
+  return {
+    detector: "paired-raking-light",
+    side,
+    sourceMediaIds: [primaryMediaId, companionMediaId],
+    completed: true,
+    usableForConditionInference: true,
+    reviewCandidateCount: snapshot.surface.signals?.length ?? 0,
+    method: snapshot.surface.method ?? "paired-raking-light-difference-v1",
+    note: "Browser paired-raking-light detector completion record. A zero candidate count means no strong localized or linear reflectance review candidate was isolated; it is not proof of a flawless surface."
+  };
 }
 
 export function createVaultGradingPersistenceUi() {
@@ -163,7 +191,7 @@ export function createVaultGradingPersistenceUi() {
   actions.append(save, refresh);
   section.append(actions);
 
-  const policy = node("p", "muted-copy", "Centering is always stored as a collector-reviewed measurement. Browser-computed capture-quality and contour findings are stored only when the exact analyzed primary file SHA-256 matches private image media on the selected treasure. Paired surface findings require exact matches for both images. Color and autograph persistence remain separate until their source-image linkage is wired. No detector result becomes an official grade or authentication claim.");
+  const policy = node("p", "muted-copy", "Centering is always stored as a collector-reviewed measurement. Browser-computed capture-quality, contour findings and detector-completion coverage are stored only when the exact analyzed primary file SHA-256 matches private image media on the selected treasure. Paired surface findings and coverage require exact matches for both images. Color and autograph persistence remain separate until their source-image linkage is wired. No detector result becomes an official grade or authentication claim.");
   section.append(policy);
   const history = node("div", "grading-pregrade-history");
   section.append(history);
@@ -206,11 +234,12 @@ export function createVaultGradingPersistenceUi() {
     for (const record of result.analyses) {
       const card = node("article", "grading-pregrade-history-card");
       const captureCount = record.analysis?.captureQuality?.length ?? 0;
+      const coverageCount = record.analysis?.detectorCoverage?.length ?? 0;
       const defectCount = record.analysis?.defects?.length ?? 0;
       card.append(
         node("strong", "", `${record.standardProfile.toUpperCase()} reference • ${centeringLabel(record)}`),
         node("span", "", formatTimestamp(record.createdAt)),
-        node("span", "", `${record.sourceMediaIds?.length ?? 0} linked media • ${captureCount} capture record${captureCount === 1 ? "" : "s"} • ${defectCount} detector signal${defectCount === 1 ? "" : "s"}`),
+        node("span", "", `${record.sourceMediaIds?.length ?? 0} linked media • ${captureCount} capture record${captureCount === 1 ? "" : "s"} • ${coverageCount} detector coverage record${coverageCount === 1 ? "" : "s"} • ${defectCount} detector signal${defectCount === 1 ? "" : "s"}`),
         node("code", "", record.analysisSha256),
         node("p", "muted-copy", "Append-only advisory evidence • not an official grade • does not authenticate the physical card")
       );
@@ -265,6 +294,7 @@ export function createVaultGradingPersistenceUi() {
       const companionFile = companionImage?.files?.[0] ?? null;
       const sourceMediaIds = [];
       const captureQuality = [];
+      const detectorCoverage = [];
       const defects = [];
       const limitations = [
         `Browser centering snapshot saved from ${measurement.horizontal.label} horizontal and ${measurement.vertical.label} vertical measurements.`,
@@ -279,10 +309,12 @@ export function createVaultGradingPersistenceUi() {
             sourceMediaIds.push(primaryMatch.media.id);
             const capture = captureEvidence(snapshot, primaryMatch.media.id, side.value);
             if (capture) captureQuality.push(capture);
+            const coverage = contourCoverage(snapshot, primaryMatch.media.id, side.value);
+            if (coverage) detectorCoverage.push(coverage);
             defects.push(...contourEvidence(snapshot, primaryMatch.media.id));
             limitations.push("Primary-image detector evidence was computed in this browser and linked to private Vault media only after an exact SHA-256 byte match. The server stores the evidence but did not independently recompute the image pixels.");
           } else {
-            limitations.push("The analyzed primary image did not match private media on this treasure by SHA-256, so browser-computed capture and contour findings were omitted from the durable record.");
+            limitations.push("The analyzed primary image did not match private media on this treasure by SHA-256, so browser-computed capture, contour and detector-coverage evidence was omitted from the durable record.");
           }
         } catch (error) {
           limitations.push(`Primary-image integrity linkage was unavailable (${String(error.message ?? error).slice(0, 280)}); pixel-derived primary-image findings were omitted.`);
@@ -296,10 +328,12 @@ export function createVaultGradingPersistenceUi() {
           const companionMatch = await matchPrivateImage(treasureId, companionFile);
           if (companionMatch.matched && companionMatch.media?.id) {
             sourceMediaIds.push(companionMatch.media.id);
+            const coverage = surfaceCoverage(snapshot, primaryMatch.media.id, companionMatch.media.id, side.value);
+            if (coverage) detectorCoverage.push(coverage);
             defects.push(...surfaceEvidence(snapshot, primaryMatch.media.id, companionMatch.media.id, side.value));
             limitations.push(`Paired raking-light comparison used two SHA-256-matched private Vault images and produced ${snapshot.surface.signals?.length ?? 0} advisory reflectance review candidate${snapshot.surface.signals?.length === 1 ? "" : "s"}. A reflectance signal is not a confirmed scratch, dent, print line or other physical defect.`);
           } else {
-            limitations.push("The companion raking-light image did not match private media on this treasure by SHA-256, so paired surface findings were omitted from the durable record.");
+            limitations.push("The companion raking-light image did not match private media on this treasure by SHA-256, so paired surface findings and detector coverage were omitted from the durable record.");
           }
         } catch (error) {
           limitations.push(`Companion-image integrity linkage was unavailable (${String(error.message ?? error).slice(0, 280)}); paired surface findings were omitted.`);
@@ -325,6 +359,7 @@ export function createVaultGradingPersistenceUi() {
             confidence: primaryMatch?.matched ? 0.8 : 0.65
           },
           captureQuality,
+          detectorCoverage,
           defects,
           limitations
         })
