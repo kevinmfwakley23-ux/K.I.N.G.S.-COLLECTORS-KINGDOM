@@ -1,7 +1,9 @@
+import { createVaultPortableService } from "./portable.mjs";
 import { VaultError } from "./service.mjs";
 
 const MAX_JSON_BYTES = 256 * 1024;
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
+const MAX_CSV_BYTES = 10 * 1024 * 1024;
 
 async function readBody(request, maxBytes) {
   const chunks = [];
@@ -23,6 +25,15 @@ async function readJson(request) {
   } catch {
     throw new VaultError("invalid_json", "Request body must contain valid JSON.");
   }
+}
+
+async function readCsv(request) {
+  const contentType = String(request.headers["content-type"] ?? "").toLowerCase();
+  if (!(contentType.startsWith("text/csv") || contentType.startsWith("text/plain") || contentType.startsWith("application/csv"))) {
+    throw new VaultError("unsupported_media_type", "Vault import requires text/csv content.", 415);
+  }
+  const bytes = await readBody(request, MAX_CSV_BYTES);
+  return bytes.toString("utf8").replace(/^\uFEFF/, "");
 }
 
 function intParam(searchParams, name, fallback) {
@@ -48,6 +59,7 @@ function text(status, body, contentType, headers = {}) {
 export async function handleVaultRequest({ request, pathname, searchParams, identity, vaultService, ownershipService = null } = {}) {
   if (!vaultService) throw new VaultError("vault_unavailable", "The Royal Vault service is unavailable.", 503);
   const method = request.method ?? "GET";
+  const portable = createVaultPortableService({ vaultService });
 
   if (pathname === "/api/vault/treasures") {
     if (method === "GET") {
@@ -124,8 +136,20 @@ export async function handleVaultRequest({ request, pathname, searchParams, iden
   if (pathname === "/api/vault/stats" && method === "GET") return json(200, { stats: vaultService.stats(identity) });
   if (pathname === "/api/vault/duplicates" && method === "GET") return json(200, { groups: vaultService.duplicateGroups(identity) });
 
+  if (pathname === "/api/vault/import.csv" && method === "POST") {
+    const csv = await readCsv(request);
+    const mode = String(searchParams.get("mode") ?? "preview").toLowerCase();
+    if (mode === "preview") return json(200, await portable.previewCsv(identity, csv));
+    if (mode === "commit") {
+      const expectedFingerprint = String(request.headers["x-import-fingerprint"] ?? "").trim();
+      const createMissingOrganization = String(searchParams.get("createMissingOrganization") ?? "false").toLowerCase() === "true";
+      return json(201, await portable.importCsv(identity, csv, { expectedFingerprint, createMissingOrganization }));
+    }
+    throw new VaultError("invalid_import_mode", "Import mode must be preview or commit.");
+  }
+
   if (pathname === "/api/vault/export.csv" && method === "GET") {
-    const csv = vaultService.exportCsv(identity);
+    const csv = portable.exportCsv(identity);
     return text(200, csv, "text/csv; charset=utf-8", {
       "Content-Disposition": `attachment; filename="kings-vault-export-${new Date().toISOString().slice(0, 10)}.csv"`
     });
