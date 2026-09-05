@@ -99,9 +99,6 @@ function renderLocationVisual(room) {
 }
 
 function locationConstructionCopy(room) {
-  if (room.id === "vault") {
-    return "The Royal Vault interior is reserved for IMP-005. Its real treasure records, storage locations, search, media, statistics, duplicate detection, export, permissions, and audit history will be built there rather than simulated here.";
-  }
   if (room.id === "marketplace") {
     return "The Kingdom Street Market is an outdoor Marketplace District beyond the castle gates. Real listings, merchant storefronts, offers, reputation, payments, shipping, and transaction history arrive only in the approved marketplace phases.";
   }
@@ -119,8 +116,8 @@ async function loadRoom() {
     return;
   }
 
-  if (room.id === "great-hall") {
-    window.location.replace("/great-hall.html");
+  if (room.status === "available" && typeof room.href === "string" && !room.href.startsWith("/room.html")) {
+    window.location.replace(room.href);
     return;
   }
 
@@ -133,9 +130,7 @@ async function loadRoom() {
   keeperRole.textContent = KEEPER_ROLES[room.id] ?? "Royal Assistant";
   keeperWelcomeMessage.textContent = room.id === "marketplace"
     ? "I am beside you as Royal Trade Advisor. I can explain the Marketplace District and what will be available here, but I will never pressure you into a purchase."
-    : room.id === "vault"
-      ? "I am beside you as Royal Curator. I can explain how the Vault will protect, organize, and help locate your treasures without inventing collection records that do not exist."
-      : `I am beside you here as ${KEEPER_ROLES[room.id] ?? "your royal assistant"}. Ask me about this location or where to go next.`;
+    : `I am beside you here as ${KEEPER_ROLES[room.id] ?? "your royal assistant"}. Ask me about this location or where to go next.`;
 
   roomStatusPanel.replaceChildren(
     element("strong", "", room.zone === "grounds" ? "This Kingdom district is still under construction." : "This castle location is still under construction."),
