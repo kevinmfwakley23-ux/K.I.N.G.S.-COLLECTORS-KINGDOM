@@ -6,11 +6,11 @@ K.I.N.G.S. Collector's Kingdom is being built as a collector-first environment f
 
 Active milestone: **IMP-005 — Royal Vault, Phase 1**.
 
-**Latest verified checkpoint:** the Royal Vault now has persistent owner-scoped treasure records, secure private media, Kingdom voice command/talk-to-text, and a transactional JSON/CSV migration system with field mapping, duplicate review, recoverable previews, idempotent retries, and all-or-nothing commit behavior.
+**Latest verified checkpoint:** the Royal Vault now has persistent owner-scoped treasure records, secure private media, Kingdom voice command/talk-to-text, transactional JSON/CSV migration, and a cross-device **Royal Intake Queue** for rapid identifier capture and later review.
 
-Latest verified code gate: **Kingdom Quality Gates #328** — run `33958812569` — **PASS** on commit `0bd7c528757441d5add443544640233c17a81835`.
+Latest verified code gate: **Kingdom Quality Gates #347** — run `33959303126` — **PASS** on commit `58c60d605e107bdaeeaa5300b1de0c3fea164cfb`.
 
-The next engineering target is the **Royal Intake Queue**: rapid server-side identifier capture that can begin on a phone and be reviewed on Chromebook/desktop, followed by a progressive secure barcode-camera scanner with manual fallback. Camera scanning, external catalog matching, image recognition, evidence-backed valuation, and Marketplace mutations are not yet represented as live.
+The next engineering target is the **secure progressive barcode-camera scanner** on top of the verified Intake Queue. Camera scanning remains disabled until that implementation is real and tested. External catalog matching, image recognition, evidence-backed valuation, and Marketplace mutations are not yet represented as live.
 
 ## Durable engineering records
 
@@ -88,11 +88,11 @@ Supported safe command classes include:
 - spoken search;
 - “add a treasure”.
 
-Dictation is available for Keeper messages, Great Hall/Vault search, and relevant treasure text fields. Destructive voice commands such as delete/archive/sell/buy/transfer are deliberately not executable. Microphone access is same-origin only. Camera remains disabled until the real scanner milestone.
+Dictation is available for Keeper messages, Great Hall/Vault search, and relevant treasure text fields. Destructive voice commands such as delete/archive/sell/buy/transfer are deliberately not executable. Microphone access is same-origin only.
 
 ### Transactional JSON / CSV migration
 
-The Vault now supports direct responsive migration rather than a blind bulk-write endpoint:
+The Vault supports direct responsive migration rather than a blind bulk-write endpoint:
 
 - JSON input;
 - CSV file/paste input;
@@ -109,6 +109,21 @@ The Vault now supports direct responsive migration rather than a blind bulk-writ
 - one SQLite transaction for selected treasure + provenance-event writes;
 - proven full rollback on mid-batch failure;
 - recovery of an unfinished review from the same browser session.
+
+### Royal Intake Queue
+
+The verified cross-device intake workflow lets a collector capture identifiers quickly without turning uncertain evidence into false authoritative records:
+
+- manual barcode, UPC, EAN, ISBN, catalog, serial, SKU, or custom-identifier capture;
+- owner-scoped server-side pending queue shared across signed-in devices;
+- repeated pending captures merged into one queue entry with a capture count;
+- exact existing-Vault identifier candidates shown as warnings, not automatic identity decisions;
+- pending/history views;
+- soft dismissal with preserved history;
+- responsive phone/Chromebook/desktop UI;
+- one-click identifier handoff into a new treasure editor while keeping the queue entry pending until explicitly dismissed;
+- audit events for capture/dismissal;
+- camera intentionally unavailable until the scanner milestone passes its own security and quality gates.
 
 Fresh intake/import/scanner research is recorded in [`docs/research/2026-09-05-IMP-005-INTAKE-IMPORT-SCANNER-RECON.md`](docs/research/2026-09-05-IMP-005-INTAKE-IMPORT-SCANNER-RECON.md).
 
