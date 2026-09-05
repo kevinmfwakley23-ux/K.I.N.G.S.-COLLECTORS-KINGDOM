@@ -8,6 +8,16 @@ The Kingdom must not merely imitate existing collector products. It must underst
 
 The target is a collector platform with broader collectible coverage, stronger organization, better knowledge and memory, stronger AI assistance through K.I.N.G.S. AI, more trustworthy valuation evidence, better physical-inventory control, better marketplace workflows, better portability, and a more coherent experience than competing apps.
 
+## Authority hierarchy
+
+Every build session shall use this decision order:
+
+1. **Locked K.I.N.G.S. Collector's Kingdom Construction Documents** — permanent product, architecture, PRD, infrastructure, engineering-standard, and implementation-sequence authority.
+2. **Current repository architecture, tests, verified implementation, and recorded engineering decisions** — implementation truth for what already exists.
+3. **Fresh competitor, GitHub, app-store, standards, API, and web research** — evidence for improvements, parity gaps, and better implementation ideas.
+
+External research may improve how an approved Kingdom capability is implemented. It may not silently replace, contradict, reorder, or weaken a locked Construction Document requirement. If research reveals a genuinely superior idea that would require an architectural or product change, that change must be explicitly reconciled with the Construction Documents before implementation.
+
 ## Mandatory research-before-build protocol
 
 Before every meaningful build session or milestone implementation, the engineer or AI development agent shall perform a fresh competitive and technical reconnaissance appropriate to the feature being built.
