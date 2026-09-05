@@ -57,7 +57,7 @@ function install() {
   head.append(element("h3", "", "Royal Vault views"));
   section.append(
     head,
-    element("p", "empty-copy", "Open trustworthy collection views built from explicit Favorites, real Vault timestamps, duplicate analysis, and durable set checklists.")
+    element("p", "empty-copy", "Open trustworthy views built from explicit Favorites, real Vault timestamps, durable set completion, duplicate analysis, and transparent Marketplace handoff checks.")
   );
 
   const list = element("div", "system-view-list");
@@ -87,6 +87,14 @@ function install() {
     window.dispatchEvent(new CustomEvent("kingdom:vault-open-incomplete-sets"));
   });
   list.append(incompleteSets);
+
+  const marketplaceReady = element("button", "system-view-button", "Marketplace Ready");
+  marketplaceReady.type = "button";
+  marketplaceReady.title = "Records ready for handoff into a future Marketplace listing workflow; not published listings.";
+  marketplaceReady.addEventListener("click", () => {
+    window.dispatchEvent(new CustomEvent("kingdom:vault-open-marketplace-ready"));
+  });
+  list.append(marketplaceReady);
 
   const duplicates = element("button", "system-view-button", "Possible duplicates");
   duplicates.type = "button";
