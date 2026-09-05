@@ -4,8 +4,9 @@ export function createHealthSnapshot({ version, startedAt, now = Date.now() }) {
   return { service: "kings-collectors-kingdom", status: "ok", version, uptimeMs, timestamp: new Date(now).toISOString() };
 }
 
-export function createReadinessSnapshot({ configLoaded = false, identityReady = false } = {}) {
+export function createReadinessSnapshot({ configLoaded = false, identityReady = false, vaultReady = null } = {}) {
   const checks = { configuration: configLoaded ? "ok" : "failed", identity: identityReady ? "ok" : "failed" };
+  if (vaultReady !== null) checks.vault = vaultReady ? "ok" : "failed";
   const ready = Object.values(checks).every((value) => value === "ok");
   return { status: ready ? "ready" : "not-ready", checks };
 }
