@@ -6,7 +6,7 @@
     <meta name="description" content="The Great Hall of K.I.N.G.S. Collector's Kingdom" />
     <title>Great Hall • K.I.N.G.S.</title>
     <link rel="stylesheet" href="/styles.css" />
-    <script src="/great-hall.js" defer></script>
+    <script type="module" src="/great-hall.js"></script>
   </head>
   <body class="kingdom-page">
     <a class="skip-link" href="#hall-main">Skip to Great Hall content</a>
@@ -24,19 +24,21 @@
 
     <main id="hall-main" class="hall-layout">
       <section class="hall-hero marble-panel" aria-labelledby="hall-title">
-        <div>
+        <div class="hall-hero-copy">
           <p class="eyebrow">The Great Hall • Royal Entry</p>
           <h1 id="hall-title">Welcome to your Kingdom.</h1>
           <p id="hall-greeting" class="hall-greeting" aria-live="polite">Preparing your Great Hall…</p>
-          <p class="hall-intro">A single place to understand what needs your attention, move through the castle, and call on The Keeper without losing your place.</p>
+          <p class="hall-intro">See what needs your attention, move through the castle and grounds, and call on The Keeper without losing your place.</p>
         </div>
-        <div class="keeper-welcome" aria-label="The Keeper, Royal Host">
-          <div class="keeper-avatar" aria-hidden="true"><span>🦁</span><i></i></div>
-          <div>
+        <div class="keeper-welcome keeper-stage" aria-label="The Keeper, your royal assistant and advisor">
+          <figure class="keeper-character-frame">
+            <img class="keeper-character" src="/assets/keeper.svg" alt="The Keeper, an upright lion in elegant royal butler attire" />
+          </figure>
+          <div class="keeper-welcome-copy">
             <p class="eyebrow">The Keeper</p>
-            <h2>Royal Host</h2>
-            <p>At your service throughout the Great Hall.</p>
-            <button class="gold-button" type="button" data-action="keeper">Speak with The Keeper</button>
+            <h2>Royal Assistant & Advisor</h2>
+            <p>Your resident butler, servant, steward, curator, and guide. He accompanies you through the castle and out to the Kingdom Street Market.</p>
+            <button class="gold-button" type="button" data-action="keeper">Call The Keeper</button>
           </div>
         </div>
       </section>
@@ -55,17 +57,17 @@
       </section>
 
       <section class="hall-dashboard" aria-label="Kingdom overview">
-        <article class="summary-card marble-card">
+        <article class="summary-card marble-card vault-summary-card">
           <p class="eyebrow">Collection Overview</p>
-          <h2>Vault</h2>
+          <h2>Royal Vault</h2>
           <p id="collection-summary" class="summary-copy">Loading authoritative collection status…</p>
-          <a class="card-link" href="/room.html?room=vault">Visit the Vault entrance</a>
+          <a class="card-link" href="/room.html?room=vault">Approach the Vault entrance</a>
         </article>
-        <article class="summary-card marble-card">
-          <p class="eyebrow">Marketplace</p>
-          <h2>Royal Market</h2>
+        <article class="summary-card marble-card marketplace-summary-card">
+          <p class="eyebrow">Beyond the Castle Gates</p>
+          <h2>Kingdom Street Market</h2>
           <p id="market-summary" class="summary-copy">Loading marketplace status…</p>
-          <a class="card-link" href="/room.html?room=marketplace">Visit the Marketplace entrance</a>
+          <a class="card-link" href="/room.html?room=marketplace">Walk out to the Market entrance</a>
         </article>
         <article class="summary-card marble-card">
           <p class="eyebrow">Notifications</p>
@@ -74,15 +76,26 @@
         </article>
       </section>
 
-      <section class="hall-section marble-panel" aria-labelledby="rooms-title">
+      <section class="hall-section marble-panel" aria-labelledby="castle-title">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Castle Navigation</p>
-            <h2 id="rooms-title">The rooms of your Kingdom</h2>
+            <p class="eyebrow">Inside the Castle</p>
+            <h2 id="castle-title">Royal rooms and chambers</h2>
           </div>
-          <p>Every entrance stays visible. Rooms not yet built are marked clearly instead of showing simulated features.</p>
+          <p>The castle keeps a consistent white-marble, black-vein, and gold-vein identity. Unfinished rooms remain clearly marked as under construction.</p>
         </div>
-        <nav id="room-grid" class="room-grid" aria-label="Kingdom rooms"></nav>
+        <nav id="castle-room-grid" class="room-grid" aria-label="Castle rooms"></nav>
+      </section>
+
+      <section class="hall-section grounds-panel" aria-labelledby="grounds-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Beyond the Castle Gates</p>
+            <h2 id="grounds-title">Kingdom grounds and districts</h2>
+          </div>
+          <p>The Marketplace is an outdoor Kingdom district, not another interior castle room.</p>
+        </div>
+        <nav id="grounds-grid" class="room-grid grounds-grid" aria-label="Kingdom grounds"></nav>
       </section>
 
       <section class="hall-columns">
@@ -112,13 +125,13 @@
     <aside id="keeper-panel" class="keeper-panel" aria-labelledby="keeper-title" hidden>
       <div class="keeper-panel-head">
         <div class="keeper-heading">
-          <div class="keeper-avatar small" aria-hidden="true"><span>🦁</span><i></i></div>
+          <img class="keeper-panel-portrait" src="/assets/keeper.svg" alt="" aria-hidden="true" />
           <div><p class="eyebrow">Royal Host</p><h2 id="keeper-title">The Keeper</h2></div>
         </div>
         <button id="keeper-close" class="icon-button" type="button" aria-label="Close The Keeper panel">×</button>
       </div>
       <div id="keeper-messages" class="keeper-messages" role="log" aria-live="polite" aria-relevant="additions">
-        <p class="keeper-message assistant">Welcome. I am The Keeper. Ask me where to go, what changed in your Kingdom, or what a room is for.</p>
+        <p class="keeper-message assistant">Welcome. I am The Keeper. I can guide you through the castle, explain what is available, and accompany you to the Kingdom Street Market.</p>
       </div>
       <form id="keeper-form" class="keeper-form">
         <label class="sr-only" for="keeper-input">Message The Keeper</label>
