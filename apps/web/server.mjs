@@ -11,8 +11,12 @@ import { SqliteIdentityStore } from "../../packages/identity/src/sqlite-store.mj
 import { clearSessionCookie, parseCookies, sessionCookie } from "../../packages/identity/src/tokens.mjs";
 import { createKingsAiClient, KingsAiClientError } from "../../packages/kings-ai/src/client.mjs";
 import { createLogger } from "../../packages/observability/src/logger.mjs";
+import { createVaultMediaRepository } from "../../packages/vault/src/media-repository.mjs";
+import { createVaultMediaService } from "../../packages/vault/src/media-service.mjs";
+import { LocalVaultMediaStorage } from "../../packages/vault/src/media-storage.mjs";
 import { createVaultService, VaultError } from "../../packages/vault/src/service.mjs";
 import { SqliteVaultStore } from "../../packages/vault/src/sqlite-store.mjs";
+import { handleVaultMediaRoute } from "./vault-media-http.mjs";
 
 const CONTENT_TYPES = Object.freeze({
   ".css": "text/css; charset=utf-8",
@@ -332,7 +336,8 @@ export function createKingdomServer({
   identityService = null,
   greatHallService = null,
   kingsAiClient = null,
-  vaultService = null
+  vaultService = null,
+  vaultMediaService = null
 } = {}) {
   return createServer(async (request, response) => {
     const requestStartedAt = performance.now();
@@ -392,6 +397,19 @@ export function createKingdomServer({
       }
 
       if (requestUrl.pathname === "/api/vault" || requestUrl.pathname.startsWith("/api/vault/")) {
+        const mediaHandled = await handleVaultMediaRoute({
+          request,
+          response,
+          requestUrl,
+          identityService,
+          vaultMediaService,
+          securityHeaders: SECURITY_HEADERS
+        });
+        if (mediaHandled !== null) {
+          if (mediaHandled !== false) return;
+          return sendJson(response, 405, { error: "method_not_allowed" }, method);
+        }
+
         const handled = await handleVaultRoute({
           request,
           response,
@@ -438,13 +456,28 @@ async function run() {
     sessionTtlMs: config.sessionTtlHours * 60 * 60 * 1000
   });
   const vaultService = createVaultService({ store: vaultStore });
+  const vaultMediaRepository = createVaultMediaRepository({ vaultStore });
+  const vaultMediaStorage = new LocalVaultMediaStorage(resolve(config.dataDir, "vault-media"));
+  const vaultMediaService = createVaultMediaService({
+    vaultStore,
+    mediaRepository: vaultMediaRepository,
+    storage: vaultMediaStorage
+  });
   const greatHallService = createGreatHallService({ identityService, vaultService });
   const kingsAiClient = createKingsAiClient({
     baseUrl: config.kingsAiBaseUrl,
     accessToken: config.kingsAiToken,
     timeoutMs: config.kingsAiTimeoutMs
   });
-  const server = createKingdomServer({ config, logger, identityService, greatHallService, kingsAiClient, vaultService });
+  const server = createKingdomServer({
+    config,
+    logger,
+    identityService,
+    greatHallService,
+    kingsAiClient,
+    vaultService,
+    vaultMediaService
+  });
 
   server.on("error", (error) => {
     logger.error("server.error", { error });
