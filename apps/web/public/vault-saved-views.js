@@ -1,3 +1,5 @@
+const SUPPORTED_VIEWS = new Set(["grid", "list", "binder", "gallery"]);
+
 function element(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -32,6 +34,11 @@ function installStyles() {
   document.head.append(link);
 }
 
+function activeView() {
+  const stored = localStorage.getItem("kingdom.vault.view");
+  return SUPPORTED_VIEWS.has(stored) ? stored : "grid";
+}
+
 function currentPayload(name) {
   return {
     name,
@@ -41,7 +48,7 @@ function currentPayload(name) {
     locationId: document.querySelector("#filter-location")?.value || null,
     tag: null,
     sort: document.querySelector("#sort-treasures")?.value || "updated-desc",
-    view: localStorage.getItem("kingdom.vault.view") === "list" ? "list" : "grid"
+    view: activeView()
   };
 }
 
@@ -75,8 +82,13 @@ function applySavedView(view, status) {
   const location = assignSelect("#filter-location", view.locationId);
   if ([...sort.options].some((option) => option.value === view.sort)) sort.value = view.sort;
 
-  const viewButton = document.querySelector(view.view === "list" ? "#list-view-button" : "#grid-view-button");
-  viewButton?.click();
+  const buttonByView = {
+    grid: "#grid-view-button",
+    list: "#list-view-button",
+    binder: "#binder-view-button",
+    gallery: "#gallery-view-button"
+  };
+  document.querySelector(buttonByView[SUPPORTED_VIEWS.has(view.view) ? view.view : "grid"])?.click();
   form.requestSubmit();
 
   const stale = [category, folder, location].some((entry) => entry.stale);
@@ -94,7 +106,7 @@ async function installSavedViews() {
   section.dataset.savedVaultViews = "";
   const heading = element("div", "sidebar-section-head");
   heading.append(element("h3", "", "Saved Vault views"));
-  section.append(heading, element("p", "empty-copy", "Preserve a natural search, organization filters, sort order, and grid/list preference for one-tap return."));
+  section.append(heading, element("p", "empty-copy", "Preserve a natural search, organization filters, sort order, and Grid, List, Binder, or Gallery presentation for one-tap return."));
 
   const form = element("form", "saved-view-form");
   const nameLabel = element("label", "");
@@ -103,9 +115,9 @@ async function installSavedViews() {
   nameInput.required = true;
   nameInput.maxLength = 80;
   nameInput.setAttribute("aria-label", "Saved view name");
-  nameLabel.append(nameInput);
   const save = element("button", "gold-button compact-button", "Save current view");
   save.type = "submit";
+  nameLabel.append(nameInput);
   form.append(nameLabel, save);
   section.append(form);
 
