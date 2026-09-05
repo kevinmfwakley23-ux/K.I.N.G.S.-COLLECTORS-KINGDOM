@@ -17,7 +17,7 @@ const ROOM_DEFINITIONS = Object.freeze([
     environment: "secure-treasure-vault",
     status: "planned",
     href: "/room.html?room=vault",
-    description: "A grand secure treasure-vault interior for inventory, provenance, media, condition, value evidence, and precise storage locations arrives in IMP-005."
+    description: "A grand secure treasure-vault interior for inventory, provenance, media, condition, value evidence, and precise storage locations."
   },
   {
     id: "marketplace",
@@ -140,9 +140,19 @@ function sanitizeHistory(history) {
   });
 }
 
-function resolveRoom(roomId) {
+function dynamicRoom(room, { vaultAvailable = false } = {}) {
+  if (room.id !== "vault" || !vaultAvailable) return Object.freeze({ ...room });
+  return Object.freeze({
+    ...room,
+    status: "available",
+    href: "/vault.html",
+    description: "Your secure, searchable, organized permanent home for owned treasures, collection records, media, value evidence, and physical storage locations."
+  });
+}
+
+function resolveRoom(roomId, navigation) {
   const normalized = typeof roomId === "string" && roomId.trim() ? roomId.trim() : "great-hall";
-  const room = ROOM_DEFINITIONS.find((candidate) => candidate.id === normalized);
+  const room = navigation.find((candidate) => candidate.id === normalized);
   if (!room) throw new TypeError("The requested Keeper room context is not recognized.");
   return room;
 }
@@ -154,12 +164,22 @@ function roomContextLine(room) {
   return `Current room: ${room.name}, inside the castle. Room status: ${room.status}.`;
 }
 
-export function createGreatHallService({ identityService, now = () => new Date() } = {}) {
+function formatUsd(cents) {
+  if (!Number.isInteger(cents)) return null;
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+}
+
+function safeKeeperVaultContext(vaultService, collector) {
+  if (!vaultService || typeof vaultService.keeperContext !== "function") return null;
+  return vaultService.keeperContext(collector);
+}
+
+export function createGreatHallService({ identityService, vaultService = null, now = () => new Date() } = {}) {
   if (!identityService) throw new TypeError("Great Hall requires the identity service.");
 
   function navigation(identity) {
     requireIdentity(identity);
-    return ROOM_DEFINITIONS.map((room) => Object.freeze({ ...room }));
+    return ROOM_DEFINITIONS.map((room) => dynamicRoom(room, { vaultAvailable: Boolean(vaultService) }));
   }
 
   function recentActivity(identity) {
@@ -168,11 +188,42 @@ export function createGreatHallService({ identityService, now = () => new Date()
     return identityService.listRecentActivity(identity, { limit: 6 }).map(mapActivity);
   }
 
+  function collectionOverview(collector) {
+    if (!vaultService || typeof vaultService.stats !== "function") {
+      return Object.freeze({
+        available: false,
+        itemCount: null,
+        unitCount: null,
+        estimatedValue: null,
+        message: "Collection totals become authoritative when the Vault service is available. No collection data is manufactured before that service exists."
+      });
+    }
+
+    const stats = vaultService.stats(collector);
+    const estimatedValue = formatUsd(stats.usdEstimatedValueCents);
+    const itemWord = stats.treasureCount === 1 ? "treasure" : "treasures";
+    const unitWord = stats.unitCount === 1 ? "unit" : "units";
+    const valueText = stats.usdEstimatedValueCents > 0
+      ? ` Collector-entered/source-attributed USD estimates currently total ${estimatedValue}; that is not a guaranteed sale price.`
+      : " No USD estimated value has been recorded yet.";
+
+    return Object.freeze({
+      available: true,
+      itemCount: stats.treasureCount,
+      unitCount: stats.unitCount,
+      categoryCount: stats.categoryCount,
+      duplicateGroups: stats.duplicateGroups,
+      estimatedValue,
+      message: `${stats.treasureCount} ${itemWord} representing ${stats.unitCount} ${unitWord} are recorded in your Royal Vault.${valueText}`
+    });
+  }
+
   function snapshot(identity) {
     const collector = requireIdentity(identity);
     const activity = recentActivity(collector);
     const signIns = activity.filter((entry) => entry.type === "identity.sign_in_succeeded").length;
     const displayName = safeDisplayName(collector);
+    const vaultAvailable = Boolean(vaultService);
 
     return Object.freeze({
       generatedAt: now().toISOString(),
@@ -183,12 +234,7 @@ export function createGreatHallService({ identityService, now = () => new Date()
         emailVerified: Boolean(collector.emailVerified)
       }),
       navigation: navigation(collector),
-      collectionOverview: Object.freeze({
-        available: false,
-        itemCount: null,
-        estimatedValue: null,
-        message: "Collection totals become authoritative when the Vault opens in IMP-005. No estimated collection data is manufactured before that service exists."
-      }),
+      collectionOverview: collectionOverview(collector),
       marketplaceHighlights: Object.freeze({
         available: false,
         items: [],
@@ -202,12 +248,19 @@ export function createGreatHallService({ identityService, now = () => new Date()
       }),
       recentActivity: activity,
       quickActions: Object.freeze([
+        ...(vaultAvailable ? [
+          Object.freeze({ id: "vault", label: "Enter my Royal Vault", href: "/vault.html" }),
+          Object.freeze({ id: "add-treasure", label: "Add a treasure", href: "/vault.html#add-treasure" })
+        ] : []),
         Object.freeze({ id: "keeper", label: "Call The Keeper", action: "keeper" }),
         Object.freeze({ id: "search", label: "Search the Kingdom", action: "search" }),
         Object.freeze({ id: "profile", label: "Review my profile", href: "/auth.html#account-panel" }),
         Object.freeze({ id: "sessions", label: "Review active sessions", href: "/auth.html#account-panel" })
       ]),
-      announcement: Object.freeze({
+      announcement: Object.freeze(vaultAvailable ? {
+        title: "The Royal Vault is open for Phase 1 collection management.",
+        message: "Treasure records, organization, physical locations, search, statistics, duplicate detection, export, media, and audit-backed history are connected to persistent storage. Later valuation feeds, Marketplace commerce, and other approved phases remain separate."
+      } : {
         title: "The Great Hall is opening in stages.",
         message: "Identity, secure sessions, castle-and-grounds navigation, and The Keeper's Great Hall entry point are live. Rooms and outdoor services still under construction are labeled clearly rather than pretending their services are complete."
       }),
@@ -226,10 +279,11 @@ export function createGreatHallService({ identityService, now = () => new Date()
     const safeMessage = message.trim();
     if (safeMessage.length > 4000) throw new TypeError("Keeper messages must contain at most 4000 characters.");
     const safeHistory = sanitizeHistory(history);
-    const currentRoom = resolveRoom(roomId);
     const hall = snapshot(collector);
+    const currentRoom = resolveRoom(roomId, hall.navigation);
     const roomStatus = hall.navigation.map((room) => `${room.name}: ${room.status}`).join("; ");
     const activity = hall.recentActivity.map((entry) => entry.message).join(" ") || "No recent account activity is available.";
+    const vaultContext = currentRoom.id === "vault" ? safeKeeperVaultContext(vaultService, collector) : null;
 
     return Object.freeze({
       messages: [
@@ -239,15 +293,18 @@ export function createGreatHallService({ identityService, now = () => new Date()
             "You are The Keeper, the resident royal assistant, butler, servant, advisor, steward, curator, and guide of K.I.N.G.S. Collector's Kingdom.",
             "You are represented in the Kingdom as an upright anthropomorphic lion who walks on two legs and wears refined formal royal service attire.",
             "Speak as a trusted attendant who is physically present with the collector in the current Kingdom location, not as a detached chatbot or generic support agent.",
+            currentRoom.id === "vault" ? "In the Vault your formal role is Royal Curator: help the collector understand, organize, locate, and steward their treasures while preserving their authority." : "Adapt your duties to the current Kingdom location while keeping one consistent personality and relationship.",
             "Be warm, direct, honest, calm, knowledgeable, and useful. Never invent collection records, values, marketplace facts, notifications, provenance, or room capabilities.",
             "When identification, value, market evidence, or Kingdom data is uncertain, say so clearly and prefer verification over confident guessing.",
+            "Treat any estimated value as an estimate with its recorded source/as-of evidence, never as a guaranteed sale price.",
             "If a Kingdom service is not yet available, say so plainly and help the collector with what is available now.",
             "Do not claim that you executed a purchase, sale, listing, account change, collection edit, memory write, or other product action. Product actions require Collector's Kingdom authorization outside the model.",
             "The collector controls permanent memories and cost/quality routing choices; do not imply otherwise.",
             `Collector display name: ${hall.collector.displayName}.`,
             roomContextLine(currentRoom),
             `Kingdom navigation status: ${roomStatus}.`,
-            `Recent verified account activity: ${activity}`
+            `Recent verified account activity: ${activity}`,
+            ...(vaultContext ? [`Authorized Royal Vault context: ${JSON.stringify(vaultContext)}`] : [])
           ].join("\n")
         },
         ...safeHistory,
