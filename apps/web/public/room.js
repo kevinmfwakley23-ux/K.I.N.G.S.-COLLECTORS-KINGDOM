@@ -1,4 +1,5 @@
 import { createKeeperController } from "./keeper.js";
+import { createVoiceController } from "./voice.js";
 
 const params = new URLSearchParams(window.location.search);
 const roomId = params.get("room") ?? "great-hall";
@@ -14,6 +15,7 @@ const keeperRole = document.querySelector("#keeper-role");
 const keeperWelcomeMessage = document.querySelector("#keeper-welcome-message");
 
 const keeper = createKeeperController({ roomId });
+createVoiceController({ keeper });
 
 const KEEPER_ROLES = Object.freeze({
   "great-hall": "Royal Host",
@@ -100,7 +102,7 @@ function renderLocationVisual(room) {
 
 function locationConstructionCopy(room) {
   if (room.id === "vault") {
-    return "The Royal Vault interior is reserved for IMP-005. Its real treasure records, storage locations, search, media, statistics, duplicate detection, export, permissions, and audit history will be built there rather than simulated here.";
+    return "The Royal Vault is now open through its authoritative Vault workspace. This entrance remains only as a navigation fallback.";
   }
   if (room.id === "marketplace") {
     return "The Kingdom Street Market is an outdoor Marketplace District beyond the castle gates. Real listings, merchant storefronts, offers, reputation, payments, shipping, and transaction history arrive only in the approved marketplace phases.";
@@ -123,6 +125,10 @@ async function loadRoom() {
     window.location.replace("/great-hall.html");
     return;
   }
+  if (room.id === "vault" && room.status === "available" && room.href === "/vault.html") {
+    window.location.replace("/vault.html");
+    return;
+  }
 
   keeper.setRoom(room.id);
   document.title = `${room.name} • K.I.N.G.S.`;
@@ -133,9 +139,7 @@ async function loadRoom() {
   keeperRole.textContent = KEEPER_ROLES[room.id] ?? "Royal Assistant";
   keeperWelcomeMessage.textContent = room.id === "marketplace"
     ? "I am beside you as Royal Trade Advisor. I can explain the Marketplace District and what will be available here, but I will never pressure you into a purchase."
-    : room.id === "vault"
-      ? "I am beside you as Royal Curator. I can explain how the Vault will protect, organize, and help locate your treasures without inventing collection records that do not exist."
-      : `I am beside you here as ${KEEPER_ROLES[room.id] ?? "your royal assistant"}. Ask me about this location or where to go next.`;
+    : `I am beside you here as ${KEEPER_ROLES[room.id] ?? "your royal assistant"}. Ask me about this location or where to go next.`;
 
   roomStatusPanel.replaceChildren(
     element("strong", "", room.zone === "grounds" ? "This Kingdom district is still under construction." : "This castle location is still under construction."),
