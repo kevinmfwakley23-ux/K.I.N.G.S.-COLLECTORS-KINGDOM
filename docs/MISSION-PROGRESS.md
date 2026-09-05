@@ -12,43 +12,38 @@ A progress entry must record what was actually implemented, the important archit
 
 **Date:** 2026-09-05  
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Latest verified checkpoint:** **Transactional JSON/CSV import review + secure media + Kingdom voice**  
-**Latest verified code gate:** **Kingdom Quality Gates #328** — run `33958812569` — **PASS**  
-**Verified code commit:** `0bd7c528757441d5add443544640233c17a81835`  
+**Latest verified checkpoint:** **Royal Intake Queue + transactional JSON/CSV import + secure media + Kingdom voice**  
+**Latest verified code gate:** **Kingdom Quality Gates #347** — run `33959303126` — **PASS**  
+**Verified code commit:** `58c60d605e107bdaeeaa5300b1de0c3fea164cfb`  
 **Default branch:** `main`
 
 ### Exact recovery point
 
 Do **not** restart IMP-005.
 
-The Royal Vault is now a real owner-scoped collection domain with persistent treasure identity, authenticated APIs, a responsive browser workspace, secure private media, voice command/talk-to-text support, and transactional bulk migration.
+The Royal Vault is now a real owner-scoped collection domain with persistent treasure identity, authenticated APIs, a responsive browser workspace, secure private media, voice command/talk-to-text support, transactional bulk migration, and a cross-device Royal Intake Queue.
 
-The latest verified intake/import system includes:
+The latest verified Royal Intake capability includes:
 
-- direct JSON import;
-- direct CSV import in the responsive Vault;
-- CSV header inference and explicit field mapping;
-- preservation of unmapped useful columns as custom attributes when the collector chooses;
-- server-side review batches that survive a page refresh;
-- two-hour preview expiry;
-- validation without writes;
-- duplicate detection against existing Vault treasures;
-- duplicate detection within the incoming batch;
-- explicit **Import** or **Skip** decisions for duplicate-review rows;
-- rejected rows forced to skip instead of being silently written;
-- pre-commit revalidation;
-- stale-new-duplicate detection before commit;
-- owner isolation for import batches;
-- idempotency keys so a retry cannot duplicate a committed batch;
-- one SQLite transaction for all selected treasure/event writes;
-- proven full rollback when a later row fails mid-transaction;
-- provenance events linking imported treasures to source batch and source row;
-- browser-session recovery of an unfinished review batch;
-- responsive review/mapping UI and production-artifact enforcement.
+- persistent owner-scoped pending intake records;
+- manual capture of barcode, UPC, EAN, ISBN, catalog, serial, SKU, and custom identifiers;
+- server-side queue storage so capture can begin on a phone and continue on Chromebook/desktop;
+- repeated pending captures of the same normalized identifier merged into one queue record with a capture count rather than noisy duplicate queue rows;
+- pending counts and total pending-capture counts;
+- exact existing-Vault identifier candidates surfaced as warnings/evidence without asserting that the captured identifier proves exact collectible identity;
+- owner isolation for listing and dismissing queue items;
+- soft dismissal that preserves intake history;
+- re-capture after dismissal creates a new pending intake event rather than mutating old history;
+- responsive phone/desktop Royal Intake Queue UI;
+- one-click handoff into the treasure editor that copies the identifier but intentionally leaves the queue item pending until the collector explicitly dismisses it;
+- warnings to review exact identity and quantity before saving a treasure, especially when the same identifier was captured more than once;
+- authenticated no-store HTTP API;
+- audit events for capture and dismissal;
+- camera remains intentionally disabled and reported unavailable until the real scanner is implemented and verified.
 
-The **next validated engineering target** is the **Royal Intake Queue**: persistent owner-scoped rapid identifier capture that can begin on a phone and be reviewed on Chromebook/desktop, followed by a progressive secure barcode-camera scanner with manual fallback. Barcode/image capture must produce evidence/candidates, not silently assert exact collectible identity.
+The **next validated engineering target** is the progressive secure barcode-camera scanner on top of the verified Intake Queue. It must remain user-initiated, same-origin, secure-context-only, and optional. Manual intake remains first-class on unsupported browsers. Camera detections must feed the same server-side queue and must never silently create or identify authoritative treasures.
 
-Camera access remains intentionally disabled until that real scanner is implemented and verified. External catalog adapters, image recognition, evidence-backed valuation, and Marketplace mutations are also not yet claimed as live.
+External catalog adapters, image-recognition candidates, evidence-backed valuation, and Marketplace mutations remain unimplemented and must not be represented as live.
 
 ---
 
@@ -186,6 +181,24 @@ Important verification history:
 - later UI gate correctly caught the repository's anti-placeholder policy on an ordinary DOM property name; implementation was changed without weakening the policy;
 - **Quality Gates #328 (`33958812569`) passed** after that correction.
 
+#### Royal Intake Queue
+
+Implemented and verified:
+
+- `packages/vault/src/intake-repository.mjs` — persistent owner-scoped pending/dismissed intake records and capture counts;
+- `packages/vault/src/intake-service.mjs` — validation, identifier normalization, owner authorization, Vault-candidate evidence, audit events, and queue statistics;
+- `apps/web/vault-intake-http.mjs` — authenticated list/capture/dismiss boundary with bounded request size and no-store responses;
+- production server wiring and `/api/vault` capability/count reporting;
+- `apps/web/public/vault-intake-core.js` — safe editor-handoff and collector-facing status helpers;
+- `apps/web/public/vault-intake-ui.js` — responsive cross-device capture, queue, history, warnings, dismissal, and editor handoff;
+- `apps/web/public/vault-intake.css` — responsive phone/desktop styling;
+- tests covering repeat-capture merging, capture counts, owner isolation, history, re-capture after dismissal, identifier validation, exact existing-Vault candidate warnings, authenticated HTTP behavior, editor handoff, and camera-still-disabled policy;
+- build/type/artifact gates require all Intake Queue production modules.
+
+**Verification:** Kingdom Quality Gates #347, run `33959303126`, verify job **SUCCESS** including full repository quality gates and production dependency audit.
+
+The CLZ-style phone-to-web scan-queue pattern influenced this direction, but the Kingdom improves it by using one owner-scoped server queue for both manual and future camera capture, preserving repeated-capture counts/history, surfacing existing-Vault evidence, and refusing to equate capture with authoritative identity.
+
 ---
 
 ## Competitive research records
@@ -201,8 +214,7 @@ The latest intake research compares current iCollect/CLZ migration and scan work
 
 ## Known unfinished IMP-005 work
 
-- Royal Intake Queue for rapid cross-device capture;
-- progressive camera/barcode scanner;
+- progressive secure camera/barcode scanner;
 - external catalog/recognition candidate adapters;
 - image recognition candidate workflow;
 - bulk update/archive beyond import creation;
@@ -217,19 +229,21 @@ None of these should be presented as live until their real services and tests ex
 
 ## Exact next engineering target
 
-### IMP-005 — Royal Intake Queue
+### IMP-005 — Secure barcode-camera scanner
 
-Build an owner-scoped persistent intake queue that improves on current phone-scanner/web-queue products:
+Build the scanner as a progressive enhancement on the verified Royal Intake Queue:
 
-1. manual identifier capture first, usable on every supported device;
-2. pending queue stored server-side so phone capture can continue on Chromebook/desktop;
-3. repeated scans of the same pending identifier represented by a capture count rather than noisy duplicate queue rows;
-4. queue history/status and explicit dismissal/completion;
-5. a reviewed queue entry can start a new Vault treasure workflow without automatically claiming exact identity;
-6. responsive mobile/Chromebook queue UI;
-7. only after that foundation is green, enable `camera=(self)` and add a user-initiated `BarcodeDetector` scanner when supported;
-8. always retain manual identifier entry when camera/barcode APIs are unavailable;
-9. later external catalog adapters return candidates/evidence/confidence for collector review.
+1. harden identifier matching against arbitrary provider-specific external identifier keys;
+2. add pure scanner format/detection/debounce helpers with tests;
+3. expose a camera button only when the browser is in a secure context and supports both `mediaDevices.getUserMedia` and `BarcodeDetector`;
+4. query supported barcode formats rather than assuming availability;
+5. request an environment-facing camera only after explicit collector action;
+6. stop camera tracks when the scanner closes, page leaves, or becomes inactive;
+7. feed detections into `/api/vault/intake` with `sourceType: camera`;
+8. debounce frame-repeat noise while retaining meaningful repeated scan counts;
+9. enable `Permissions-Policy: camera=(self)` only when the scanner is implemented/tested;
+10. preserve manual intake whenever the scanner APIs are unavailable;
+11. never auto-create an authoritative treasure or claim an exact catalog match from a scan alone.
 
 ---
 
