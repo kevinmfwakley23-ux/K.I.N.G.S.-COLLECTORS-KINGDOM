@@ -38,11 +38,19 @@ async function readJson(request) {
   catch { throw new VaultError("invalid_json", "Request body must contain valid JSON."); }
 }
 
-function route(pathname) {
-  const match = pathname.match(/^\/api\/grading\/treasures\/([^/]+)\/pregrade-analyses$/);
-  if (!match) return null;
-  try { return decodeURIComponent(match[1]); }
+function decodeTreasureId(value) {
+  try { return decodeURIComponent(value); }
   catch { throw new VaultError("invalid_treasure_id", "The treasure identifier is invalid."); }
+}
+
+function analysisRoute(pathname) {
+  const match = pathname.match(/^\/api\/grading\/treasures\/([^/]+)\/pregrade-analyses$/);
+  return match ? decodeTreasureId(match[1]) : null;
+}
+
+function estimateRoute(pathname) {
+  const match = pathname.match(/^\/api\/grading\/treasures\/([^/]+)\/pregrade-estimate$/);
+  return match ? decodeTreasureId(match[1]) : null;
 }
 
 export async function handleGradingAnalysisRoute({
@@ -53,17 +61,23 @@ export async function handleGradingAnalysisRoute({
   gradingAnalysisService,
   securityHeaders
 } = {}) {
-  const treasureId = route(requestUrl.pathname);
-  if (!treasureId) return null;
+  const analysisTreasureId = analysisRoute(requestUrl.pathname);
+  const estimateTreasureId = estimateRoute(requestUrl.pathname);
+  if (!analysisTreasureId && !estimateTreasureId) return null;
   if (!gradingAnalysisService) throw new VaultError("pregrade_analysis_unavailable", "Stored pre-grade analysis is unavailable.", 503);
   const method = request.method ?? "GET";
   const identity = requireIdentity(identityService, request);
+
+  if (estimateTreasureId) {
+    if (method !== "GET" && method !== "HEAD") return false;
+    return sendJson(response, 200, gradingAnalysisService.estimate(identity, estimateTreasureId), method, securityHeaders);
+  }
 
   if (method === "GET" || method === "HEAD") {
     const limitRaw = requestUrl.searchParams.get("limit");
     const limit = limitRaw === null ? undefined : Number(limitRaw);
     return sendJson(response, 200, {
-      analyses: gradingAnalysisService.list(identity, treasureId, { limit }),
+      analyses: gradingAnalysisService.list(identity, analysisTreasureId, { limit }),
       policy: {
         appendOnly: true,
         ordinaryUpdateAvailable: false,
@@ -81,7 +95,7 @@ export async function handleGradingAnalysisRoute({
 
   if (method === "POST") {
     const body = await readJson(request);
-    const analysis = gradingAnalysisService.append(identity, treasureId, {
+    const analysis = gradingAnalysisService.append(identity, analysisTreasureId, {
       standardProfile: body.standardProfile,
       cardSizeProfile: body.cardSizeProfile,
       sourceMediaIds: body.sourceMediaIds,
