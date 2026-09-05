@@ -77,6 +77,8 @@ test("Vault recovery snapshot validates and restores authoritative records plus 
     assert.equal(snapshot.manifest.database.counts.vault_media, 1);
     assert.equal(snapshot.manifest.database.counts.vault_evidence_documents, 1);
     assert.equal(snapshot.manifest.database.counts.vault_collection_sets, 1);
+    assert.equal(snapshot.manifest.database.counts.vault_set_entries, 1);
+    assert.equal(snapshot.manifest.database.counts.vault_set_links, 1);
     assert.equal(snapshot.manifest.files.length, 2);
     assert.deepEqual(new Set(snapshot.manifest.files.map((file) => file.sha256)), new Set([image.sha256, document.sha256]));
 
@@ -108,7 +110,10 @@ test("Vault recovery snapshot validates and restores authoritative records plus 
       assert.deepEqual((await restoredEvidence.file(collector, document.id)).bytes, PDF);
       assert.equal(restoredEvidence.list(collector, treasure.id)[0].title, "Estate provenance record");
       assert.equal(restoredSets.get(collector, collectionSet.id).completionPercent, 100);
-      assert.equal(restoredMarketplace.get(collector, treasure.id).preparation.listingDescription, "Signed championship card from a documented family collection.");
+      const restoredPreparation = restoredMarketplace.get(collector, treasure.id);
+      assert.equal(restoredPreparation.listingDescription, "Signed championship card from a documented family collection.");
+      assert.equal(restoredPreparation.conditionDisclosure, "Light edge wear visible under magnification.");
+      assert.equal(restoredPreparation.ready, true);
     } finally {
       restoredEvidence.close();
       restoredMarketplace.close();
