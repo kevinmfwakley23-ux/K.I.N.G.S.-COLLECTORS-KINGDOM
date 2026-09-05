@@ -16,6 +16,9 @@ const contractFiles = [
   "packages/vault/src/service.mjs",
   "packages/vault/src/media-security.mjs",
   "packages/vault/src/recovery.mjs",
+  "packages/vault/src/performance-indexes.mjs",
+  "packages/vault/src/recommendations.mjs",
+  "packages/vault/src/recommendations-http.mjs",
   "packages/vault/src/http.mjs",
   "packages/vault/src/ownership.mjs",
   "packages/vault/src/portable.mjs",
@@ -45,4 +48,4 @@ for (const relative of contractFiles) {
 const entries = await readdir(resolve(root, "packages"), { withFileTypes: true });
 if (!entries.some((entry) => entry.isDirectory())) throw new Error("No package boundaries found.");
 
-console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, and Royal Vault boundaries, including byte-validated image intake, verified recovery snapshots, portable intake, provenance, category intelligence, dirty-tracked scalable collector search, saved Vault views, protected evidence documents, explicit collection-set completion with aggregate progress summaries, transparent Marketplace handoff readiness, and bounded Royal Curator context.");
+console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, and Royal Vault boundaries, including byte-validated image intake, verified recovery snapshots, account-scoped performance indexes, grounded collector-only tag recommendations, portable intake, provenance, category intelligence, dirty-tracked scalable collector search, saved Vault views, protected evidence documents, explicit collection-set completion with aggregate progress summaries, transparent Marketplace handoff readiness, and bounded Royal Curator context.");
