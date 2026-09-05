@@ -10,7 +10,11 @@ test("Vault enhancement modules load in dependency-safe order", async () => {
     "./vault-provenance-ui.js",
     "./vault-reorganization-ui.js",
     "./vault-bulk-reorganization-ui.js",
-    "./vault-saved-views-ui.js"
+    "./vault-saved-views-ui.js",
+    "./vault-grading-ui.js",
+    "./vault-grading-color-ui.js",
+    "./vault-grading-autograph-ui.js",
+    "./vault-grading-persistence-ui.js"
   ]);
 
   const calls = [];

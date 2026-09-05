@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -27,22 +28,24 @@ async function withMedia(run) {
   const storage = new LocalVaultMediaStorage(join(directory, "private-media"));
   const media = createVaultMediaService({ vaultStore, mediaRepository, storage });
   try {
-    await run({ vault, media, vaultStore });
+    await run({ vault, media, mediaRepository, vaultStore });
   } finally {
     vaultStore.close();
     await rm(directory, { recursive: true, force: true });
   }
 }
 
-test("Vault media stores validated private bytes and enforces owner isolation", async () => {
-  await withMedia(async ({ vault, media }) => {
+test("Vault media stores validated private bytes, persists SHA-256, and enforces owner isolation", async () => {
+  await withMedia(async ({ vault, media, mediaRepository }) => {
     const treasure = vault.createTreasure(collectorA, {
       title: "Amazing Fantasy #15",
       category: "Comic Book"
     });
 
+    const bytes = pngBytes();
+    const digest = createHash("sha256").update(bytes).digest("hex");
     const created = await media.add(collectorA, treasure.id, {
-      bytes: pngBytes(),
+      bytes,
       contentType: "image/png",
       originalName: "front-cover.png"
     });
@@ -51,13 +54,30 @@ test("Vault media stores validated private bytes and enforces owner isolation", 
     assert.equal(created.mediaKind, "image");
     assert.equal(created.contentType, "image/png");
     assert.match(created.url, /^\/api\/vault\/media\//);
+    assert.equal(Object.hasOwn(created, "sha256"), false);
+
+    const stored = mediaRepository.findById(collectorA.id, created.id);
+    assert.equal(stored.sha256, digest);
+
+    const matched = media.matchBySha256(collectorA, treasure.id, digest.toUpperCase());
+    assert.equal(matched.id, created.id);
+    assert.equal(Object.hasOwn(matched, "sha256"), false);
+    assert.equal(media.matchBySha256(collectorA, treasure.id, "0".repeat(64)), null);
+    assert.throws(
+      () => media.matchBySha256(collectorA, treasure.id, "not-a-digest"),
+      (error) => error instanceof VaultError && error.code === "invalid_media_sha256"
+    );
+    assert.throws(
+      () => media.matchBySha256(collectorB, treasure.id, digest),
+      (error) => error instanceof VaultError && error.code === "treasure_not_found"
+    );
 
     const listed = media.list(collectorA, treasure.id);
     assert.equal(listed.length, 1);
     assert.equal(listed[0].id, created.id);
 
     const read = await media.read(collectorA, created.id);
-    assert.deepEqual(read.bytes, pngBytes());
+    assert.deepEqual(read.bytes, bytes);
 
     assert.throws(
       () => media.list(collectorB, treasure.id),
@@ -71,7 +91,7 @@ test("Vault media stores validated private bytes and enforces owner isolation", 
     const history = vault.history(collectorA, treasure.id);
     assert.equal(history[0].eventType, "vault.media_added");
     assert.equal(history[0].metadata.mediaId, created.id);
-    assert.match(history[0].metadata.sha256, /^[a-f0-9]{64}$/);
+    assert.equal(history[0].metadata.sha256, digest);
 
     const removed = await media.remove(collectorA, created.id);
     assert.equal(removed.removed, true);

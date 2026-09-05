@@ -17,11 +17,11 @@ This file is the durable engineering recovery ledger. Read it before substantial
 
 **Date:** 2026-09-05  
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Latest verified checkpoint:** **Exact Sports-Card Catalog Evidence via The Card API**  
-**Latest verified implementation gate:** **Kingdom Quality Gates #495** — run `33974730681` — **PASS**  
-**Verified implementation commit:** `e51c0751675746e3d9b3fa22f97815dd1450df2b`  
-**Working branch:** `imp-005-the-card-api-sports-catalog`  
-**Pull request:** `#14` — `IMP-005: exact sports-card catalog evidence`
+**Latest verified checkpoint:** **AI Card Pre-Grading Foundation + SHA-Linked Evidence + Advisory Range Engine**  
+**Latest verified implementation gate:** **Kingdom Quality Gates #598** — run `33982767676` — **PASS**  
+**Verified implementation commit:** `bbe7bad9e4282fe987274e3d42403782e0c96bef`  
+**Working branch:** `imp-005-ai-card-pregrading-foundation`  
+**Pull request:** `#15` — `IMP-005: AI card pre-grading foundation`
 
 ### Exact recovery point
 
@@ -31,6 +31,7 @@ Do **not** rebuild the following verified IMP-005 slices:
 - treasure create/read/update/archive;
 - collections and arbitrary-depth physical storage;
 - secure private media;
+- SHA-256 integrity metadata for new private media uploads and owner/treasure-scoped exact digest matching;
 - voice command/talk-to-text;
 - transactional JSON/CSV migration;
 - Royal Intake Queue and progressive native barcode scanning;
@@ -42,127 +43,129 @@ Do **not** rebuild the following verified IMP-005 slices:
 - review-only Pokémon exact-card evidence;
 - review-only Magic exact-printing evidence via Scryfall;
 - review-only PSA certification-number database evidence;
-- review-only exact sports-card catalog evidence via The Card API.
+- review-only exact sports-card catalog evidence via The Card API;
+- AI pre-grading card-size/grader reference profiles;
+- deterministic front/back centering math and manual anchor correction;
+- browser capture-quality analysis;
+- whole-card geometry/crop/perspective detection;
+- contour-based corner/edge anomaly review signals;
+- paired raking-light surface anomaly analysis;
+- same-printing color/fade comparison;
+- web-backed autograph visual-similarity comparison through authenticated Wikimedia Commons reference search/proxy;
+- append-only hashed pre-grade analysis persistence;
+- detector-completion coverage evidence;
+- server-computed read-only advisory grade range with fail-closed minimum evidence and conservative uncertainty widening.
 
-### Latest sports-card slice
+### Latest AI pre-grading slice
 
 Primary implementation files include:
 
-- `packages/catalog/src/the-card-api-provider.mjs`
-- `packages/catalog/src/runtime.mjs`
-- `packages/catalog/src/service.mjs`
-- `config/runtime.mjs`
-- `packages/vault/src/intake-service.mjs`
-- `apps/web/public/vault-catalog-core.js`
-- `apps/web/public/vault-intake-core.js`
-- `apps/web/public/vault-intake-ui.js`
-- `.env.example`
-- provider/runtime/Intake/UI/build-contract tests
-- `docs/research/2026-09-05-IMP-005-THE-CARD-API-SPORTS-CATALOG.md`
+- `packages/grading/src/profiles.mjs`
+- `packages/grading/src/centering.mjs`
+- `packages/grading/src/evidence.mjs`
+- `packages/grading/src/aggregate.mjs`
+- `packages/grading/src/repository.mjs`
+- `packages/grading/src/service.mjs`
+- `packages/grading/src/commons-autograph-provider.mjs`
+- `apps/web/grading-analysis-http.mjs`
+- `apps/web/grading-reference-http.mjs`
+- `apps/web/public/vault-grading-core.js`
+- `apps/web/public/vault-grading-image-core.js`
+- `apps/web/public/vault-grading-geometry-core.js`
+- `apps/web/public/vault-grading-contour-core.js`
+- `apps/web/public/vault-grading-surface-core.js`
+- `apps/web/public/vault-grading-color-core.js`
+- `apps/web/public/vault-grading-autograph-core.js`
+- `apps/web/public/vault-grading-ui.js`
+- `apps/web/public/vault-grading-color-ui.js`
+- `apps/web/public/vault-grading-autograph-ui.js`
+- `apps/web/public/vault-grading-persistence-ui.js`
+- `packages/vault/src/media-repository.mjs`
+- `packages/vault/src/media-service.mjs`
+- `apps/web/vault-media-http.mjs`
+- grading/media/server/UI/build-contract tests
+- `docs/research/2026-09-05-IMP-005-AI-CARD-PREGRADING.md`
 
 Verified behavior:
 
-- permanent `UC-` sports-card UCIDs normalize and validate before network use;
-- exact set/card lookup uses provider set USID + printed card number;
-- the card's referenced set is independently fetched and must have provider category `sports`;
-- external HTTP is forbidden outside localhost tests; production transport is HTTPS;
-- the API key is server-only and sent through `x-api-key` rather than URLs/browser code;
-- `/api/v1` is preserved by explicit provider path joining;
-- timeout, response size and request pacing are bounded;
-- exact-result ambiguity fails instead of silently selecting a card;
-- configuration-required, paid-plan/subscription-required, rate-limit, auth, upstream, malformed, category mismatch and identifier mismatch failures stay distinct;
-- provider catalog entitlement is **not** claimed at startup merely because a key exists;
-- normalized evidence may include subject/player, set/parent set, printed number, sport/year, manufacturer, rookie/autograph/relic flags, print run and provider IDs;
-- Market/Sales endpoints, sale prices, market prices, listing data, valuation and provider images are excluded from this identification path;
-- Royal Intake supports `sports-card-ucid` and `sports-card-set-number` as duplicate-review evidence;
-- candidate handoff creates only a **new unsaved** Trading Card editor;
-- no automatic physical parallel/variant/finish, condition, grade, authenticity, provenance, ownership, purchase price, market value or Marketplace mutation occurs.
+- standard-western and Japanese-size card calibration profiles are versioned references rather than authenticity claims;
+- PSA/BGS/CGC published centering material can be compared as reference thresholds without implying affiliation or an official grade;
+- horizontal and vertical centering are measured independently;
+- browser capture analysis measures resolution, focus/sharpness, glare/overexposure, underexposure and contrast;
+- card geometry can detect a whole-card rectangle on a contrasting background and evaluate crop completeness, perspective and expected aspect;
+- contour analysis can surface possible physical corner/edge silhouette anomalies and fails closed when geometry is unusable;
+- paired raking-light comparison normalizes exposure and suppresses stable artwork before surfacing possible localized/linear reflectance anomalies;
+- same-printing color comparison normalizes channel balance/brightness and can surface possible chroma loss/color drift while recording limitations;
+- autograph analysis isolates stroke geometry, compares multiple references and is structurally `authenticationClaim=false` / `professionallyAuthenticated=false`;
+- Commons reference discovery uses the official MediaWiki API, identifying server traffic and preserving source/license metadata;
+- Commons images reach the browser only through an authenticated same-origin Kingdom proxy; arbitrary remote image URLs are not accepted;
+- saved pre-grade records are immutable append-only advisory evidence with server-generated IDs/timestamps/profile versions/SHA-256 hashes;
+- pre-grade persistence cannot mutate authoritative treasure grade, condition, authenticity or value;
+- client-supplied overall grade ranges are rejected;
+- pixel-derived findings persist only after the exact local `File` SHA-256 matches private image media on the same owner/treasure;
+- public media responses do not expose stored digest catalogs;
+- detector coverage distinguishes a completed zero-candidate run from a detector that never ran;
+- paired-surface evidence can validate and retain both source-media IDs;
+- the advisory range engine reads immutable stored evidence and deduplicates identical review candidates;
+- no range is returned until at least one side has centering + usable capture + usable contour coverage;
+- partial evidence intentionally produces a wide range (verified one-side clean example: `6.5–10`), while broad front/back + surface coverage can narrow the range;
+- range confidence/completeness/missing evidence are explicit;
+- the range is Kingdom-owned advisory logic, not reverse-engineered PSA/BGS/CGC scoring;
+- the read-only estimate endpoint and UI cannot modify treasure fields.
 
-### Verification sequence
+### Verification sequence for the current grading checkpoint
 
-- **Quality Gates #494** — run `33974619115` — failed **1/167** because an older Magic UI artifact test required the literal phrase `physical variant or finish`; the new shared warning had changed that phrase to sports-card `variant or parallel` language.
-- Production/provider logic was not weakened. The shared warning was corrected to preserve **both** Magic `variant or finish` and sports-card `variant or parallel` review concepts.
-- **Quality Gates #495** — run `33974730681` — **PASS** on `e51c0751675746e3d9b3fa22f97815dd1450df2b`.
-- #495 passed lint, type contracts, all tests, production build/artifact verification and production dependency audit.
-
-### Provider/legal research outcome
-
-- The Card API currently offers permanent typed identifiers and a commercial Catalog API under eligible paid plans/add-ons with plan-specific storage/use restrictions.
-- The Kingdom treats it as an optional server-side integration and does not redistribute the provider catalog as a standalone competing dataset.
-- Beckett, SGC and CGC provide collector-facing certification verification, but no supported public automation API was identified in the official material reviewed for this pass; do not scrape/bypass those interfaces.
-- SportsCardsPro/PriceCharting proprietary price data remains excluded as a default Kingdom valuation source without appropriate permission for third-party-accessible use.
+- Earlier grading foundation/capture/autograph/persistence gates passed progressively, including #498, #509, #516, #530, #551, #559 and #580.
+- **Quality Gates #596** — run `33982013475` — failed 3 tests because the new HTTP test helper incorrectly read registration as `body.identity.id` instead of the real API contract `{ account }`. This was a test-fixture defect, not a grading/runtime failure.
+- The helper was corrected to use `registration.body.account.id`.
+- **Quality Gates #597** — run `33982682584` — passed 229/230 tests; the sole failure was a stale HTTP expectation of `7–10` while the deterministic partial-evidence rubric correctly returned `6.5–10`.
+- The stale expectation was aligned with the conservative rubric; production grading logic was not weakened.
+- **Quality Gates #598** — run `33982767676` — **PASS** on `bbe7bad9e4282fe987274e3d42403782e0c96bef`.
+- #598 passed lint, type contracts, all **230 tests**, production build/artifact verification and production dependency audit.
 
 ---
 
-## Newly locked requirement — AI card pre-grading
+## Research/adaptation outcome for the next grading slice
 
-The collector has explicitly required AI grading capability including:
+Fresh 2026 review of current grading/condition workflows confirms the next advantage should be **explainability and measurable evidence**, not a more opaque single score.
 
-- border-size and centering tools for TCG/sports cards;
-- corner checks;
-- edge checks;
-- scratch/surface checks;
-- color/fading checks;
-- autograph knowledge and scan-to-reference comparison using lawful web access/reference evidence.
+Current official/first-party material reviewed includes:
 
-Pass-specific research record:
-
-- `docs/research/2026-09-05-IMP-005-AI-CARD-PREGRADING.md`
-
-### Standards research completed
-
-Official sources reviewed:
-
+- TAG Grading machine-learning workflow and DIG report;
+- Beckett/BGS grading/subgrade criteria;
 - PSA grading standards;
-- Beckett/BGS grading scale and four-subgrade model;
 - CGC Cards grading scale;
-- PSA autograph authentication process;
-- Beckett Authentication autograph process;
-- trading-card physical-size references for standard western and Japanese-size cards.
+- TCGplayer condition and imperfection measurement guidance.
 
-Key decisions:
+Useful ideas to adapt into Kingdom-owned implementation:
 
-- the Kingdom feature is named **AI pre-grade**, **condition analysis**, or **estimated grade range**, not an official grade;
-- versioned grader profiles may expose PSA/BGS/CGC-style thresholds, but the Kingdom must not claim affiliation or certainty beyond the published criteria and captured evidence;
-- centering must measure horizontal and vertical ratios independently and preserve front/back results;
-- western standard cards use a common approximately 63×88 mm / 2.5×3.5 in calibration profile; Japanese-size cards use approximately 59×86 mm; actual image geometry still controls measurement;
-- borderless/asymmetric designs require a known reference template or collector-correctable manual anchors rather than naive outer-border math;
-- corners, edges and surface retain independent evidence/sub-scores;
-- fine scratches, gloss changes, dents, restoration and alteration can require macro/raking/spectral views, so low-quality phone images must produce limitations rather than false confidence;
-- professional autograph authentication uses more than visual similarity. PSA and Beckett describe ink/structure analysis, object evaluation, side-by-side exemplars and specialized tools;
-- the Kingdom may perform sourced **signature similarity comparison** against known exemplars but may not call a signature genuine/fake solely from AI image comparison.
+- front/back condition dimensions rather than one unexplained number;
+- explicit centering, corners, edges and surface summaries;
+- annotated detector findings with collector/human review before final interpretation;
+- measured defect extent where the detector actually supports length/area inference;
+- explicit distinction between manufacturing artifacts and handling/wear where evidence permits;
+- per-dimension completeness/confidence and `needs more capture` instructions;
+- preservation of original machine evidence even when a collector accepts/rejects/marks a finding uncertain.
 
-### Target capture protocol
-
-The grading workflow should request, where appropriate:
-
-1. straight-on front;
-2. straight-on back;
-3. high-resolution corner/macro evidence;
-4. raking-light surface views from multiple directions;
-5. optional alternate-light/UV evidence when available;
-6. autograph close-up when present;
-7. optional scale/calibration reference for exact-size/trimming review.
-
-Capture quality must be checked for blur, glare, crop completeness, perspective and resolution before analysis.
+Do **not** copy proprietary grading algorithms, private datasets, protected exemplar databases, or third-party score formulas.
 
 ---
 
 ## Exact next engineering target
 
-**IMP-005 — AI Card Pre-Grading Foundation**
+**IMP-005 — Explainable Grading Report + Dimension Evidence**
 
 Build next in this order:
 
-1. add `packages/grading/` with versioned card-size and grader-standard profiles;
-2. implement deterministic centering math for left/right and top/bottom borders with front/back ratios and tests;
-3. add manual-anchor correction support for borderless/asymmetric/poorly detected cards;
-4. define capture-quality and defect evidence contracts for corners, edges, surface, color and alteration warnings;
-5. create an append-only pre-grade analysis repository tied to permanent treasure UUIDs and source media IDs/hashes;
-6. add an image-analysis provider boundary that can use browser/local computer vision and governed K.I.N.G.S. AI vision routing without exposing provider credentials;
-7. add autograph-comparison evidence with sourced reference exemplar URLs/dates and strict non-authentication semantics;
-8. build responsive mobile-first grading capture/review UI;
-9. do not directly mutate authoritative treasure grade, condition, authenticity, provenance or value from AI analysis;
+1. create a versioned dimension-summary contract for front/back centering, corners, edges and surface;
+2. compute per-dimension advisory score/range only when evidence for that dimension is sufficient;
+3. expose why each dimension is available/unavailable and which captures are missing;
+4. add normalized length/area metrics to defect evidence where geometry permits reliable measurement;
+5. introduce manufacturing-vs-handling classification as advisory evidence with confidence/limitations, never as certainty;
+6. add append-only collector review decisions for detector candidates: `accepted`, `rejected`, `uncertain`;
+7. never delete or rewrite the original detector evidence when reviewed;
+8. surface annotated findings and dimension summaries in the responsive Vault grading report;
+9. keep all third-party grader profiles reference-only;
 10. pass full Kingdom Quality Gates;
 11. update README and this recovery ledger before merge.
 
@@ -182,7 +185,8 @@ Build next in this order:
 - Pokémon TCG Category Catalog Intelligence — #480 — PASS.
 - Magic / Scryfall Catalog Intelligence — #485 and later regression gates — PASS.
 - PSA Certification-Database Evidence — #490 — PASS.
-- Exact Sports-Card Catalog Evidence / The Card API — #495 — run `33974730681` — PASS on `e51c0751675746e3d9b3fa22f97815dd1450df2b`.
+- Exact Sports-Card Catalog Evidence / The Card API — #495 — PASS.
+- AI Card Pre-Grading Foundation + SHA-Linked Evidence + Advisory Range Engine — **#598** — run `33982767676` — PASS on `bbe7bad9e4282fe987274e3d42403782e0c96bef`.
 
 ---
 
@@ -190,11 +194,14 @@ Build next in this order:
 
 Do not represent these as live until separately implemented and verified:
 
-- AI card pre-grading/condition analysis UI and persistence;
-- automatic border/corner/edge/surface/color computer vision;
-- autograph similarity comparison and sourced exemplar retrieval;
+- explainable per-dimension grading report/subscores;
+- measured detector annotations beyond current normalized boxes/signals;
+- collector accept/reject/uncertain review decisions for detector findings;
+- reliable manufacturing-vs-handling defect classification;
+- alternate-light/UV/spectral analysis;
 - official grading-provider integrations beyond PSA certification database evidence;
 - physical slab/card authentication;
+- professional autograph authentication;
 - evidence-backed market valuation and value history;
 - image-based collectible identification;
 - multi-provider Pokémon reconciliation/fallback;

@@ -28,6 +28,13 @@ function requireTreasure(vaultStore, ownerAccountId, treasureId) {
   return treasure;
 }
 
+function safeSha256(value) {
+  if (typeof value !== "string" || !/^[a-f0-9]{64}$/i.test(value.trim())) {
+    throw new VaultError("invalid_media_sha256", "A valid SHA-256 digest is required.", 400);
+  }
+  return value.trim().toLowerCase();
+}
+
 function safeOriginalName(value) {
   if (typeof value !== "string") throw new VaultError("invalid_media_filename", "An original filename is required.");
   const name = value.normalize("NFKC").trim();
@@ -166,6 +173,7 @@ export function createVaultMediaService({ vaultStore, mediaRepository, storage, 
         originalName: inspected.originalName,
         contentType: inspected.contentType,
         sizeBytes: inspected.sizeBytes,
+        sha256: inspected.sha256,
         createdAt
       });
       vaultStore.writeEvent({
@@ -194,6 +202,15 @@ export function createVaultMediaService({ vaultStore, mediaRepository, storage, 
     const collector = requireCollector(identity);
     const treasure = requireTreasure(vaultStore, collector.id, treasureId);
     return mediaRepository.listForTreasure(collector.id, treasure.id).map(publicMedia);
+  }
+
+  function matchBySha256(identity, treasureId, sha256) {
+    const collector = requireCollector(identity);
+    const treasure = requireTreasure(vaultStore, collector.id, treasureId);
+    const digest = safeSha256(sha256);
+    const media = mediaRepository.findBySha256(collector.id, treasure.id, digest);
+    if (!media || media.mediaKind !== "image") return null;
+    return publicMedia(media);
   }
 
   async function read(identity, mediaId) {
@@ -243,5 +260,5 @@ export function createVaultMediaService({ vaultStore, mediaRepository, storage, 
     });
   }
 
-  return Object.freeze({ add, list, read, remove, usage });
+  return Object.freeze({ add, list, matchBySha256, read, remove, usage });
 }

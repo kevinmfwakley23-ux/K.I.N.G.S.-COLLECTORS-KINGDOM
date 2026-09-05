@@ -6,6 +6,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { loadRuntimeConfig } from "../../config/runtime.mjs";
 import { createCatalogRuntime } from "../../packages/catalog/src/runtime.mjs";
 import { createHealthSnapshot, createReadinessSnapshot } from "../../packages/core/src/health.mjs";
+import { createCommonsAutographProvider } from "../../packages/grading/src/commons-autograph-provider.mjs";
+import { createPregradeAnalysisRepository } from "../../packages/grading/src/repository.mjs";
+import { createPregradeAnalysisService } from "../../packages/grading/src/service.mjs";
 import { createGreatHallService } from "../../packages/great-hall/src/service.mjs";
 import { createIdentityService, IdentityError } from "../../packages/identity/src/service.mjs";
 import { SqliteIdentityStore } from "../../packages/identity/src/sqlite-store.mjs";
@@ -28,6 +31,8 @@ import { createVaultReorganizationService } from "../../packages/vault/src/reorg
 import { createVaultService, VaultError } from "../../packages/vault/src/service.mjs";
 import { SqliteVaultStore } from "../../packages/vault/src/sqlite-store.mjs";
 import { handleCatalogRoute } from "./catalog-http.mjs";
+import { handleGradingAnalysisRoute } from "./grading-analysis-http.mjs";
+import { handleGradingReferenceRoute } from "./grading-reference-http.mjs";
 import { handleVaultImportRoute } from "./vault-import-http.mjs";
 import { handleVaultIntakeRoute } from "./vault-intake-http.mjs";
 import { handleVaultMediaRoute } from "./vault-media-http.mjs";
@@ -441,6 +446,8 @@ export function createKingdomServer({
   greatHallService = null,
   kingsAiClient = null,
   catalogService = null,
+  autographReferenceProvider = null,
+  gradingAnalysisService = null,
   vaultService = null,
   vaultMediaService = null,
   vaultImportService = null,
@@ -517,6 +524,34 @@ export function createKingdomServer({
         });
         if (handled !== null) {
           if (handled !== false) return;
+          return sendJson(response, 405, { error: "method_not_allowed" }, method);
+        }
+      }
+
+      if (requestUrl.pathname.startsWith("/api/grading/")) {
+        const analysisHandled = await handleGradingAnalysisRoute({
+          request,
+          response,
+          requestUrl,
+          identityService,
+          gradingAnalysisService,
+          securityHeaders: SECURITY_HEADERS
+        });
+        if (analysisHandled !== null) {
+          if (analysisHandled !== false) return;
+          return sendJson(response, 405, { error: "method_not_allowed" }, method);
+        }
+
+        const referenceHandled = await handleGradingReferenceRoute({
+          request,
+          response,
+          requestUrl,
+          identityService,
+          autographReferenceProvider,
+          securityHeaders: SECURITY_HEADERS
+        });
+        if (referenceHandled !== null) {
+          if (referenceHandled !== false) return;
           return sendJson(response, 405, { error: "method_not_allowed" }, method);
         }
       }
@@ -676,6 +711,12 @@ async function run() {
     mediaRepository: vaultMediaRepository,
     storage: vaultMediaStorage
   });
+  const gradingAnalysisRepository = createPregradeAnalysisRepository({ vaultStore });
+  const gradingAnalysisService = createPregradeAnalysisService({
+    vaultStore,
+    mediaRepository: vaultMediaRepository,
+    analysisRepository: gradingAnalysisRepository
+  });
   const vaultProvenanceRepository = createVaultProvenanceRepository({ vaultStore });
   const vaultProvenanceService = createVaultProvenanceService({
     vaultStore,
@@ -688,6 +729,7 @@ async function run() {
   });
   const catalogRuntime = createCatalogRuntime({ config });
   const catalogService = catalogRuntime.service;
+  const autographReferenceProvider = createCommonsAutographProvider({ version: config.version });
   const greatHallService = createGreatHallService({ identityService, vaultService });
   const kingsAiClient = createKingsAiClient({
     baseUrl: config.kingsAiBaseUrl,
@@ -701,6 +743,8 @@ async function run() {
     greatHallService,
     kingsAiClient,
     catalogService,
+    autographReferenceProvider,
+    gradingAnalysisService,
     vaultService,
     vaultMediaService,
     vaultImportService,

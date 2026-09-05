@@ -21,6 +21,13 @@ const contractFiles = [
   "packages/catalog/src/the-card-api-provider.mjs",
   "packages/catalog/src/runtime.mjs",
   "packages/catalog/src/service.mjs",
+  "packages/grading/src/profiles.mjs",
+  "packages/grading/src/centering.mjs",
+  "packages/grading/src/evidence.mjs",
+  "packages/grading/src/aggregate.mjs",
+  "packages/grading/src/commons-autograph-provider.mjs",
+  "packages/grading/src/repository.mjs",
+  "packages/grading/src/service.mjs",
   "packages/vault/src/sqlite-store.mjs",
   "packages/vault/src/service.mjs",
   "packages/vault/src/import-repository.mjs",
@@ -37,6 +44,8 @@ const contractFiles = [
   "packages/vault/src/reorganization-repository.mjs",
   "packages/vault/src/reorganization-service.mjs",
   "apps/web/catalog-http.mjs",
+  "apps/web/grading-analysis-http.mjs",
+  "apps/web/grading-reference-http.mjs",
   "apps/web/vault-import-http.mjs",
   "apps/web/vault-intake-http.mjs",
   "apps/web/vault-media-http.mjs",
@@ -59,6 +68,17 @@ const contractFiles = [
   "apps/web/public/vault-pagination-core.js",
   "apps/web/public/vault-saved-views-core.js",
   "apps/web/public/vault-saved-views-ui.js",
+  "apps/web/public/vault-grading-core.js",
+  "apps/web/public/vault-grading-image-core.js",
+  "apps/web/public/vault-grading-geometry-core.js",
+  "apps/web/public/vault-grading-contour-core.js",
+  "apps/web/public/vault-grading-surface-core.js",
+  "apps/web/public/vault-grading-color-core.js",
+  "apps/web/public/vault-grading-color-ui.js",
+  "apps/web/public/vault-grading-autograph-core.js",
+  "apps/web/public/vault-grading-autograph-ui.js",
+  "apps/web/public/vault-grading-persistence-ui.js",
+  "apps/web/public/vault-grading-ui.js",
   "apps/web/public/voice.js",
   "apps/web/server.mjs"
 ];
@@ -71,4 +91,4 @@ for (const relative of contractFiles) {
 const entries = await readdir(resolve(root, "packages"), { withFileTypes: true });
 if (!entries.some((entry) => entry.isDirectory())) throw new Error("No package boundaries found.");
 
-console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, provider-neutral ISBN/UPC/EAN/Pokémon/MTG/sports-card catalog evidence, PSA certification-database evidence, append-only provenance API/UI, saved Vault views and deterministic keyset retrieval API/UI, cycle-safe individual and previewed atomic bulk reorganization API/UI, Vault, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice boundaries.");
+console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, provider-neutral catalog/cert evidence, AI card pre-grading profiles/centering/evidence/detector-coverage/advisory-range contracts, append-only hashed pre-grade persistence and read-only estimate API/UI, browser capture-quality/card-geometry/contour/paired-surface/color/autograph analysis UI, authenticated Commons autograph reference search/proxy, append-only provenance API/UI, saved Vault views and deterministic keyset retrieval API/UI, cycle-safe individual and previewed atomic bulk reorganization API/UI, Vault, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice boundaries.");
