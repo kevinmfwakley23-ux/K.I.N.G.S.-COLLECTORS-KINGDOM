@@ -73,6 +73,15 @@
 .grading-review-note { display: grid; gap: .3rem; font-size: .8rem; font-weight: 750; }
 .grading-review-note textarea { width: 100%; resize: vertical; min-height: 3.5rem; }
 .grading-finding-review-actions { display: flex; flex-wrap: wrap; gap: .45rem; }
+.grading-calibration-panel { border-color: rgba(138, 94, 20, .22); background: rgba(214, 170, 74, .07); }
+.grading-calibration-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .65rem; }
+.grading-calibration-grid label { display: grid; gap: .3rem; font-size: .78rem; font-weight: 780; }
+.grading-calibration-grid input { width: 100%; }
+.grading-physical-measurement { display: grid; gap: .6rem; }
+.grading-physical-card { display: grid; gap: .35rem; padding: .8rem; border-radius: .85rem; border: 1px solid rgba(138, 94, 20, .22); background: rgba(214, 170, 74, .07); }
+.grading-physical-card.missing { background: rgba(160,58,45,.05); border-color: rgba(160,58,45,.16); }
+.grading-physical-card h4 { margin: 0; }
+.grading-physical-card > span { font-size: .8rem; }
 @media (max-width: 1100px) {
   .grading-dimension-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -81,10 +90,10 @@
   .grading-workspace { grid-template-columns: 1fr; }
 }
 @media (max-width: 620px) {
-  .grading-toolbar, .grading-border-grid, .grading-reference-form, .grading-reference-candidates, .grading-dimension-grid { grid-template-columns: 1fr; }
+  .grading-toolbar, .grading-border-grid, .grading-reference-form, .grading-reference-candidates, .grading-dimension-grid, .grading-calibration-grid { grid-template-columns: 1fr; }
   .grading-heading { display: grid; }
   .grading-advisory-badge { white-space: normal; width: fit-content; }
   .grading-image-stage { min-height: 18rem; }
   .grading-threshold, .grading-result-row, .grading-quality-row, .grading-finding-review-heading { align-items: flex-start; flex-direction: column; gap: .2rem; }
-  .grading-autograph-panel > .gold-button, .grading-persistence-actions > button, .grading-finding-review-actions > button { width: 100%; }
+  .grading-autograph-panel > .gold-button, .grading-persistence-actions > button, .grading-finding-review-actions > button, .grading-calibration-panel > button { width: 100%; }
 }
