@@ -7,6 +7,7 @@ import { SqliteIdentityStore } from "../../packages/identity/src/sqlite-store.mj
 import { parseCookies } from "../../packages/identity/src/tokens.mjs";
 import { createKingsAiClient } from "../../packages/kings-ai/src/client.mjs";
 import { createLogger } from "../../packages/observability/src/logger.mjs";
+import { createVaultDuplicateSummaryService } from "../../packages/vault/src/duplicate-summaries.mjs";
 import { createVaultEvidenceService } from "../../packages/vault/src/evidence.mjs";
 import { createVaultIntelligence } from "../../packages/vault/src/intelligence.mjs";
 import { createVaultMarketplaceReadinessService } from "../../packages/vault/src/marketplace-readiness.mjs";
@@ -150,6 +151,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
   const vaultOwnershipService = createVaultOwnershipService({ filename: vaultDatabasePath });
   const vaultSearchService = createVaultSearchService({ filename: vaultDatabasePath });
   const vaultRecommendationService = createVaultRecommendationService({ filename: vaultDatabasePath });
+  const vaultDuplicateSummaryService = createVaultDuplicateSummaryService({ filename: vaultDatabasePath });
   const vaultSetService = createVaultSetService({ filename: vaultDatabasePath });
   const vaultSetSummaryService = createVaultSetSummaryService({ filename: vaultDatabasePath });
   const vaultMarketplaceReadinessService = createVaultMarketplaceReadinessService({ filename: vaultDatabasePath });
@@ -168,7 +170,8 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
     searchService: vaultSearchService,
     attributeService: vaultOwnershipService.attributeService,
     setSummaryService: vaultSetSummaryService,
-    recommendationService: vaultRecommendationService
+    recommendationService: vaultRecommendationService,
+    duplicateSummaryService: vaultDuplicateSummaryService
   });
   const greatHallService = createGreatHallService({ identityService, vaultService: vaultIntelligence });
   const kingsAiClient = createKingsAiClient({
@@ -208,6 +211,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
     vaultMarketplaceReadinessService.close();
     vaultSetSummaryService.close();
     vaultSetService.close();
+    vaultDuplicateSummaryService.close();
     vaultRecommendationService.close();
     vaultSearchService.close();
     vaultOwnershipService.close();
@@ -224,6 +228,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
       vaultOwnershipService,
       vaultSearchService,
       vaultRecommendationService,
+      vaultDuplicateSummaryService,
       vaultEvidenceService,
       vaultSetService,
       vaultSetSummaryService,
@@ -254,6 +259,7 @@ async function run() {
       collectionSets: true,
       marketplaceReadiness: true,
       tagRecommendations: true,
+      boundedDuplicateContext: true,
       vaultPerformanceIndexes: runtime.services.vaultPerformanceIndexes.installed.length
     });
   });
