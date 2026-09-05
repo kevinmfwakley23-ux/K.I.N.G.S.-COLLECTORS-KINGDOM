@@ -109,7 +109,9 @@ test("bulk movement previews exact effects, commits atomically, preserves treasu
     assert.deepEqual(withoutOrganizationAndUpdatedAt(afterFirst), withoutOrganizationAndUpdatedAt(beforeFirst));
 
     const media = store.database.prepare(`SELECT id,treasure_id,storage_key FROM vault_treasure_media WHERE id = ?`).get("media-1");
-    assert.deepEqual(media, { id: "media-1", treasure_id: first.id, storage_key: "private/media-1" });
+    assert.equal(media.id, "media-1");
+    assert.equal(media.treasure_id, first.id);
+    assert.equal(media.storage_key, "private/media-1");
 
     const events = store.database.prepare(`
       SELECT treasure_id,event_type,metadata_json FROM vault_events
