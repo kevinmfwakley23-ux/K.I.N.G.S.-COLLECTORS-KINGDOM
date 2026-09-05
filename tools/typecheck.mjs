@@ -14,6 +14,8 @@ const contractFiles = [
   "packages/great-hall/src/service.mjs",
   "packages/catalog/src/cache.mjs",
   "packages/catalog/src/open-library-provider.mjs",
+  "packages/catalog/src/upcitemdb-provider.mjs",
+  "packages/catalog/src/runtime.mjs",
   "packages/catalog/src/service.mjs",
   "packages/vault/src/sqlite-store.mjs",
   "packages/vault/src/service.mjs",
@@ -31,6 +33,7 @@ const contractFiles = [
   "apps/web/public/vault-import-core.js",
   "apps/web/public/vault-import-ui.js",
   "apps/web/public/vault-intake-core.js",
+  "apps/web/public/vault-catalog-core.js",
   "apps/web/public/vault-intake-ui.js",
   "apps/web/public/vault-scanner-core.js",
   "apps/web/public/vault-scanner-ui.js",
@@ -48,4 +51,4 @@ for (const relative of contractFiles) {
 const entries = await readdir(resolve(root, "packages"), { withFileTypes: true });
 if (!entries.some((entry) => entry.isDirectory())) throw new Error("No package boundaries found.");
 
-console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, provider-neutral catalog candidates, Vault, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice boundaries.");
+console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, provider-neutral ISBN/UPC/EAN catalog candidates, Vault, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice boundaries.");
