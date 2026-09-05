@@ -2,20 +2,39 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createAutographComparisonEvidence, createCaptureQualityEvidence, createPregradeAnalysis, normalizeDefectEvidence } from "../packages/grading/src/evidence.mjs";
 
-test("grading defect evidence preserves location, severity, confidence, and source media without authoritative claims", () => {
+test("grading defect evidence preserves location, severity, confidence, source media and optional paired comparison media", () => {
   const defect = normalizeDefectEvidence({
-    type: "surface-scratch",
-    region: "front-upper-right",
+    type: "surface-reflectance-anomaly",
+    region: "front-surface-linear",
     severity: 0.42,
     confidence: 0.91,
     sourceMediaId: "media-front-raking-1",
+    comparisonMediaId: "media-front-raking-2",
     boundingBox: { x: 0.6, y: 0.1, width: 0.2, height: 0.15 },
-    note: "Fine linear reflection change under raking light."
+    note: "Linear reflectance change between paired captures; physical cause requires closer review."
   });
-  assert.equal(defect.type, "surface-scratch");
+  assert.equal(defect.type, "surface-reflectance-anomaly");
   assert.equal(defect.severity, 0.42);
   assert.equal(defect.confidence, 0.91);
+  assert.equal(defect.comparisonMediaId, "media-front-raking-2");
   assert.equal(defect.boundingBox.x, 0.6);
+
+  const corner = normalizeDefectEvidence({
+    type: "corner-contour-anomaly",
+    region: "top-left",
+    severity: 0.2,
+    confidence: 0.7,
+    sourceMediaId: "front-1"
+  });
+  const edge = normalizeDefectEvidence({
+    type: "edge-contour-anomaly",
+    region: "left-edge",
+    severity: 0.15,
+    confidence: 0.68,
+    sourceMediaId: "front-1"
+  });
+  assert.equal(corner.type, "corner-contour-anomaly");
+  assert.equal(edge.type, "edge-contour-anomaly");
   assert.throws(() => normalizeDefectEvidence({ ...defect, type: "fake-defect" }), /Unsupported defect type/);
 });
 
@@ -91,7 +110,7 @@ test("pre-grade analysis is advisory only and cannot mutate authoritative grade,
       focusAdequate: true, glareAcceptable: true, perspectiveAcceptable: true, analyzerConfidence: 0.95
     }],
     defects: [{
-      type: "corner-whitening", region: "front-top-left", severity: 0.15, confidence: 0.88, sourceMediaId: "front-1"
+      type: "corner-contour-anomaly", region: "front-top-left", severity: 0.15, confidence: 0.88, sourceMediaId: "front-1"
     }],
     estimatedGradeRange: { min: 8, max: 9.5 },
     confidence: 0.78,
