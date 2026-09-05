@@ -1,0 +1,40 @@
+.grading-panel { display: grid; gap: 1rem; }
+.grading-heading { align-items: flex-start; gap: 1rem; }
+.grading-advisory-badge { display: inline-flex; align-items: center; border: 1px solid rgba(138, 94, 20, .35); border-radius: 999px; padding: .45rem .7rem; font-size: .78rem; font-weight: 800; letter-spacing: .02em; background: rgba(214, 170, 74, .12); white-space: nowrap; }
+.grading-toolbar { display: grid; grid-template-columns: minmax(14rem, 1.4fr) repeat(3, minmax(9rem, 1fr)); gap: .75rem; }
+.grading-toolbar label, .grading-border-control { display: grid; gap: .35rem; font-size: .82rem; font-weight: 750; }
+.grading-toolbar input, .grading-toolbar select, .grading-border-control input { width: 100%; }
+.grading-workspace { display: grid; grid-template-columns: minmax(18rem, 1.15fr) minmax(18rem, .85fr); gap: 1rem; align-items: start; }
+.grading-preview-column, .grading-controls { display: grid; gap: .65rem; }
+.grading-image-stage { position: relative; min-height: 22rem; overflow: hidden; border: 1px solid rgba(35, 28, 20, .2); border-radius: 1rem; background: rgba(20, 17, 14, .92); display: grid; place-items: center; }
+.grading-image-stage img { width: 100%; height: auto; max-height: 36rem; object-fit: contain; display: block; }
+.grading-image-empty { padding: 2rem; max-width: 30rem; text-align: center; color: rgba(255,255,255,.76); line-height: 1.55; }
+.grading-guide { position: absolute; pointer-events: none; opacity: .9; box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
+.grading-guide-vertical { top: 0; bottom: 0; width: 2px; background: #d44; }
+.grading-guide-horizontal { left: 0; right: 0; height: 2px; background: #d44; }
+.grading-border-grid { display: grid; grid-template-columns: repeat(2, minmax(7rem, 1fr)); gap: .65rem; }
+.grading-results, .grading-quality-panel { display: grid; gap: .5rem; padding: .8rem; border-radius: .9rem; background: rgba(255,255,255,.42); border: 1px solid rgba(35, 28, 20, .12); }
+.grading-result-row, .grading-threshold, .grading-quality-row { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+.grading-ratio { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.grading-threshold-list, .grading-quality-metrics { display: grid; gap: .35rem; }
+.grading-threshold, .grading-quality-row { padding: .45rem .55rem; border-radius: .65rem; font-size: .82rem; }
+.grading-threshold.pass, .grading-quality-row.pass, .grading-quality-summary.pass { background: rgba(34, 128, 80, .1); border: 1px solid rgba(34, 128, 80, .2); }
+.grading-threshold.miss, .grading-quality-row.miss, .grading-quality-summary.miss { background: rgba(160, 58, 45, .08); border: 1px solid rgba(160, 58, 45, .16); }
+.grading-quality-row.pending { background: rgba(165, 123, 35, .08); border: 1px solid rgba(165, 123, 35, .18); }
+.grading-quality-summary { margin: 0; padding: .55rem .65rem; border-radius: .65rem; font-weight: 800; }
+.grading-quality-warnings { margin: .15rem 0 0; padding-left: 1.2rem; display: grid; gap: .3rem; font-size: .82rem; }
+.grading-capture-plan { padding: .9rem 1rem; border-radius: .9rem; border: 1px solid rgba(35, 28, 20, .12); background: rgba(255,255,255,.3); }
+.grading-capture-plan h3, .grading-controls h3, .grading-quality-panel h3 { margin: 0; }
+.grading-capture-plan ul { margin: .55rem 0; padding-left: 1.2rem; display: grid; gap: .35rem; }
+.grading-image-status { margin: 0; }
+@media (max-width: 960px) {
+  .grading-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grading-workspace { grid-template-columns: 1fr; }
+}
+@media (max-width: 620px) {
+  .grading-toolbar, .grading-border-grid { grid-template-columns: 1fr; }
+  .grading-heading { display: grid; }
+  .grading-advisory-badge { white-space: normal; width: fit-content; }
+  .grading-image-stage { min-height: 18rem; }
+  .grading-threshold, .grading-result-row, .grading-quality-row { align-items: flex-start; flex-direction: column; gap: .2rem; }
+}
