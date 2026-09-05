@@ -8,15 +8,31 @@ Build K.I.N.G.S. Collector's Kingdom as a real-world, production-oriented collec
 
 The permanent product and competitive-engineering mission is defined in `docs/MISSION-STATEMENT.md` and is mandatory guidance for every build session.
 
+The durable engineering checkpoint is `docs/MISSION-PROGRESS.md`. Read it before substantial implementation work and update it after every substantial implementation commit or verified milestone so the exact recovery point remains current.
+
 ## Research-before-build rule
 
 Before every meaningful build session or milestone, perform fresh research appropriate to the feature being built. Review current official competitor webpages/documentation, current Google Play/App Store information when relevant, active GitHub implementations, current standards/APIs, and the Kingdom's own locked Construction Documents and code.
 
 Use that research to identify parity gaps, recurring competitor weaknesses, and ideas worth improving. Do not copy incompatible code or proprietary visual design. Adopt only ideas that strengthen the approved Kingdom architecture, and improve them where practical through better trust, reliability, evidence, privacy, accessibility, interoperability, collector control, or AI assistance.
 
+## Mission-progress ledger rule
+
+`docs/MISSION-PROGRESS.md` is the permanent detailed development ledger. After every major body of code or meaningful milestone commit, record:
+
+- the milestone or mission identifier;
+- what was actually implemented;
+- important files or architecture changed;
+- verification performed and whether it passed;
+- known limitations, regressions, or unfinished work;
+- the exact next validated engineering target;
+- the associated commit SHA when available.
+
+Do not let the ledger describe planned functionality as completed. The README should remain the concise headline status and must point to the ledger.
+
 ## Working rules
 
-1. Inspect existing architecture, documentation, tests, and current implementation before making changes.
+1. Inspect existing architecture, documentation, tests, `docs/MISSION-PROGRESS.md`, and current implementation before making changes.
 2. Preserve working behavior unless a validated change intentionally replaces it.
 3. Prefer incremental, reviewable changes over large unverified rewrites.
 4. When introducing an architectural boundary, document its ownership and how it is tested.
@@ -25,6 +41,7 @@ Use that research to identify parity gaps, recurring competitor weaknesses, and 
 7. Do not mark a milestone complete unless its acceptance criteria have been verified.
 8. Do not claim competitive parity from decorative UI, sample data, or unimplemented integrations.
 9. Keep Collector's Kingdom domain authority separate from K.I.N.G.S. AI routing/model-provider authority.
+10. Update `docs/MISSION-PROGRESS.md` after every substantial implementation commit or verified milestone.
 
 ## Verification
 
