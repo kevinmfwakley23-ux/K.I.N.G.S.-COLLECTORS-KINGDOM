@@ -4,21 +4,28 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="K.I.N.G.S. Collector's Kingdom" />
+    <meta name="theme-color" content="#b18a30" />
     <title>K.I.N.G.S. Collector's Kingdom</title>
+    <link rel="icon" href="/assets/kingdom-official-logo.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/manifest.json" />
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/brand.css" />
+    <script src="/pwa.js" defer></script>
   </head>
   <body>
     <main class="shell">
-      <section class="foundation" aria-labelledby="title">
+      <section class="foundation brand-foundation" aria-labelledby="title">
+        <img class="brand-crest brand-crest-large" src="/assets/kingdom-official-logo.svg" alt="K.I.N.G.S. Collector's Kingdom" />
         <p class="eyebrow">K.I.N.G.S. • Collector's Kingdom</p>
-        <h1 id="title">The Great Hall is taking shape.</h1>
-        <p class="lede">The production foundation and secure identity core are live. IMP-004 is building the Great Hall, permanent castle navigation, real account-backed activity, and The Keeper's authenticated entry point through the shared K.I.N.G.S. AI core.</p>
+        <h1 id="title">Enter the Collector's Kingdom.</h1>
+        <p class="lede">The Great Hall, secure collector identity, Royal Vault, voice access, The Keeper, catalog evidence workflows, provenance, organization, and the verified AI-assisted card pre-grading foundation are live. The Kingdom remains under active production hardening as IMP-005 expands the Royal Vault with explainable evidence and collector-controlled review.</p>
         <div class="account-actions">
           <a class="gold-button" href="/great-hall.html">Enter the Great Hall</a>
           <a class="button" href="/auth.html">Enter the Royal Gate</a>
+          <button class="quiet-button install-kingdom-button" type="button" data-install-kingdom hidden>Install Kingdom app</button>
         </div>
         <dl class="status-grid">
-          <div><dt>Build phase</dt><dd>IMP-004 Great Hall &amp; Navigation</dd></div>
+          <div><dt>Build phase</dt><dd>IMP-005 Royal Vault, Phase 1</dd></div>
           <div><dt>Runtime</dt><dd>Node.js 22.13+</dd></div>
           <div><dt>Health endpoint</dt><dd><code>/health</code></dd></div>
           <div><dt>Readiness endpoint</dt><dd><code>/ready</code></dd></div>
