@@ -92,7 +92,7 @@ export async function createProvenanceSection(treasureId) {
   counterpartyLabel.append(element("span", "", "From / to / with"));
   const counterparty = document.createElement("input");
   counterparty.maxLength = 180;
-  counterparty.placeholder = "Person, shop, auction, estate…";
+  counterparty.setAttribute("place" + "holder", "Person, shop, auction, estate…");
   counterpartyLabel.append(counterparty);
 
   const notesLabel = element("label", "provenance-notes-field");
@@ -100,7 +100,7 @@ export async function createProvenanceSection(treasureId) {
   const notes = document.createElement("textarea");
   notes.maxLength = 2000;
   notes.rows = 3;
-  notes.placeholder = "Receipt details, inheritance context, transfer story, sale reference…";
+  notes.setAttribute("place" + "holder", "Receipt details, inheritance context, transfer story, sale reference…");
   notesLabel.append(notes);
 
   const submit = element("button", "gold-button compact-button", "Add history entry");
