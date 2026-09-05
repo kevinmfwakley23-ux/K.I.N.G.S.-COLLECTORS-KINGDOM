@@ -6,15 +6,17 @@ K.I.N.G.S. Collector's Kingdom is being built as a collector-first environment f
 
 Active milestone: **IMP-005 — Royal Vault, Phase 1**.
 
-**Latest verified checkpoint:** the Royal Vault now includes permanent owner-scoped treasure records, hierarchical storage, secure private media, voice/talk-to-text, transactional JSON/CSV migration, a cross-device **Royal Intake Queue**, progressive camera barcode scanning, real review-only ISBN and UPC/EAN/GTIN catalog candidates, an append-only **Provenance & Ownership Ledger**, a verified browser enhancement bootstrap, and live cycle-safe **collection/location reorganization PATCH APIs**.
+**Latest verified checkpoint:** the Royal Vault now includes permanent owner-scoped treasure records, hierarchical storage, secure private media, voice/talk-to-text, transactional JSON/CSV migration, a cross-device **Royal Intake Queue**, progressive camera barcode scanning, real review-only ISBN and UPC/EAN/GTIN catalog candidates, an append-only **Provenance & Ownership Ledger**, a verified browser enhancement bootstrap, and live cycle-safe **collection/location reorganization API + responsive stewardship controls**.
 
-Latest verified code gate: **Kingdom Quality Gates #433** — run `33964005746` — **PASS** on commit `bd0502f57d9bb333f2ea262c93d27e495cd45462`.
+Latest verified code gate: **Kingdom Quality Gates #444** — run `33965170288` — **PASS** on commit `2245f52a7bd6d0edbec9f8c89d7977d7306c76fa`.
 
-The reorganization API now exposes owner-authenticated `PATCH /api/vault/collections/:id` and `PATCH /api/vault/locations/:id`. Collection rename preserves treasure membership and permanent treasure UUIDs. Location rename/reparent preserves descendant IDs and treasure references while recalculating paths. Self-parent, descendant-cycle, cross-owner, unsupported-field, and unauthorized mutations are rejected server-side. No collection/location DELETE shortcut or bulk movement endpoint was added.
+The responsive Vault sidebar now exposes explicit **Manage** controls for existing collection groups and physical storage locations. Collectors can rename/edit collection details and rename/retype/reparent physical locations through the already-verified PATCH APIs. The location editor shows the current path, supports moving a branch to top level or another valid parent, and removes the current location plus all descendants from client-side parent choices while the server remains the final cycle/ownership authority.
 
-Competition research for this pass reconfirmed the product direction: explicit edit intent, omitted-field PATCH preservation, clear selection before bulk changes, and one authoritative movement rule set shared by individual and future bulk workflows. See `docs/research/2026-09-05-IMP-005-REORGANIZATION-PATCH-PASS.md`.
+After a successful organization change, the page reloads authoritative Vault state rather than manufacturing local success. No collection/location delete action or destructive bulk operation was added.
 
-The next engineering target is a deliberately small browser slice: **responsive individual collection and location edit controls** backed only by the verified PATCH APIs. Previewed atomic bulk treasure movement remains after those controls are proven.
+This pass followed the locked K.I.N.G.S. construction documents first: collection organization, editing, flexible grouping, responsive layouts, and an exploratory rather than form-dominated Vault remain the baseline. Current HomeBox implementation research contributed one improvement consistent with that baseline: prominent explicit Save and a parent-location selector aware of the current location. The Kingdom extends that by filtering the whole descendant branch before submission while retaining server-authoritative cycle checks. See `docs/research/2026-09-05-IMP-005-REORGANIZATION-UI-PASS.md`.
+
+The next engineering target is **previewed atomic bulk treasure reorganization** using selected permanent treasure UUIDs, an explicit preview/review boundary, authoritative destination validation, and all-or-nothing commit. Destructive mass archive/delete remains separately gated.
 
 Evidence-backed current valuation, image recognition, broad category-specific catalog coverage, and Marketplace ownership transfers remain separate future milestones and are not represented as live.
 
@@ -22,12 +24,14 @@ Evidence-backed current valuation, image recognition, broad category-specific ca
 
 - [`docs/MISSION-STATEMENT.md`](docs/MISSION-STATEMENT.md) — permanent engineering mission and authority order.
 - [`docs/MISSION-PROGRESS.md`](docs/MISSION-PROGRESS.md) — exact recoverable build state, verification evidence, limitations, and next target.
-- [`docs/research/`](docs/research/) — dated competitor, standards, provider/API, GitHub, and technical reconnaissance used before meaningful build work.
+- [`docs/research/`](docs/research/) — dated construction-document, competitor, standards, provider/API, GitHub, and technical reconnaissance used before meaningful build work.
 
 After every substantial verified implementation milestone, `docs/MISSION-PROGRESS.md` must be updated so development can resume from the repository rather than depending on a chat session.
 
 ## Permanent engineering rules
 
+- The locked K.I.N.G.S. construction documents are the primary build guide; researched improvements may strengthen them but must not silently replace product intent.
+- Research current competitors/open-source patterns before each meaningful build pass.
 - Build real, executable, production-oriented functionality; never present simulated integrations or decorative-only interfaces as complete features.
 - Verify changes with the strongest available lint, contract, automated-test, production-build, artifact, and dependency-audit gates.
 - Never fabricate collection totals, market values, Marketplace activity, notifications, identification certainty, provenance verification, or other domain data when no authoritative evidence exists.
@@ -56,8 +60,8 @@ The Vault establishes one permanent treasure identity that later Marketplace, pr
 Current verified capability includes:
 
 - owner-scoped treasure create/read/update/archive;
-- collection groups;
-- arbitrary-depth physical storage such as room → safe → shelf → binder → page → pocket;
+- collection groups plus responsive collection editing;
+- arbitrary-depth physical storage plus responsive rename/reparent editing;
 - condition, variant, quantity, acquisition, cost, identifiers, descriptions, notes, and custom attributes;
 - normalized accent-tolerant search/filter/sort;
 - duplicate candidate detection without destructive automatic merging;
@@ -90,7 +94,7 @@ Camera permission is least-privilege: `/vault.html` receives `camera=(self)`, wh
 
 ### Verified Vault enhancement bootstrap
 
-The live Vault page schedules one dependency-safe enhancement loader after the core Vault and Keeper code initializes. It loads transactional import UI, Royal Intake Queue UI, progressive scanner UI, and provenance timeline UI in that order. The loader is regression-tested to stop on the first failed dependency rather than leaving later tools in a misleading half-loaded state.
+The live Vault page schedules one dependency-safe enhancement loader after the core Vault and Keeper code initializes. It now loads transactional import UI, Royal Intake Queue UI, progressive scanner UI, provenance timeline UI, and reorganization stewardship UI in that order. The loader is regression-tested to stop on the first failed dependency rather than leaving later tools in a misleading half-loaded state.
 
 ### Review-only external catalog evidence
 
@@ -109,26 +113,29 @@ Saved treasures expose an append-only provenance timeline backed by `vault_prove
 
 Verified behavior includes acquisition, ownership/provenance note, supporting-document, loan/custody, sale/gift/trade, loss/stolen/recovery, and correction events; amount/currency validation; owner isolation; audit events; no ordinary update/delete API; archive survival; export schema version 2; responsive timeline UI; and explicit `collector-recorded` / `independentlyVerified: false` truthfulness policy.
 
-### Cycle-safe reorganization — live API foundation
+### Cycle-safe reorganization — live API + UI
 
-Verified through Quality Gates #433:
+Verified through Quality Gates #444:
 
 - owner-authenticated `PATCH /api/vault/collections/:id`;
 - owner-authenticated `PATCH /api/vault/locations/:id`;
-- strict mutable-field allowlists;
-- omitted fields remain unchanged;
-- explicit `parentId: null` top-level movement supported by the domain service;
+- responsive explicit Manage controls in the live Vault sidebar;
+- collection selection, name edit, and description edit;
+- location selection, current-path context, name/type/parent/notes editing;
+- client parent choices exclude the current location and every descendant;
+- top-level movement remains explicit through `parentId: null`;
+- only changed mutable fields are sent;
+- strict server mutable-field allowlists;
 - unique collection-name enforcement;
 - self-parent and descendant-cycle rejection;
 - cross-owner reference rejection;
 - branch movement preserves descendant IDs;
 - treasure UUID and collection/location references remain intact;
 - descendant display paths recalculate from authoritative parent links;
+- authoritative page state reloads after successful save;
 - unsupported fields are rejected instead of silently ignored;
 - DELETE is not exposed for these stewardship routes;
-- `/api/vault` reports individual reorganization availability while keeping `bulkMoveAvailable: false` and destructive bulk actions unavailable.
-
-The browser still needs collector-facing edit controls before this is a complete end-user reorganization workflow.
+- `/api/vault` keeps `bulkMoveAvailable: false` and destructive bulk actions unavailable.
 
 ## Truthfulness boundary
 
@@ -136,6 +143,6 @@ Market values remain absent until a real evidence-backed valuation service is im
 
 ## Current next target
 
-**Vault Reorganization — responsive individual edit controls.**
+**Vault Reorganization — previewed atomic bulk treasure movement.**
 
-The next short build will research current UI patterns again, add mobile/Chromebook-friendly collection and location edit controls against the verified PATCH routes, preserve explicit Save/Cancel behavior and visible cycle errors, then run the full gate. Previewed atomic bulk treasure movement remains the following slice; destructive mass archive/delete remains separately gated.
+The next short build pass will re-read the construction-document organization/movement requirements, re-check current competitor/open-source bulk-move patterns, and then build the smallest real backend slice for explicitly selected permanent treasure UUIDs: preview destination effects first, validate owner/destination state server-side, and commit all selected moves atomically or none. Destructive mass archive/delete remains out of scope.
