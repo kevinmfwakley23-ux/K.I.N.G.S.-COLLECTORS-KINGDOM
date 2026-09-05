@@ -1,6 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { createVaultSavedViewService } from "./saved-searches.mjs";
 import { VaultError } from "./service.mjs";
 
 const SEARCH_SCHEMA_VERSION = 1;
@@ -105,6 +106,7 @@ export function createVaultSearchService({ filename } = {}) {
   database.exec("PRAGMA journal_mode = WAL;");
   database.exec("PRAGMA busy_timeout = 5000;");
   database.exec(SCHEMA);
+  const savedViews = createVaultSavedViewService({ filename });
 
   function removeOrphans(accountId) {
     const orphanRows = database.prepare(`SELECT m.treasure_id FROM vault_extended_search_meta m
@@ -264,8 +266,9 @@ export function createVaultSearchService({ filename } = {}) {
   }
 
   function close() {
+    savedViews.close();
     database.close();
   }
 
-  return Object.freeze({ synchronize, search, searchTreasureIds, close });
+  return Object.freeze({ synchronize, search, searchTreasureIds, savedViews, close });
 }
