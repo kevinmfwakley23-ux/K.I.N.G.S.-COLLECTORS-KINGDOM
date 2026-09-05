@@ -20,7 +20,11 @@ test("runtime configuration applies secure local defaults", () => {
     catalogTimeoutMs: 5000,
     catalogCacheTtlMs: 21600000,
     catalogCacheEntries: 500,
-    catalogMinIntervalMs: 1100
+    catalogMinIntervalMs: 1100,
+    upcItemDbBaseUrl: "https://api.upcitemdb.com",
+    upcItemDbUserKey: null,
+    upcItemDbTimeoutMs: 5000,
+    upcItemDbMinIntervalMs: 10000
   });
 });
 
