@@ -6,6 +6,8 @@ export function intakeTypeLabel(type) {
     upc: "UPC",
     ean: "EAN",
     isbn: "ISBN",
+    "pokemon-card-id": "Pokémon card ID",
+    "pokemon-set-number": "Pokémon set + card number",
     catalog: "Catalog number",
     serial: "Serial number",
     sku: "SKU",

@@ -89,6 +89,10 @@ export function loadRuntimeConfig(env = process.env) {
     upcItemDbBaseUrl: parseExternalHttpsUrl(env.KINGDOM_UPCITEMDB_BASE_URL ?? "https://api.upcitemdb.com", "KINGDOM_UPCITEMDB_BASE_URL"),
     upcItemDbUserKey: parseOptionalSecret(env.KINGDOM_UPCITEMDB_USER_KEY, "KINGDOM_UPCITEMDB_USER_KEY"),
     upcItemDbTimeoutMs: parsePositiveInteger(env.KINGDOM_UPCITEMDB_TIMEOUT_MS ?? "5000", "KINGDOM_UPCITEMDB_TIMEOUT_MS"),
-    upcItemDbMinIntervalMs: parsePositiveInteger(env.KINGDOM_UPCITEMDB_MIN_INTERVAL_MS ?? "10000", "KINGDOM_UPCITEMDB_MIN_INTERVAL_MS")
+    upcItemDbMinIntervalMs: parsePositiveInteger(env.KINGDOM_UPCITEMDB_MIN_INTERVAL_MS ?? "10000", "KINGDOM_UPCITEMDB_MIN_INTERVAL_MS"),
+    pokemonTcgBaseUrl: parseExternalHttpsUrl(env.KINGDOM_POKEMON_TCG_BASE_URL ?? "https://api.pokemontcg.io", "KINGDOM_POKEMON_TCG_BASE_URL"),
+    pokemonTcgApiKey: parseOptionalSecret(env.KINGDOM_POKEMON_TCG_API_KEY, "KINGDOM_POKEMON_TCG_API_KEY"),
+    pokemonTcgTimeoutMs: parsePositiveInteger(env.KINGDOM_POKEMON_TCG_TIMEOUT_MS ?? "5000", "KINGDOM_POKEMON_TCG_TIMEOUT_MS"),
+    pokemonTcgMinIntervalMs: parsePositiveInteger(env.KINGDOM_POKEMON_TCG_MIN_INTERVAL_MS ?? "5000", "KINGDOM_POKEMON_TCG_MIN_INTERVAL_MS")
   });
 }

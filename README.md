@@ -6,17 +6,17 @@ K.I.N.G.S. Collector's Kingdom is being built as a collector-first environment f
 
 Active milestone: **IMP-005 — Royal Vault, Phase 1**.
 
-**Latest verified checkpoint:** the Royal Vault now includes permanent owner-scoped treasure records, hierarchical storage, secure private media, voice/talk-to-text, transactional JSON/CSV migration, a cross-device **Royal Intake Queue**, progressive camera barcode scanning, real review-only ISBN and UPC/EAN/GTIN catalog candidates, an append-only **Provenance & Ownership Ledger**, cycle-safe individual collection/location stewardship, **previewed atomic bulk treasure reorganization**, and **private Saved Vault Views with deterministic large-collection paging**.
+**Latest verified checkpoint:** the Royal Vault now includes permanent owner-scoped treasure records, hierarchical storage, secure private media, voice/talk-to-text, transactional JSON/CSV migration, a cross-device **Royal Intake Queue**, progressive camera barcode scanning, review-only ISBN and UPC/EAN/GTIN catalog candidates, an append-only **Provenance & Ownership Ledger**, cycle-safe individual collection/location stewardship, previewed atomic bulk treasure reorganization, private Saved Vault Views with deterministic large-collection paging, and the first **category-specific trading-card catalog intelligence for Pokémon TCG**.
 
-Latest verified implementation gate: **Kingdom Quality Gates #475** — run `33969652785` — **PASS** on commit `0b43608065020e8fa9a8e13ff1e529193a167cac`.
+Latest verified implementation gate: **Kingdom Quality Gates #480** — run `33970697179` — **PASS** on commit `fdc04a828119bbeaf8ca18db88c2c8f8a975005f`.
 
-The live Vault no longer relies on one browser request for as many as 500 treasure rows. Its inventory uses bounded **50-record keyset pages** with a Load more control, a permanent UUID tie-breaker, opaque query-bound cursors, and a 100-record server maximum. Automated large-fixture tests traverse 135 equal-sort records exactly once, and `EXPLAIN QUERY PLAN` regression tests confirm SQLite selects the dedicated paging indexes for default and collection-scoped retrieval.
+The Pokémon slice adds a real server-side provider behind the existing provider-neutral review-only catalog service. It supports exact `pokemon-card-id` and `pokemon-set-number` evidence, optional server-only API credentials, conservative request pacing, bounded timeouts/response sizes, explicit no-match/rate-limit/provider failures, and identification-only field mapping. Provider commerce/price material is deliberately excluded from normalized evidence and cannot become Kingdom valuation through this path.
 
-Collectors can save the current search/filter/sort state as a private **Saved Vault View**, then apply, update, rename, or delete that definition. A saved view is not another collection and does not store a stale item snapshot; every application executes against current authoritative Vault records. Deleting a view deletes only the definition and never treasures, media, provenance, collection structure, or ownership data.
+The Royal Intake Queue now accepts both exact Pokémon identifier modes. From a pending intake item, the collector can request a candidate and copy approved metadata into a **new unsaved treasure editor**. The draft can prefill title, Trading Card category, Pokémon, set/series, catalog key, rarity/artist and provider evidence attributes. It does **not** auto-select the physical card variant, grade, condition, provenance, market value, purchase price, or ownership claim, and it performs no automatic Vault mutation.
 
-This pass followed the locked K.I.N.G.S. construction documents first. Current PriceCharting, Ludex, CollX, and HomeBox research reinforced reusable collection views, strong search/filter/sort, cross-device collection management, and low-friction large-inventory navigation. The Kingdom strengthens those patterns with owner isolation, strict normalized saved state, live-data execution, deterministic keyset cursors, server page boundaries, and verified database index use. See `docs/research/2026-09-05-IMP-005-SAVED-VIEWS-LARGE-COLLECTIONS.md`.
+This pass followed the locked K.I.N.G.S. construction documents first and researched current collector/card workflows and provider constraints. Ludex/CollX reinforced fast scan/review/organization patterns; current TCGplayer documentation states new API access is not being granted, so the Kingdom does not depend on obtaining new TCGplayer access. The implemented first Pokémon adapter uses the documented Pokémon TCG API exact-card path, while TCGdex remains a later multilingual/fallback candidate after multi-provider reconciliation rules exist. See `docs/research/2026-09-05-IMP-005-TRADING-CARD-CATALOG.md`.
 
-The next engineering target is **category-specific catalog intelligence, trading cards first**. Evidence-backed market valuation, visual recognition, broader comic/video-game/vinyl catalogs, insurance outputs, and Marketplace ownership transfer remain separate future milestones and are not represented as live.
+The next engineering target is **Magic: The Gathering catalog intelligence via Scryfall**, using the same review-only evidence boundary. Image recognition, automatic parallel/finish identification, grading verification, evidence-backed market valuation, destructive bulk actions, and Marketplace ownership transfer remain separate future milestones and are not represented as live.
 
 ## Durable engineering records
 
@@ -32,10 +32,10 @@ After every substantial verified implementation milestone, `docs/MISSION-PROGRES
 - Research current competitors/open-source patterns before each meaningful build pass.
 - Build real, executable, production-oriented functionality; never present simulated integrations or decorative-only interfaces as complete features.
 - Verify changes with the strongest available lint, contract, automated-test, production-build, artifact, dependency-audit, and query-plan gates relevant to the milestone.
-- Never fabricate collection totals, market values, Marketplace activity, notifications, identification certainty, provenance verification, or other domain data when no authoritative evidence exists.
+- Never fabricate collection totals, market values, Marketplace activity, notifications, identification certainty, provenance verification, grading certainty, or other domain data when no authoritative evidence exists.
 - Never commit credentials, provider keys, access tokens, or secrets.
 - Keep collector authority over destructive, ownership-changing, and authoritative record actions.
-- AI and provider assistance must surface uncertainty rather than silently inventing an identification, value, provenance claim, or exact variant.
+- AI and provider assistance must surface uncertainty rather than silently inventing an identification, value, provenance claim, exact physical variant, or grade.
 - Prefer portable data and provider-independent permanent Kingdom identities.
 - Keep mobile, Chromebook, tablet, and desktop workflows first-class.
 
@@ -61,8 +61,8 @@ Current verified capability includes:
 - collection groups plus responsive collection editing;
 - arbitrary-depth physical storage plus responsive rename/reparent editing;
 - previewed atomic bulk movement between collection and/or physical-storage organization;
-- private Saved Vault Views that store normalized query/filter/sort definitions only;
-- deterministic keyset pagination with default 50 / max 100 records per page;
+- private Saved Vault Views storing normalized query/filter/sort definitions only;
+- deterministic keyset pagination with default 50 / maximum 100 records per page;
 - condition, variant, quantity, acquisition, cost, identifiers, descriptions, notes, and custom attributes;
 - normalized accent-tolerant search/filter/sort;
 - duplicate candidate detection without destructive automatic merging;
@@ -87,7 +87,7 @@ The Vault accepts JSON and CSV migration sources through a review-first workflow
 
 ### Royal Intake Queue & barcode scanner
 
-Collectors can capture UPC, EAN, ISBN, catalog, serial, SKU, or custom identifiers from phone, Chromebook, or desktop into an account-scoped server-side queue. Repeated pending captures merge into a capture count and dismissed history is preserved.
+Collectors can capture UPC, EAN, ISBN, Pokémon card IDs/set-card keys, catalog, serial, SKU, or custom identifiers from phone, Chromebook, or desktop into an account-scoped server-side queue. Repeated pending captures merge into a capture count and dismissed history is preserved.
 
 On secure browsers exposing native `BarcodeDetector`, the Vault adds explicit Start/Stop camera capture, supported-format discovery, rear-camera preference, frame debounce, authenticated Intake Queue writes, and track shutdown on leave/background. Manual intake remains the fallback.
 
@@ -98,11 +98,14 @@ Camera permission is least-privilege: `/vault.html` receives `camera=(self)`, wh
 The provider-neutral catalog boundary currently supports:
 
 - **Open Library** for low-volume checksum-valid ISBN/book candidate lookup;
-- **UPCitemdb** for low-volume checksum-valid UPC/EAN/GTIN retail product candidates.
+- **UPCitemdb** for low-volume checksum-valid UPC/EAN/GTIN retail product candidates;
+- **Pokémon TCG API** for exact Pokémon provider-card-ID or explicit set-ID/card-number candidates.
 
-Provider access is bounded by validation, HTTPS-only external transport, timeouts, response-size limits, conservative serialized rates, caching, authenticated Kingdom routes, and explicit review semantics. Lookup itself never writes a treasure.
+All catalog lookup paths are authenticated, review-only, cache/rate/timeout bounded, and perform no automatic Vault write. Provider identifiers remain supporting evidence rather than permanent Kingdom identity.
 
-UPCitemdb provider prices, offers, merchant links/domains, and images are deliberately excluded from the identification model and cannot become Kingdom market value, trade value, or purchase price.
+UPCitemdb commerce fields and Pokémon provider TCGPlayer/Cardmarket-style pricing/commerce material are deliberately excluded from normalized identification evidence and cannot become Kingdom market value, trade value, or purchase price through the catalog path.
+
+For Pokémon, an exact provider match still does not prove the collector's physical parallel/finish, condition, grade, authenticity, provenance, ownership, or value. Those facts require separate evidence and collector confirmation.
 
 ### Provenance & Ownership Ledger
 
@@ -135,8 +138,27 @@ Verified through Quality Gates #464, #474, and #475:
 - normal Vault inventory migrated from the legacy `limit=500` browser path to `/api/vault/query` + Load more;
 - honest loaded-result labels rather than an unproven total;
 - dedicated owner/active/sort and collection/location paging indexes;
-- automated `EXPLAIN QUERY PLAN` assertions verifying SQLite selects the intended default and collection-scoped indexes;
-- production artifact verification for the query service, HTTP route, pagination helpers, saved-view UI, and CSS.
+- automated `EXPLAIN QUERY PLAN` assertions verifying SQLite selects the intended default and collection-scoped indexes.
+
+### Pokémon trading-card catalog intelligence
+
+Verified through **Kingdom Quality Gates #480**:
+
+- exact `pokemon-card-id` and `pokemon-set-number` provider modes;
+- optional server-only Pokémon API key through runtime configuration;
+- HTTPS outside local tests;
+- serialized conservative provider request pacing;
+- timeout and maximum response-size protections;
+- explicit 404 no-match, 429 rate-limit, malformed JSON/payload, and provider failure behavior;
+- normalized identification-only candidate fields;
+- provider pricing/commerce and images excluded from normalized candidate evidence;
+- Royal Intake support for exact Pokémon identifier capture and repeated-pending merge;
+- catalog-key duplicate candidate warning against existing Vault records without asserting identity;
+- responsive `Find Pokémon card candidate` workflow;
+- copy-to-editor remains a new **unsaved** treasure draft;
+- set/series, card number, rarity, artist, Pokémon metadata, and provider evidence attributes can prefill;
+- no automatic grade, condition, physical variant/parallel, provenance, value, purchase price, ownership change, or Vault save;
+- production runtime composition asserts the Pokémon provider and both capability flags while keeping `automaticVaultMutation=false` and `valuationFromCatalogProviders=false`.
 
 ## Truthfulness boundary
 
@@ -144,6 +166,6 @@ Market values remain absent until a real evidence-backed valuation service is im
 
 ## Current next target
 
-**Category-specific catalog intelligence — trading cards first.**
+**IMP-005 — Magic: The Gathering catalog intelligence via Scryfall.**
 
-The next build pass will research current trading-card data providers, official/public sources, active open-source card databases, licensing/terms, set/card-number and variant/parallel semantics, grading boundaries, rate limits, and collector-app identification workflows. The implementation will extend the existing review-only provider-neutral candidate architecture and will not silently turn provider matches or market offers into authoritative identity or Kingdom valuation.
+The next build pass will extend the same provider-neutral review-only boundary with MTG-specific identifiers and print semantics. Research/implementation must cover Scryfall's current API guidance, exact collector-number/set identifiers, language, finishes, frame/layout/card-face semantics, reprints, promo/digital distinctions, and bulk-data guidance. The adapter must send an appropriate `User-Agent` and `Accept`, stay within Scryfall traffic guidance, avoid aggressive retries, and keep price/commerce/image material outside authoritative valuation/ownership. A provider match must not silently choose the collector's physical finish, condition, language, grade, or provenance.

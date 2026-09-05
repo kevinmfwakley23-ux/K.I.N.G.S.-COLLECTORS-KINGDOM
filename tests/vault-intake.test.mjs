@@ -107,6 +107,54 @@ test("Royal Intake Queue surfaces exact existing Vault identifier candidates wit
   });
 });
 
+test("Royal Intake Queue accepts exact Pokémon card IDs and set/card keys as review-only intake identifiers", async () => {
+  await withIntake(async ({ intakeService }) => {
+    const setNumber = intakeService.capture(collectorA, {
+      identifierType: "pokemon-set-number",
+      identifierValue: " base1:4 "
+    });
+    assert.equal(setNumber.item.identifierType, "pokemon-set-number");
+    assert.equal(setNumber.item.identifierValue, "base1/4");
+    assert.equal(setNumber.merged, false);
+
+    const repeated = intakeService.capture(collectorA, {
+      identifierType: "pokemon-card",
+      identifierValue: "base1/4"
+    });
+    assert.equal(repeated.item.id, setNumber.item.id);
+    assert.equal(repeated.merged, true);
+    assert.equal(repeated.item.captureCount, 2);
+
+    const providerId = intakeService.capture(collectorA, {
+      identifierType: "pokemon-card-id",
+      identifierValue: "base1-4"
+    });
+    assert.equal(providerId.item.identifierType, "pokemon-card-id");
+    assert.equal(providerId.item.identifierValue, "base1-4");
+    assert.equal(providerId.merged, false);
+  });
+});
+
+test("Royal Intake Queue can surface a saved Pokémon catalog key without treating it as authentication", async () => {
+  await withIntake(async ({ vaultService, intakeService }) => {
+    const treasure = vaultService.createTreasure(collectorA, {
+      title: "Charizard",
+      category: "Trading Card",
+      series: "Base",
+      externalIdentifiers: { catalog: "base1/4" }
+    });
+
+    const captured = intakeService.capture(collectorA, {
+      identifierType: "pokemon-set-number",
+      identifierValue: "base1/4"
+    }).item;
+
+    assert.equal(captured.existingVaultCandidates.length, 1);
+    assert.equal(captured.existingVaultCandidates[0].id, treasure.id);
+    assert.equal(captured.existingVaultCandidates[0].matchedIdentifierType, "catalog");
+  });
+});
+
 test("Royal Intake Queue safely ignores arbitrary provider-specific external identifier keys", async () => {
   await withIntake(async ({ vaultService, intakeService }) => {
     vaultService.createTreasure(collectorA, {
@@ -127,7 +175,7 @@ test("Royal Intake Queue safely ignores arbitrary provider-specific external ide
   });
 });
 
-test("Royal Intake Queue validates identifier types and structured barcode patterns", async () => {
+test("Royal Intake Queue validates identifier types and structured barcode/card patterns", async () => {
   await withIntake(async ({ intakeService }) => {
     assert.throws(() => intakeService.capture(collectorA, {
       identifierType: "upc",
@@ -137,11 +185,21 @@ test("Royal Intake Queue validates identifier types and structured barcode patte
     assert.throws(() => intakeService.capture(collectorA, {
       identifierType: "mystery-provider",
       identifierValue: "123"
-    }), /Identifier type must be barcode, UPC, EAN, ISBN, catalog, serial, SKU, or custom/i);
+    }), /Identifier type must be barcode, UPC, EAN, ISBN, Pokémon card ID, Pokémon set\/card number, catalog, serial, SKU, or custom/i);
 
     assert.throws(() => intakeService.capture(collectorA, {
       identifierType: "isbn",
       identifierValue: "1234"
     }), /ISBN must contain a valid 10- or 13-character digit pattern/i);
+
+    assert.throws(() => intakeService.capture(collectorA, {
+      identifierType: "pokemon-card-id",
+      identifierValue: "base1"
+    }), /provider card identifier such as base1-4/i);
+
+    assert.throws(() => intakeService.capture(collectorA, {
+      identifierType: "pokemon-set-number",
+      identifierValue: "base1"
+    }), /setId\/cardNumber/i);
   });
 });
