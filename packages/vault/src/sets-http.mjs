@@ -38,14 +38,15 @@ function segment(value) {
   }
 }
 
-export async function handleVaultSetRequest({ request, pathname, identity, setService } = {}) {
+export async function handleVaultSetRequest({ request, pathname, identity, setService, summaryService = null } = {}) {
   if (!setService) throw new VaultError("collection_sets_unavailable", "Vault collection sets are unavailable.", 503);
   const method = request?.method ?? "GET";
 
   if (pathname === "/api/vault/sets") {
     if (method === "GET") {
+      const sets = summaryService?.list ? summaryService.list(identity) : setService.list(identity);
       return json(200, {
-        sets: setService.list(identity),
+        sets,
         maximumSets: setService.maximumSets,
         maximumEntriesPerSet: setService.maximumEntriesPerSet
       });
@@ -56,9 +57,10 @@ export async function handleVaultSetRequest({ request, pathname, identity, setSe
 
   if (pathname === "/api/vault/sets/incomplete") {
     if (method !== "GET") return null;
-    return json(200, {
-      sets: setService.list(identity).filter((set) => set.expectedEntryCount > 0 && !set.complete)
-    });
+    const sets = summaryService?.list
+      ? summaryService.list(identity, { incompleteOnly: true })
+      : setService.list(identity).filter((set) => set.expectedEntryCount > 0 && !set.complete);
+    return json(200, { sets });
   }
 
   const treasureLinkMatch = pathname.match(/^\/api\/vault\/sets\/([^/]+)\/entries\/([^/]+)\/treasures\/([^/]+)$/);
