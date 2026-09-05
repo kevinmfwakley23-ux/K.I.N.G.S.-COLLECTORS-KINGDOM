@@ -17,6 +17,9 @@ test("explainable grading report UI exposes eight advisory dimensions and append
   assert.match(source, /Not supported/);
   assert.match(source, /Unsure/);
   assert.match(source, /Raw detector evidence was preserved|raw detector candidate remains in immutable evidence history/i);
+  assert.match(source, /Overall raw-evidence advisory range/);
+  assert.match(source, /reviews affect the eight dimension interpretations/i);
+  assert.match(source, /do not rewrite or recalculate the overall raw-evidence range/i);
   assert.match(source, /Not an official grade/i);
   assert.match(source, /official subgrade: no/i);
   assert.doesNotMatch(source, /officialGrade\s*:\s*true|officialSubgrade\s*:\s*true|physicalAuthentication\s*:\s*true|mutatesTreasure\s*:\s*true/);
