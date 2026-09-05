@@ -1,6 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { createVaultFavoriteService } from "./favorites.mjs";
 import { createVaultSavedViewService } from "./saved-searches.mjs";
 import { VaultError } from "./service.mjs";
 
@@ -165,6 +166,7 @@ export function createVaultSearchService({ filename } = {}) {
   database.exec("PRAGMA busy_timeout = 5000;");
   database.exec(SCHEMA);
   ensureSearchMetaColumns(database);
+  const favorites = createVaultFavoriteService({ filename });
   const savedViews = createVaultSavedViewService({ filename });
 
   function removeOrphans(accountId) {
@@ -287,9 +289,6 @@ export function createVaultSearchService({ filename } = {}) {
     const offset = integer(options.offset ?? 0, "search_offset", { min: 0, max: 10_000_000 });
     const sort = typeof options.sort === "string" && SORTS.has(options.sort) ? options.sort : "updated-desc";
     if (!plan.expression && !plan.favoritesOnly) return { ids: [], limit, offset, hasMore: false, searchApplied: false, queryTokens: [] };
-    if (plan.favoritesOnly && !tableExists(database, "vault_favorites")) {
-      return { ids: [], limit, offset, hasMore: false, searchApplied: true, queryTokens: plan.tokens, favoriteFilterApplied: true };
-    }
 
     const values = [];
     const clauses = [];
@@ -328,8 +327,9 @@ export function createVaultSearchService({ filename } = {}) {
 
   function close() {
     savedViews.close();
+    favorites.close();
     database.close();
   }
 
-  return Object.freeze({ synchronize, search, searchTreasureIds, savedViews, close });
+  return Object.freeze({ synchronize, search, searchTreasureIds, favorites, savedViews, close });
 }
