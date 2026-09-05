@@ -9,6 +9,7 @@ const ENRICHMENT_STYLES = Object.freeze([
   "/vault-sets.css",
   "/vault-marketplace-readiness.css",
   "/vault-tag-recommendations.css",
+  "/vault-improvements.css",
   "/vault-accessibility.css"
 ]);
 
