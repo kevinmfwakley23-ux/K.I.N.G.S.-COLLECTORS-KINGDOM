@@ -3,7 +3,8 @@ export const VAULT_EXTRA_MODULES = Object.freeze([
   "./vault-intake-ui.js",
   "./vault-scanner-ui.js",
   "./vault-provenance-ui.js",
-  "./vault-reorganization-ui.js"
+  "./vault-reorganization-ui.js",
+  "./vault-bulk-reorganization-ui.js"
 ]);
 
 export async function loadVaultExtras(loadModule = (specifier) => import(specifier)) {
