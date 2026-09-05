@@ -417,11 +417,23 @@ export class SqliteVaultStore {
   stats(ownerAccountId) {
     const totals = this.database.prepare(`
       SELECT COUNT(*) AS treasure_count, COALESCE(SUM(quantity), 0) AS unit_count,
-             COALESCE(SUM(CASE WHEN purchase_price_cents IS NOT NULL THEN purchase_price_cents * quantity ELSE 0 END), 0) AS purchase_total_cents,
-             SUM(CASE WHEN purchase_price_cents IS NOT NULL THEN 1 ELSE 0 END) AS priced_treasure_count
+             COALESCE(SUM(CASE WHEN purchase_price_cents IS NOT NULL THEN 1 ELSE 0 END), 0) AS priced_treasure_count
       FROM vault_treasures
       WHERE owner_account_id = ? AND archived_at IS NULL
     `).get(ownerAccountId);
+    const purchaseTotals = this.database.prepare(`
+      SELECT COALESCE(currency, 'UNSPECIFIED') AS currency,
+             COALESCE(SUM(purchase_price_cents * quantity), 0) AS total_cents,
+             COUNT(*) AS treasure_count
+      FROM vault_treasures
+      WHERE owner_account_id = ? AND archived_at IS NULL AND purchase_price_cents IS NOT NULL
+      GROUP BY COALESCE(currency, 'UNSPECIFIED')
+      ORDER BY currency
+    `).all(ownerAccountId).map((row) => ({
+      currency: row.currency,
+      totalCents: Number(row.total_cents),
+      treasureCount: Number(row.treasure_count)
+    }));
     const categories = this.database.prepare(`
       SELECT category, COUNT(*) AS treasure_count, COALESCE(SUM(quantity), 0) AS unit_count
       FROM vault_treasures
@@ -437,8 +449,8 @@ export class SqliteVaultStore {
     return {
       treasureCount: Number(totals.treasure_count),
       unitCount: Number(totals.unit_count),
-      purchaseTotalCents: Number(totals.purchase_total_cents),
       pricedTreasureCount: Number(totals.priced_treasure_count),
+      purchaseTotals,
       categories
     };
   }
@@ -447,7 +459,7 @@ export class SqliteVaultStore {
     return {
       collections: this.listCollections(ownerAccountId),
       locations: this.listLocations(ownerAccountId),
-      treasures: this.listTreasures(ownerAccountId, { includeArchived: true, sort: "createdAt", order: "asc", limit: 100000 })
+      treasures: this.database.prepare(`SELECT * FROM vault_treasures WHERE owner_account_id = ? ORDER BY created_at ASC, id ASC`).all(ownerAccountId).map(mapTreasure)
     };
   }
 
