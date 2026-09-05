@@ -12,6 +12,9 @@ const required = [
   "dist/apps/web/public/room.html",
   "dist/apps/web/public/room.js",
   "dist/apps/web/public/keeper.js",
+  "dist/apps/web/public/vault.html",
+  "dist/apps/web/public/vault.js",
+  "dist/apps/web/public/vault.css",
   "dist/apps/web/public/styles.css",
   "dist/apps/web/public/world.css",
   "dist/apps/web/public/assets/keeper.svg",
@@ -25,10 +28,14 @@ const required = [
   "dist/packages/identity/src/service.mjs",
   "dist/packages/kings-ai/src/client.mjs",
   "dist/packages/great-hall/src/service.mjs",
+  "dist/packages/vault/src/sqlite-store.mjs",
+  "dist/packages/vault/src/service.mjs",
+  "dist/packages/vault/src/http.mjs",
+  "dist/packages/vault/src/ownership.mjs",
   "dist/build-manifest.json"
 ];
 
 for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
-if (manifest.phase !== "IMP-004-GREAT-HALL") throw new Error("Unexpected build phase in manifest.");
-console.log("Production artifact verification passed for IMP-004 Great Hall, Keeper, castle, and grounds output.");
+if (manifest.phase !== "IMP-005-VAULT-PHASE-1") throw new Error("Unexpected build phase in manifest.");
+console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 output.");
