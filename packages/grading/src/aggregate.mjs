@@ -56,11 +56,6 @@ function sideFromCapture(capture) {
   return null;
 }
 
-function bestByConfidence(current, candidate, field = "confidence") {
-  if (!current) return candidate;
-  return Number(candidate?.[field] ?? 0) > Number(current?.[field] ?? 0) ? candidate : current;
-}
-
 function defectKey(defect) {
   return JSON.stringify([
     defect?.type ?? null,
@@ -90,16 +85,18 @@ export function estimateAdvisoryGradeRange(records = []) {
     const analysis = record.analysis;
     const centeringSide = analysis.centering?.side;
     if (SIDES.includes(centeringSide) && analysis.centering?.measurement) {
-      bySide[centeringSide].centering = bestByConfidence(bySide[centeringSide].centering, analysis.centering, "measurement.confidence");
-      if (!bySide[centeringSide].centering || Number(analysis.centering.measurement.confidence ?? 0) >= Number(bySide[centeringSide].centering.measurement?.confidence ?? 0)) {
-        bySide[centeringSide].centering = analysis.centering;
-      }
+      const current = bySide[centeringSide].centering;
+      const candidateConfidence = Number(analysis.centering.measurement.confidence ?? 0);
+      const currentConfidence = Number(current?.measurement?.confidence ?? -1);
+      if (!current || candidateConfidence >= currentConfidence) bySide[centeringSide].centering = analysis.centering;
     }
     for (const capture of analysis.captureQuality ?? []) {
       const captureSide = sideFromCapture(capture);
       if (!captureSide) continue;
       const current = bySide[captureSide].capture;
-      if (!current || (capture.usableForPregrade && !current.usableForPregrade) || Number(capture.analyzerConfidence ?? 0) > Number(current.analyzerConfidence ?? 0)) {
+      const candidateUsable = capture.usableForPregrade === true;
+      const currentUsable = current?.usableForPregrade === true;
+      if (!current || (candidateUsable && !currentUsable) || (candidateUsable === currentUsable && Number(capture.analyzerConfidence ?? 0) > Number(current.analyzerConfidence ?? 0))) {
         bySide[captureSide].capture = capture;
       }
     }
@@ -108,9 +105,9 @@ export function estimateAdvisoryGradeRange(records = []) {
       const key = coverage.detector === "contour" ? "contour" : coverage.detector === "paired-raking-light" ? "surface" : null;
       if (!key) continue;
       const current = bySide[coverage.side][key];
-      if (!current || (coverage.usableForConditionInference && !current.usableForConditionInference) || Number(coverage.reviewCandidateCount ?? 0) < Number(current.reviewCandidateCount ?? 0)) {
-        bySide[coverage.side][key] = coverage;
-      }
+      const candidateUsable = coverage.usableForConditionInference === true;
+      const currentUsable = current?.usableForConditionInference === true;
+      if (!current || (candidateUsable && !currentUsable)) bySide[coverage.side][key] = coverage;
     }
     for (const defect of analysis.defects ?? []) {
       const key = defectKey(defect);
