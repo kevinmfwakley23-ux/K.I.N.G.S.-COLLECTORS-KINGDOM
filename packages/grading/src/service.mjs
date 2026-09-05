@@ -81,6 +81,9 @@ function normalizeCentering(input, profileId) {
 function referencedMediaIds(input = {}) {
   const ids = [];
   for (const capture of Array.isArray(input.captureQuality) ? input.captureQuality : []) if (capture?.sourceMediaId) ids.push(capture.sourceMediaId);
+  for (const coverage of Array.isArray(input.detectorCoverage) ? input.detectorCoverage : []) {
+    for (const mediaId of Array.isArray(coverage?.sourceMediaIds) ? coverage.sourceMediaIds : []) if (mediaId) ids.push(mediaId);
+  }
   for (const defect of Array.isArray(input.defects) ? input.defects : []) {
     if (defect?.sourceMediaId) ids.push(defect.sourceMediaId);
     if (defect?.comparisonMediaId) ids.push(defect.comparisonMediaId);
@@ -164,7 +167,7 @@ export function createPregradeAnalysisService({ vaultStore, mediaRepository, ana
     const sourceMediaSet = new Set(sourceMediaIds);
     for (const mediaId of referencedMediaIds(input)) {
       const cleaned = cleanIdentifier(mediaId, "evidence_source_media_id", { required: true });
-      if (!sourceMediaSet.has(cleaned)) throw new VaultError("pregrade_evidence_media_not_linked", "Capture, defect and autograph evidence may reference only sourceMediaIds explicitly linked to this analysis.");
+      if (!sourceMediaSet.has(cleaned)) throw new VaultError("pregrade_evidence_media_not_linked", "Capture, detector coverage, defect and autograph evidence may reference only sourceMediaIds explicitly linked to this analysis.");
     }
 
     const centering = normalizeCentering(input.centering, profile.id);
@@ -186,6 +189,7 @@ export function createPregradeAnalysisService({ vaultStore, mediaRepository, ana
         cardSizeProfile: cardSize.id,
         centering,
         captureQuality: input.captureQuality ?? [],
+        detectorCoverage: input.detectorCoverage ?? [],
         defects: input.defects ?? [],
         autographComparison: input.autographComparison ?? null,
         estimatedGradeRange: null,
