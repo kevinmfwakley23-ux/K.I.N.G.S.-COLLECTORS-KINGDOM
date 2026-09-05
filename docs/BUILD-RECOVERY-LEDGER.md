@@ -22,10 +22,13 @@ Research may improve implementation but may not silently override the locked Con
 - Draft PR: `#7 — IMP-005: build Royal Vault Phase 1`
 - Base branch: `main`
 - Base commit: `8e5fd453e477997b9257977f8ace07e617e7fc7a`
-- Last fully green verified checkpoint before current candidate work: commit `6eaae868f24eb350d101830bee8771c55f859b03`
-- Last fully green CI at that checkpoint: **Kingdom Quality Gates run #244 — SUCCESS**
-- Candidate head immediately before creation of this ledger: `b6ff71ffe1338319fcbed8df1a3b286134789d58`
-- Candidate work after #244: grounded collection-improvement authority + tests/research record; **not yet claimed verified until its exact descendant head passes the complete gate**.
+- Current verified candidate commit: `d9491394db8e9e796726e684f43dadfb32698957`
+- Latest fully green CI: **Kingdom Quality Gates run #251 — SUCCESS**
+- Previous broad baseline: commit `6eaae868f24eb350d101830bee8771c55f859b03`, run #244 — SUCCESS.
+- Latest red event: run #250 on descendant head `dde8438e1fd6ea224357e1b586aa7249aa0cc955` failed one new improvement test because `setSummaryService.list()` was called before the optional `vault_collection_sets` schema existed in that partial fixture.
+- Repair: collection-set improvement signals now activate only when both the summary service is present **and** the `vault_collection_sets` table actually exists. This preserves optional-enrichment startup behavior.
+- Repair verification: run #251 passed quality gates and production dependency audit.
+- Current next work is **not yet verified**: authenticated HTTP/runtime/Keeper/UI integration for the now-green collection-improvement authority.
 - PR remains **DRAFT**.
 
 ## Current milestone
@@ -68,7 +71,7 @@ Render is a **possible future deployment target**. Do not introduce Render-speci
 
 ## Verified IMP-005 capability inventory
 
-The following capabilities were automated-verified on or before the #244 green checkpoint:
+The following capabilities were automated-verified on or before the current #251 checkpoint.
 
 ### Vault data and organization
 
@@ -135,6 +138,36 @@ The following capabilities were automated-verified on or before the #244 green c
 - no automatic duplicate merge/delete;
 - no Vault context outside the Vault room.
 
+### Grounded collection-improvement core
+
+The deterministic improvement authority itself is now **verified by run #251**. It derives recommendations from authenticated collector-owned Vault state and does not mutate records.
+
+Current verified signals:
+
+- missing physical storage location;
+- missing actual-item photographs;
+- missing recorded condition;
+- missing category-specific details when that optional table exists;
+- missing ownership/provenance history when that optional table exists;
+- valued/purchase-recorded treasures lacking attached supporting evidence when that optional table exists;
+- incomplete Collection Sets when the set schema/service exists;
+- possible duplicate groups;
+- Marketplace preparation already started by the collector but still incomplete when that optional table exists.
+
+Recommendation contract:
+
+- deterministic recommendation ID;
+- priority;
+- affected-record count;
+- at most three collector-owned example records;
+- plain-language reason;
+- concrete next action;
+- `basis: authenticated-collector-vault-state`;
+- `automaticApplication: false`;
+- no cross-collector learning;
+- no model-generated opaque health score;
+- no invented provenance/condition/verification facts.
+
 ### Accessibility / responsive hardening
 
 Automated safeguards include:
@@ -152,55 +185,22 @@ Automated safeguards include:
 - critical text-token contrast tests;
 - responsive breakpoints and production artifact requirements.
 
-## Current candidate work — collection improvement authority
+## Current unverified work — collection improvement integration
 
-The active candidate work implements a deterministic `packages/vault/src/improvements.mjs` service.
+The core `packages/vault/src/improvements.mjs` service has passed CI. The next slice is to make that capability real in the running product while retaining its read-only/advisory contract.
 
-Its purpose is to close the locked Royal Curator requirement to **suggest collection improvements** and **explain missing information** using measurable collector-owned Vault state rather than generic model advice.
+### Next exact steps
 
-Current candidate signals:
-
-- treasures missing physical storage location;
-- treasures missing actual-item photographs;
-- treasures missing recorded condition;
-- treasures missing category-specific details;
-- treasures missing ownership/provenance history;
-- valued/purchase-recorded treasures with no supporting evidence document;
-- incomplete explicit Collection Sets;
-- possible duplicate groups;
-- Marketplace preparation the collector already started but has not finished.
-
-Recommendation contract:
-
-- deterministic recommendation ID;
-- priority;
-- affected-record count;
-- bounded collector-owned examples;
-- plain-language reason;
-- concrete next action;
-- `basis: authenticated-collector-vault-state`;
-- `automaticApplication: false`;
-- no cross-collector learning;
-- no manufactured missing facts.
-
-Current candidate files include:
-
-- `packages/vault/src/improvements.mjs`
-- `tests/vault-improvements.test.mjs`
-- `docs/research/2026-09-05-collection-improvement-recon.md`
-- a temporary HTTP-contract guard test intentionally stating the route is not wired until the core passes verification.
-
-### Next exact steps for this candidate
-
-1. Run/inspect the complete GitHub Actions gate on the current descendant head.
-2. If red, fix the actual service/test defect before runtime integration.
-3. If green, add an authenticated read-only HTTP route for bounded improvement recommendations.
-4. Instantiate the service in production runtime and close it with runtime lifecycle.
-5. Feed only a bounded, sanitized subset into Royal Curator context.
-6. Add a collector-visible Vault improvement section/dashboard that explains the basis and never auto-applies changes.
-7. Add HTTP/runtime/UI wiring tests and production artifact gates.
-8. Rerun the complete repository gate.
-9. Update this ledger, acceptance matrix, architecture docs, README summary if material, and PR #7 body.
+1. Replace the temporary HTTP guard test with a real authenticated read-only improvement HTTP contract.
+2. Add a bounded endpoint such as `GET /api/vault/improvements` with explicit maximum-result metadata/policy.
+3. Instantiate `createVaultImprovementService` in `server-runtime.mjs` after dependent Vault services exist.
+4. Include the service in runtime lifecycle/close handling.
+5. Give Royal Curator only a bounded sanitized improvement summary—no raw SQL state, notes, documents, or mutation authority.
+6. Add a visible Vault “Curator recommendations / improve my collection” section with counts, examples, explanation, and next action.
+7. Make UI language explicit that recommendations are advisory and nothing is changed automatically.
+8. Add owner-isolation HTTP/runtime tests, Keeper context bounds tests, browser wiring tests, and production artifact/type-contract requirements.
+9. Run the complete repository gate on the fully wired head.
+10. Update this ledger, `docs/verification/IMP-005-ACCEPTANCE.md`, `docs/architecture/VAULT.md`, README summary if material, and PR #7 body.
 
 ## Fresh research lessons currently adopted
 
