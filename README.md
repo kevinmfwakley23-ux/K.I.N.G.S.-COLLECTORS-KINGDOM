@@ -1,12 +1,14 @@
 # K.I.N.G.S. Collector's Kingdom
 
-A place for collectors to keep inventory logs of their treasures, get A.I.-assisted insights on market values and trade values, receive updates on collection value, and participate in a trusted marketplace for buying, selling, trading, discovery, preservation, and more.
+A collector-first Kingdom for preserving, organizing, understanding, and eventually trading lawful collectibles through one coherent world rather than a collection of disconnected utilities.
 
 ## Engineering status
 
-Active milestone: **IMP-004 — Great Hall & Navigation**.
+Active milestone: **IMP-005 — Royal Vault Phase 1**.
 
-The repository currently contains the verified production foundation, persistent identity/session core, the server-side K.I.N.G.S. AI application boundary, and the IMP-004 Great Hall implementation under active verification.
+IMP-004 Great Hall & Navigation is merged and verified on `main`. IMP-005 is under active hardening on the draft pull request branch and is **not considered complete or merge-ready until its remaining manual acceptance work and final quality gate are closed**.
+
+The current IMP-005 implementation includes real persistent Vault records, flexible multi-category collectible metadata, nested collection and physical-location organization, media/evidence handling, scalable search, saved views, collection sets, duplicate detection, import/export, recovery foundations, Marketplace handoff preparation, and bounded Royal Curator intelligence.
 
 ## Permanent engineering mission
 
@@ -23,23 +25,24 @@ Fresh research is mandatory before meaningful build sessions, but external produ
 ## Core engineering rules
 
 - Build real, executable, production-oriented functionality. Do not substitute simulated integrations, decorative-only functionality presented as complete, or nonfunctional UI for required behavior.
-- Validate changes with the strongest available build, type-check, lint, and test commands before treating work as complete.
-- Keep architecture, implementation status, and build instructions documented as the application grows.
+- Validate changes with the strongest available build, type-check, lint, test, production-artifact, and dependency-audit gates before treating work as verified.
+- Keep architecture, implementation status, recovery boundaries, and known limitations documented as the application grows.
 - Prefer small, reviewable commits with clear verification evidence.
 - Never commit credentials, API keys, access tokens, or other secrets.
 - A permanent room/location entrance may exist before its approved service phase, but unfinished services must be labeled honestly and must not manufacture collector data.
+- AI may recommend, explain, retrieve, and reason over authorized context, but Collector's Kingdom remains the authority for product mutations.
 
 ## Shared K.I.N.G.S. AI core
 
 K.I.N.G.S. AI is the shared AI-routing core for the K.I.N.G.S. application family. Collector's Kingdom owns collector, Vault, Marketplace, identity, authorization, and other product-domain rules; it does not duplicate model-provider routing or provider credentials. AI requests are sent server-to-server through the governed K.I.N.G.S. AI app-router contract.
 
-The K.I.N.G.S. client/user remains responsible for the mission's cost/quality strategy. Collector's Kingdom sends the capabilities required by a product task and does not make a high-cost route mandatory. K.I.N.G.S. AI remains responsible for its configured routing, model collaboration, verification, and response-quality controls.
+The collector remains responsible for mission cost/quality strategy. Collector's Kingdom sends the capabilities required by a product task and does not make a high-cost route mandatory. K.I.N.G.S. AI remains responsible for its configured routing, multi-model collaboration, verification, adjudication, and response-quality controls.
 
-This boundary lets K.I.N.G.S. AI choose among its configured intelligence routes while Collector's Kingdom remains responsible for authorizing any product action proposed by AI. Browser code must never receive provider API keys or the shared router access token.
+Browser code never receives provider API keys or the shared router access token, and K.I.N.G.S. AI has not been modified as part of the IMP-005 Vault build.
 
 ## Great Hall
 
-IMP-004 establishes the authenticated central Kingdom experience:
+IMP-004 established the authenticated central Kingdom experience:
 
 - personalized collector welcome;
 - permanent castle-and-grounds navigation;
@@ -49,9 +52,39 @@ IMP-004 establishes the authenticated central Kingdom experience:
 - conversational search entry;
 - The Keeper as a visible Royal Host through the K.I.N.G.S. AI boundary;
 - room-aware Keeper continuity at Kingdom entrances;
-- responsive mobile, tablet, Chromebook, and desktop layouts.
+- responsive mobile, tablet, Chromebook, and desktop layout foundations.
 
-Collection totals, marketplace highlights, and notification counts remain explicitly unavailable until their authoritative services are implemented. The Great Hall does not fabricate those values.
+When the Vault is composed into the production runtime, Great Hall collection totals and Vault navigation are derived from the real Vault service rather than manufactured values.
+
+## Royal Vault — current verified capabilities
+
+The active IMP-005 branch currently provides:
+
+- owner-scoped SQLite treasure persistence with WAL, foreign keys, audit history, and nested conceptual folders / physical storage locations;
+- flexible lawful collectible categories rather than a restrictive enum;
+- category profiles for cards, TCG, vinyl figures, die-cast, comics, action figures, stamps, coins/currency, film/sports/music memorabilia, autographs, games, records, LEGO/building sets, tickets, historical memorabilia, and custom categories;
+- per-treasure custom metadata with explicit source and verification state;
+- protected images with byte-signature validation, SHA-256 integrity metadata, and authenticated retrieval;
+- protected evidence documents with integrity checks and collector-entered trust state;
+- structured ownership/provenance history separate from technical audit history;
+- Grid, List, Binder, and Gallery views plus Favorites, Recently Added, Recently Updated, Possible Duplicates, Incomplete Sets, and Marketplace Ready system views;
+- explicit Collection Sets with expected entries and collector-selected owned-treasure links;
+- dirty-tracked incremental FTS search over core data, organization, collectible details, provenance, evidence metadata, and private Marketplace preparation text;
+- account-scoped collection-view indexes verified through SQLite query-planner tests;
+- Saved Vault Views and preview-before-commit CSV import/export;
+- a verified Vault snapshot/restore primitive covering the authoritative Vault database and referenced media/evidence;
+- Marketplace Preparation as a private future-listing handoff boundary without pretending commerce is implemented;
+- Royal Curator retrieval with bounded category details, incomplete-set summaries, grounded tag recommendations, and possible-duplicate summaries;
+- explicit no-auto-merge, no-auto-delete, no-auto-tag-application safety rules;
+- automated accessibility semantics including keyboard-operable treasure cards, explicit modal naming/focus return, live regions, reduced-motion support, forced-colors support, and critical contrast checks.
+
+See [`docs/architecture/VAULT.md`](docs/architecture/VAULT.md) for the authoritative implementation architecture and [`docs/verification/IMP-005-ACCEPTANCE.md`](docs/verification/IMP-005-ACCEPTANCE.md) for current acceptance status.
+
+## Recovery boundary
+
+The Vault can create, verify, and restore a consistent recovery snapshot containing `vault.sqlite` plus media/evidence files referenced by that database state. Recovery verifies SQLite integrity, foreign keys, file sizes, and SHA-256 hashes and restores only into a new/empty target.
+
+This is a real Phase-1 recovery primitive, **not a false claim of complete production disaster recovery**. Automated scheduling, off-site replication, retention policy, distributed disaster recovery, and true point-in-time log infrastructure remain later deployment/operations responsibilities.
 
 ## Product direction
 
@@ -59,7 +92,7 @@ The Kingdom is a premium collector-focused experience with an elegant royal visu
 
 Castle interiors use polished white marble with black and gold veining, modern mansion/castle refinement, clear spatial orientation, and immersive but uncluttered interactive spaces.
 
-The Royal Vault is inside the castle and is designed as a grand, orderly, high-security treasure-vault environment for preserving, locating, documenting, and eventually managing the collector's treasures.
+The Royal Vault is inside the castle and is designed as a grand, orderly, high-security treasure-vault environment for preserving, locating, documenting, and managing the collector's treasures.
 
 The Marketplace District is **outside the castle** as the Kingdom Street Market: a refined open-air collector market with stalls, awnings, display cases, merchant areas, and a living street/farmers-market atmosphere rather than a generic storefront dashboard.
 
@@ -72,6 +105,8 @@ npm ci
 npm run verify
 ```
 
-`npm run verify` runs repository policy/syntax checks, module-contract checks, automated tests, the production build, and artifact verification. GitHub Actions is the required remote quality gate before a milestone is treated as verified.
+`npm run verify` runs repository policy/syntax checks, module-contract checks, the complete automated test suite, the production build, and artifact verification. GitHub Actions also runs the production dependency audit and is the required remote quality gate before a milestone is treated as verified.
 
-Architecture notes live in `docs/architecture/`.
+Automated verification does **not** replace manual accessibility and cross-device acceptance. The IMP-005 branch remains draft until the required manual phone/tablet/Chromebook and assistive-technology review is recorded honestly.
+
+Architecture notes live in `docs/architecture/`; research records live in `docs/research/`; verification records live in `docs/verification/`.
