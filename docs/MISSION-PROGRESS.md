@@ -12,9 +12,9 @@ A progress entry must record what was actually implemented, important architectu
 
 **Date:** 2026-09-05  
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Latest verified checkpoint:** **Append-only Provenance & Ownership Ledger with responsive treasure timeline**  
-**Latest verified code gate:** **Kingdom Quality Gates #416** — run `33961966066` — **PASS**  
-**Verified code commit:** `cc3e6dd7e25f15e3aece341bc30cd44b238b69b7`  
+**Latest verified checkpoint:** **Live Vault enhancement bootstrap restored; cycle-safe collection/location reorganization domain foundation green**  
+**Latest verified code gate:** **Kingdom Quality Gates #425** — run `33963495455` — **PASS**  
+**Verified code commit:** `34ca527c4f608d07290d43fa32fddacedc5df0f0`  
 **Default branch:** `main`
 
 ### Exact recovery point
@@ -33,30 +33,32 @@ The Royal Vault now has:
 - progressive camera barcode scanning;
 - review-only Open Library ISBN candidates;
 - review-only UPCitemdb UPC/EAN/GTIN candidates;
-- append-only provenance/acquisition/ownership/custody/disposition history.
+- append-only provenance/acquisition/ownership/custody/disposition history;
+- a verified ordered browser bootstrap that actually loads transactional import, Intake Queue, scanner, and provenance enhancement modules on `/vault.html`.
 
-Provider/catalog lookup never writes a treasure or market value. Provenance entries are explicitly collector-recorded evidence and return `independentlyVerified: false`. Corrections append a linked event instead of rewriting earlier history.
+A connection-interrupted build had left the enhancement files packaged and individually tested but not loaded by the live Vault page. `apps/web/public/vault-extras.js` now loads them in dependency-safe order, and the already-imported Keeper module schedules that loader only on the Vault page after core initialization. The loader stops on the first failed module instead of pretending downstream tools loaded successfully.
+
+The reorganization work has also advanced beyond the prior ledger entry. Quality Gates #422 verified the repository/service foundation for collection edits and nested-location moves, including cycle prevention and permanent treasure-reference preservation. That stewardship service is **not yet live through HTTP or browser edit controls**, so do not represent collection/location editing as available to collectors yet.
 
 ### Exact next engineering target
 
-**IMP-005 — Vault Reorganization & Bulk Stewardship**
+**IMP-005 — Vault Reorganization: authenticated PATCH API slice**
 
 Research record:
 
 - `docs/research/2026-09-05-IMP-005-VAULT-REORGANIZATION-BULK-RECON.md`
 
-Build in this order:
+Continue in short verified slices:
 
-1. owner-scoped collection rename/description update;
-2. owner-scoped location rename/type/notes/parent update;
-3. server-authoritative cycle prevention so a location cannot move beneath itself or any descendant;
-4. preserve descendant nodes, treasure IDs, and treasure/location references when a branch moves;
-5. authenticated PATCH APIs for collections and locations;
-6. responsive individual edit controls;
-7. bulk treasure reorganization preview for collection/location assignments;
-8. atomic commit for selected treasure UUIDs with owner isolation and normal audit history;
-9. no destructive bulk archive/delete in the first bulk-move slice;
-10. full lint/contracts/tests/build/artifact/dependency verification before representing it as live.
+1. expose the already-green collection update service through an owner-authenticated `PATCH /api/vault/collections/:id` route;
+2. expose the already-green location update/reparent service through an owner-authenticated `PATCH /api/vault/locations/:id` route;
+3. keep server-authoritative cycle prevention and cross-owner rejection intact at the HTTP boundary;
+4. add HTTP integration tests proving collection rename preserves treasure membership/UUID, location branch moves preserve descendant/reference integrity, and invalid cycles return explicit errors;
+5. add the reorganization modules/routes to type-contract and production-artifact requirements;
+6. pass full quality gates;
+7. only after that, add responsive individual collection/location edit controls;
+8. after individual controls are verified, build previewed atomic bulk treasure movement for selected permanent treasure UUIDs;
+9. keep destructive bulk archive/delete out of the first bulk-move slice.
 
 A treasure's collection group or shelf/binder/safe may change, but its permanent Kingdom treasure UUID must not.
 
@@ -205,22 +207,54 @@ Implemented:
 - exact decimal-to-integer-cents browser parsing;
 - production artifact/type-contract requirements.
 
-Verification covers:
+### Cycle-safe reorganization domain foundation — verified
 
-- owner isolation;
-- cross-treasure correction rejection;
-- archive survival;
-- monetary validation;
-- append-only repository/API semantics;
-- correction linkage;
-- audit linkage;
-- export v2;
-- browser timeline helper behavior;
-- full previous Kingdom regression suite;
-- production build/artifact verification;
-- production dependency audit.
+**Quality Gates #422** — run `33962143456` — **PASS**  
+**Verified head:** `85989588939d06fdf6022e0bad2ba2f5b3fc1a00`
 
-Gate #415 initially failed only because the strict repository anti-fake-code lint treated the literal browser hint-property spelling as a forbidden marker. The UI helper was rewritten without weakening the rule; #416 then passed the complete suite.
+Implemented but **not yet exposed as live HTTP/UI**:
+
+- `packages/vault/src/reorganization-repository.mjs` owner-scoped collection/location update persistence;
+- `packages/vault/src/reorganization-service.mjs` validation and cycle-safe stewardship logic;
+- collection name/description updates;
+- unique owner collection-name enforcement;
+- location parent/name/type/notes updates;
+- self-parent rejection;
+- descendant-cycle rejection;
+- cross-owner parent rejection;
+- branch movement to a new parent or top level;
+- descendant IDs preserved when a branch moves;
+- treasure UUID and location reference preserved when ancestors move;
+- recalculated descendant display paths from authoritative parent links;
+- structure-level `vault.collection_updated` and `vault.location_updated` audit events;
+- no-op updates do not manufacture audit/change claims.
+
+Verification specifically proves a path such as:
+
+`Vault Room → North Safe → Shelf 2 → Pokémon Binder`
+
+can move under a different room while the shelf, binder and treasure IDs remain intact and their displayed paths recalculate from the new authoritative hierarchy.
+
+### Live Vault enhancement bootstrap — verified
+
+**Quality Gates #425** — run `33963495455` — **PASS**  
+**Verified head:** `34ca527c4f608d07290d43fa32fddacedc5df0f0`
+
+Defect found:
+
+- transactional import, Intake Queue, scanner and provenance UI modules existed in the production public tree and had their own tests, but the current `/vault.html` execution path loaded only the core `vault.js`; therefore those enhancement modules could be packaged without actually initializing in the browser.
+
+Fix:
+
+- added `apps/web/public/vault-extras.js` as an explicit ordered enhancement loader;
+- load order is transactional import → Intake Queue → scanner → provenance;
+- scanner remains after Intake Queue by construction;
+- loader stops on the first failed module so dependent later tools are not falsely treated as loaded;
+- the already-imported Keeper module schedules the enhancement bootstrap only when `body.vault-page` is active and only after core page initialization has had a chance to complete;
+- non-Vault Kingdom pages do not load the Vault enhancement bundle;
+- regression tests verify load order and fail-stop behavior.
+
+The full Kingdom quality gate passed after the fix, including lint, automated tests, build/artifact checks, and dependency audit.
 
 ---
 
@@ -244,8 +278,8 @@ Research-before-build remains a permanent repository rule.
 
 Do not represent these as live until separately implemented and verified:
 
-- collection rename/edit workflows;
-- physical-location rename/reparent/reorganization;
+- authenticated collection rename/edit PATCH route and collector-facing controls;
+- authenticated physical-location rename/reparent PATCH route and collector-facing controls;
 - bulk treasure movement/reorganization;
 - destructive bulk archive/delete flows;
 - dedicated trading-card provider candidates;
