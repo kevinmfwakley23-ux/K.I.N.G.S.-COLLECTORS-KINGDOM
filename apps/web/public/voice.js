@@ -276,4 +276,9 @@ if (typeof document !== "undefined" && document.querySelector("#import-preview-f
       const status = document.querySelector("#vault-status");
       if (status) status.textContent = `The Royal Intake Queue or barcode scanner interface could not load: ${error.message}`;
     });
+
+  import("./vault-provenance-ui.js").catch((error) => {
+    const status = document.querySelector("#treasure-status");
+    if (status) status.textContent = `The provenance ledger interface could not load: ${error.message}`;
+  });
 }
