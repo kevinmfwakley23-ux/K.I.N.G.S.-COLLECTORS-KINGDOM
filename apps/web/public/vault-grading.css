@@ -9,7 +9,8 @@
 .grading-image-stage { position: relative; min-height: 22rem; overflow: hidden; border: 1px solid rgba(35, 28, 20, .2); border-radius: 1rem; background: rgba(20, 17, 14, .92); display: grid; place-items: center; }
 .grading-image-stage img { width: 100%; height: auto; max-height: 36rem; object-fit: contain; display: block; }
 .grading-image-empty { padding: 2rem; max-width: 30rem; text-align: center; color: rgba(255,255,255,.76); line-height: 1.55; }
-.grading-guide { position: absolute; pointer-events: none; opacity: .9; box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
+.grading-card-boundary { position: absolute; pointer-events: none; border: 2px solid #d6aa4a; box-shadow: 0 0 0 1px rgba(10,10,10,.5), 0 0 12px rgba(214,170,74,.35); z-index: 2; }
+.grading-guide { position: absolute; pointer-events: none; opacity: .9; box-shadow: 0 0 0 1px rgba(255,255,255,.35); z-index: 3; }
 .grading-guide-vertical { top: 0; bottom: 0; width: 2px; background: #d44; }
 .grading-guide-horizontal { left: 0; right: 0; height: 2px; background: #d44; }
 .grading-border-grid { display: grid; grid-template-columns: repeat(2, minmax(7rem, 1fr)); gap: .65rem; }
