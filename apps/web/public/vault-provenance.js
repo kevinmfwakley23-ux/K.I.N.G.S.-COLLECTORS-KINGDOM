@@ -1,4 +1,5 @@
 import { createCollectibleDetailsSection } from "./vault-details.js";
+import { createEvidenceSection } from "./vault-evidence.js";
 import "./vault-categories.js";
 
 const EVENT_LABELS = Object.freeze({
@@ -55,8 +56,11 @@ function eventSummary(event) {
 
 export async function createProvenanceSection(treasureId) {
   const wrapper = element("div", "detail-extended-sections");
-  const collectibleDetails = await createCollectibleDetailsSection(treasureId);
-  wrapper.append(collectibleDetails);
+  const [collectibleDetails, evidence] = await Promise.all([
+    createCollectibleDetailsSection(treasureId),
+    createEvidenceSection(treasureId)
+  ]);
+  wrapper.append(collectibleDetails, evidence);
 
   const section = element("section", "detail-history provenance-history");
   section.dataset.treasureId = treasureId;
