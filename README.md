@@ -85,6 +85,24 @@ It includes:
 
 Research: `docs/research/2026-09-05-IMP-005-GRADING-EXPLAINABILITY.md`.
 
+## Calibrated physical measurement — in-progress branch
+
+Branch `imp-005-calibrated-physical-measurement` adds the next real grading-measurement slice for verification. It is not a verified production baseline until the full gates pass.
+
+The new slice is designed to:
+
+- store versioned physical-scale calibration evidence inside append-only pre-grade records;
+- accept only independent same-plane known-size marker measurements as a millimeter scale source;
+- fail closed when the reference is cropped, ambiguous, distorted, skewed or below confidence tolerance;
+- compute perspective-aware card width/height estimates with uncertainty;
+- compare measured dimensions against selected card-size profiles as advisory evidence only;
+- convert normalized defect bounding-box spans to approximate millimeters only when valid calibration exists;
+- keep normalized-only metrics when calibration is absent;
+- expose physical measurement status, source media, confidence and limitations in the explainable report UI;
+- keep all official-grade, authentication, condition, value and ownership mutation flags false.
+
+Research: `docs/research/2026-09-05-IMP-005-CALIBRATED-PHYSICAL-MEASUREMENT.md`.
+
 ## Durable engineering records
 
 - [`docs/MISSION-STATEMENT.md`](docs/MISSION-STATEMENT.md) — permanent mission and authority order.
