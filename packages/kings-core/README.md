@@ -20,12 +20,13 @@ Current shared deterministic authorities:
 - `memory-relevance.mjs` ← `core/workforce/memory-relevance.ts`
 - `knowledge-retrieval.mjs` ← `core/workforce/knowledge-retrieval.ts`
 - `context-optimizer.mjs` ← `core/workforce/execution/context-optimizer.ts`
+- `budget-authority.mjs` ← `core/workforce/budget-authority.ts`
 
 ## Reuse classification
 
 ### Safe to copy/pin when useful
 
-Deterministic, credential-free logic can be copied into a child app when the product benefits from local execution and the copied source is pinned to a verified K.I.N.G.S. commit. Examples include memory relevance, memory-context selection, knowledge retrieval, and context optimization.
+Deterministic, credential-free logic can be copied into a child app when the product benefits from local execution and the copied source is pinned to a verified K.I.N.G.S. commit. Examples include memory relevance, memory-context selection, knowledge retrieval, context optimization, and execution-budget enforcement.
 
 ### Pattern-only when product trust rules differ
 
