@@ -4,6 +4,11 @@ import {
   intakeTypeLabel,
   treasurePrefillFromIntake
 } from "./vault-intake-core.js";
+import {
+  catalogCandidateDraft,
+  catalogCandidateSummary,
+  catalogReviewPolicy
+} from "./vault-catalog-core.js";
 
 function node(tag, className, text) {
   const element = document.createElement(tag);
@@ -84,45 +89,28 @@ function prefillTreasureEditor(item, status) {
   status.textContent = "Identifier copied into a new treasure editor. The queue item remains pending until you explicitly dismiss it.";
 }
 
-function candidateDetails(candidate) {
-  const fields = candidate?.fields ?? {};
-  const parts = [];
-  if (Array.isArray(fields.creators) && fields.creators.length) parts.push(fields.creators.join(", "));
-  if (fields.publisher) parts.push(fields.publisher);
-  if (fields.firstPublishYear) parts.push(String(fields.firstPublishYear));
-  if (Number.isInteger(fields.editionCount)) parts.push(`${fields.editionCount} provider edition record${fields.editionCount === 1 ? "" : "s"}`);
-  return parts.join(" • ") || "Provider metadata is limited for this candidate.";
-}
-
 function prefillCatalogCandidate(item, candidate, status) {
-  const title = candidate?.fields?.title;
-  if (!title) throw new Error("This provider candidate does not contain a usable title.");
+  const draft = catalogCandidateDraft(item, candidate);
   const newTreasure = document.querySelector("#new-treasure-button");
   if (!newTreasure) throw new Error("The treasure editor is unavailable on this page.");
   newTreasure.click();
 
-  const titleField = setEditorValue("#treasure-title", title);
-  setEditorValue("#treasure-category", "Book");
-  setEditorValue("#treasure-manufacturer", candidate.fields.publisher);
-  setEditorValue("#treasure-barcode", candidate.externalIdentifiers?.isbn ?? item.identifierValue);
-
-  const attributes = {};
-  if (Array.isArray(candidate.fields.creators) && candidate.fields.creators.length) {
-    attributes.author = candidate.fields.creators.join("; ");
+  const titleField = setEditorValue("#treasure-title", draft.title);
+  setEditorValue("#treasure-category", draft.category);
+  setEditorValue("#treasure-manufacturer", draft.manufacturer);
+  setEditorValue("#treasure-description", draft.description);
+  setEditorValue("#treasure-barcode", draft.barcode);
+  if (Object.keys(draft.attributes).length) {
+    setEditorValue("#treasure-attributes", JSON.stringify(draft.attributes, null, 2));
   }
-  if (Number.isInteger(candidate.fields.firstPublishYear)) attributes.firstPublishYear = candidate.fields.firstPublishYear;
-  if (candidate.providerName) attributes.catalogEvidenceProvider = candidate.providerName;
-  if (candidate.providerRecordId) attributes.catalogEvidenceRecord = candidate.providerRecordId;
-  if (candidate.sourceUrl) attributes.catalogEvidenceUrl = candidate.sourceUrl;
-  if (Object.keys(attributes).length) setEditorValue("#treasure-attributes", JSON.stringify(attributes, null, 2));
 
   const editorStatus = document.querySelector("#treasure-status");
   if (editorStatus) {
-    editorStatus.textContent = `${candidate.providerName || "Catalog provider"} candidate copied into this unsaved editor. Review title, edition, publisher, authorship, condition, and every identifier before saving. No Vault record has been written yet.`;
+    editorStatus.textContent = `${candidate.providerName || "Catalog provider"} candidate copied into this unsaved editor. Review title, model or edition, maker or publisher, condition, category, and every identifier before saving. No Vault record has been written and no provider price was applied.`;
   }
   titleField?.focus();
   document.querySelector("#treasure-editor")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  status.textContent = "Catalog candidate copied into a new unsaved treasure editor. The Intake Queue item remains pending and no authoritative record was changed.";
+  status.textContent = "Catalog candidate copied into a new unsaved treasure editor. The Intake Queue item remains pending and no authoritative record or value was changed.";
 }
 
 export function createVaultIntakeUi() {
@@ -230,10 +218,10 @@ export function createVaultIntakeUi() {
 
   const state = { view: "pending", items: [] };
 
-  async function resolveCatalogCandidates(item, output, button) {
+  async function resolveCatalogCandidates(item, output, button, policy) {
     button.disabled = true;
     button.textContent = "Finding candidates…";
-    output.replaceChildren(node("p", "muted-copy", "Requesting review-only book metadata evidence…"));
+    output.replaceChildren(node("p", "muted-copy", policy.loadingMessage));
     try {
       const params = new URLSearchParams({
         identifierType: item.identifierType,
@@ -242,14 +230,14 @@ export function createVaultIntakeUi() {
       const { result } = await api(`/api/catalog/candidates?${params.toString()}`);
       output.replaceChildren();
       if (!result.candidates.length) {
-        output.append(node("p", "catalog-no-match", "No external book candidate was returned for this ISBN. Nothing in the Vault was changed; manual entry remains available."));
+        output.append(node("p", "catalog-no-match", policy.noMatchMessage));
         return;
       }
 
       const evidenceHeader = node("div", "catalog-evidence-header");
       evidenceHeader.append(
         node("strong", "", `${result.candidates.length} review candidate${result.candidates.length === 1 ? "" : "s"}`),
-        node("small", "", `Retrieved ${formatTime(result.retrievedAt)} • no Vault write performed`)
+        node("small", "", `Retrieved ${formatTime(result.retrievedAt)} • no Vault write or valuation performed`)
       );
       output.append(evidenceHeader);
 
@@ -259,7 +247,7 @@ export function createVaultIntakeUi() {
         copy.append(
           node("span", "catalog-provider", candidate.providerName || candidate.providerId),
           node("h4", "", candidate.fields?.title || "Untitled provider candidate"),
-          node("p", "muted-copy", candidateDetails(candidate)),
+          node("p", "muted-copy", catalogCandidateSummary(candidate)),
           node("p", "catalog-match-reason", candidate.matchReason || "Provider identifier evidence requires collector review.")
         );
 
@@ -288,7 +276,7 @@ export function createVaultIntakeUi() {
       output.replaceChildren(node("p", "catalog-error", `${error.message} Nothing in the Vault was changed.`));
     } finally {
       button.disabled = false;
-      button.textContent = "Find book candidates";
+      button.textContent = policy.actionLabel;
     }
   }
 
@@ -306,11 +294,12 @@ export function createVaultIntakeUi() {
     let catalogOutput = null;
     if (item.status === "pending") {
       const actions = node("div", "intake-card-actions");
-      if (item.identifierType === "isbn") {
-        const candidateButton = node("button", "quiet-button", "Find book candidates");
+      const policy = catalogReviewPolicy(item.identifierType);
+      if (policy.supported) {
+        const candidateButton = node("button", "quiet-button", policy.actionLabel);
         candidateButton.type = "button";
         catalogOutput = node("div", "catalog-candidate-results");
-        candidateButton.addEventListener("click", () => resolveCatalogCandidates(item, catalogOutput, candidateButton));
+        candidateButton.addEventListener("click", () => resolveCatalogCandidates(item, catalogOutput, candidateButton, policy));
         actions.append(candidateButton);
       }
       const useButton = node("button", "quiet-button", "Use in treasure editor");
