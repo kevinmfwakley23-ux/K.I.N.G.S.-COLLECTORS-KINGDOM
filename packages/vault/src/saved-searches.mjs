@@ -36,7 +36,10 @@ function requireIdentity(identity) {
 }
 
 function cleanText(value, name, max, { required = false } = {}) {
-  if (value === undefined) return undefined;
+  if (value === undefined) {
+    if (required) throw new VaultError(`invalid_${name}`, `${name} is required.`);
+    return undefined;
+  }
   if (value === null || value === "") {
     if (required) throw new VaultError(`invalid_${name}`, `${name} is required.`);
     return null;
@@ -91,17 +94,20 @@ export function createVaultSavedViewService({ filename, now = () => new Date() }
 
   function normalize(accountId, input = {}, existing = null) {
     if (!input || typeof input !== "object" || Array.isArray(input)) throw new VaultError("invalid_saved_view", "Saved view data must be an object.");
-    const name = cleanText(input.name, "saved_view_name", 80, { required: !existing });
+    const name = input.name === undefined && existing
+      ? existing.name
+      : cleanText(input.name, "saved_view_name", 80, { required: true });
     const query = cleanText(input.query, "saved_view_query", 4000);
     const category = cleanText(input.category, "saved_view_category", 120);
-    const tag = cleanText(input.tag, "saved_view_tag", 60)?.toLowerCase();
+    const tagText = cleanText(input.tag, "saved_view_tag", 60);
+    const tag = tagText === undefined ? undefined : tagText === null ? null : tagText.toLowerCase();
     const sort = input.sort === undefined ? undefined : String(input.sort).trim();
     const view = input.view === undefined ? undefined : String(input.view).trim();
     if (sort !== undefined && !SORTS.has(sort)) throw new VaultError("invalid_saved_view_sort", "Saved view sort option is not supported.");
     if (view !== undefined && !VIEWS.has(view)) throw new VaultError("invalid_saved_view_mode", "Saved view mode must be grid or list.");
 
     return {
-      name: name === undefined ? existing?.name : name,
+      name,
       query: query === undefined ? existing?.query ?? null : query,
       category: category === undefined ? existing?.category ?? null : category,
       folderId: input.folderId === undefined ? existing?.folderId ?? null : requireFolder(accountId, input.folderId),
