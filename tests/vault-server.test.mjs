@@ -5,6 +5,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createKingdomServer } from "../apps/web/server.mjs";
+import { createGreatHallService } from "../packages/great-hall/src/service.mjs";
 import { createIdentityService } from "../packages/identity/src/service.mjs";
 import { SqliteIdentityStore } from "../packages/identity/src/sqlite-store.mjs";
 import { createVaultService } from "../packages/vault/src/service.mjs";
@@ -18,6 +19,7 @@ async function withKingdom(run) {
   const vaultStore = new SqliteVaultStore(join(directory, "vault.sqlite"));
   const identityService = createIdentityService({ store: identityStore });
   const vaultService = createVaultService({ store: vaultStore });
+  const greatHallService = createGreatHallService({ identityService, vaultService });
   const config = {
     host: "127.0.0.1",
     port: 0,
@@ -29,6 +31,7 @@ async function withKingdom(run) {
     config,
     logger: silentLogger,
     identityService,
+    greatHallService,
     vaultService
   });
   server.listen(0, "127.0.0.1");
@@ -77,13 +80,19 @@ async function registerAndSignIn(baseUrl, suffix = "owner") {
   return cookie;
 }
 
-test("authenticated Vault APIs persist real records and enforce collector isolation", async () => {
+test("authenticated Vault APIs persist real records, open Great Hall navigation, and enforce collector isolation", async () => {
   await withKingdom(async (baseUrl) => {
     const denied = await json(baseUrl, "/api/vault");
     assert.equal(denied.response.status, 401);
 
     const ownerCookie = await registerAndSignIn(baseUrl, "owner");
     const outsiderCookie = await registerAndSignIn(baseUrl, "outsider");
+
+    const initialNavigation = await json(baseUrl, "/api/navigation", { headers: { cookie: ownerCookie } });
+    assert.equal(initialNavigation.response.status, 200);
+    const vaultRoom = initialNavigation.body.rooms.find((room) => room.id === "vault");
+    assert.equal(vaultRoom.status, "available");
+    assert.equal(vaultRoom.href, "/vault.html");
 
     const collection = await json(baseUrl, "/api/vault/collections", {
       method: "POST",
@@ -140,8 +149,15 @@ test("authenticated Vault APIs persist real records and enforce collector isolat
     const stats = await json(baseUrl, "/api/vault", { headers: { cookie: ownerCookie } });
     assert.equal(stats.response.status, 200);
     assert.equal(stats.body.stats.treasureCount, 1);
-    assert.equal(stats.body.stats.purchaseTotalCents, 45000);
+    assert.deepEqual(stats.body.stats.purchaseTotals, [{ currency: "USD", totalCents: 45000, treasureCount: 1 }]);
     assert.equal(stats.body.stats.estimatedValueAvailable, false);
+
+    const hall = await json(baseUrl, "/api/great-hall", { headers: { cookie: ownerCookie } });
+    assert.equal(hall.response.status, 200);
+    assert.equal(hall.body.collectionOverview.available, true);
+    assert.equal(hall.body.collectionOverview.itemCount, 1);
+    assert.equal(hall.body.collectionOverview.unitCount, 1);
+    assert.deepEqual(hall.body.collectionOverview.purchaseTotals, [{ currency: "USD", totalCents: 45000, treasureCount: 1 }]);
 
     const outsiderLookup = await json(baseUrl, `/api/vault/treasures/${treasureId}`, { headers: { cookie: outsiderCookie } });
     assert.equal(outsiderLookup.response.status, 404);
