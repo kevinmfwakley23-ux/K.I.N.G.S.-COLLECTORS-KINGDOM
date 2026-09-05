@@ -6,6 +6,16 @@ const DIALOG_LABELS = Object.freeze([
   ["duplicates-dialog", ".dialog-head h2", "vault-duplicates-dialog-title"]
 ]);
 
+const DIALOG_FOCUS_TARGETS = Object.freeze({
+  "treasure-dialog": "#treasure-title",
+  "detail-dialog": "#detail-title",
+  "folder-dialog": "#folder-name",
+  "location-dialog": "#location-name",
+  "duplicates-dialog": ".dialog-head h2"
+});
+
+const dialogInvokers = new WeakMap();
+
 function nameDialog(dialogId, headingSelector, fallbackHeadingId) {
   const dialog = document.getElementById(dialogId);
   if (!dialog) return false;
@@ -16,9 +26,45 @@ function nameDialog(dialogId, headingSelector, fallbackHeadingId) {
   return true;
 }
 
-function installDialogNames() {
+function focusTarget(dialog) {
+  const selector = DIALOG_FOCUS_TARGETS[dialog.id];
+  if (!selector) return null;
+  const target = dialog.querySelector(selector);
+  if (!(target instanceof HTMLElement)) return null;
+  if (/^H[1-6]$/.test(target.tagName) && !target.hasAttribute("tabindex")) target.tabIndex = -1;
+  return target;
+}
+
+function rememberDialogInvoker(dialog) {
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement) || active === document.body || dialog.contains(active)) return;
+  dialogInvokers.set(dialog, active);
+}
+
+function restoreDialogInvoker(dialog) {
+  const invoker = dialogInvokers.get(dialog);
+  dialogInvokers.delete(dialog);
+  if (!(invoker instanceof HTMLElement) || !invoker.isConnected) return;
+  invoker.focus({ preventScroll: true });
+}
+
+function installDialogFocus(dialog) {
+  dialog.addEventListener("beforetoggle", (event) => {
+    if (event.newState !== "open") return;
+    rememberDialogInvoker(dialog);
+    setTimeout(() => {
+      if (!dialog.open) return;
+      focusTarget(dialog)?.focus({ preventScroll: true });
+    }, 0);
+  });
+  dialog.addEventListener("close", () => restoreDialogInvoker(dialog));
+}
+
+function installDialogs() {
   for (const [dialogId, headingSelector, fallbackHeadingId] of DIALOG_LABELS) {
     nameDialog(dialogId, headingSelector, fallbackHeadingId);
+    const dialog = document.getElementById(dialogId);
+    if (dialog instanceof HTMLDialogElement) installDialogFocus(dialog);
   }
 }
 
@@ -42,7 +88,7 @@ function installFileInputDescription() {
 }
 
 function install() {
-  installDialogNames();
+  installDialogs();
   installCollectionBusyState();
   installFileInputDescription();
 }
@@ -50,4 +96,4 @@ function install() {
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, { once: true });
 else install();
 
-export { DIALOG_LABELS, nameDialog };
+export { DIALOG_FOCUS_TARGETS, DIALOG_LABELS, focusTarget, nameDialog, rememberDialogInvoker, restoreDialogInvoker };
