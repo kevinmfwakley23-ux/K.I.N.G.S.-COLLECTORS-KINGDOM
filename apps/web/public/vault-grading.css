@@ -1,7 +1,7 @@
 .grading-panel { display: grid; gap: 1rem; }
 .grading-heading { align-items: flex-start; gap: 1rem; }
 .grading-advisory-badge { display: inline-flex; align-items: center; border: 1px solid rgba(138, 94, 20, .35); border-radius: 999px; padding: .45rem .7rem; font-size: .78rem; font-weight: 800; letter-spacing: .02em; background: rgba(214, 170, 74, .12); white-space: nowrap; }
-.grading-toolbar { display: grid; grid-template-columns: minmax(14rem, 1.4fr) repeat(3, minmax(9rem, 1fr)); gap: .75rem; }
+.grading-toolbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .75rem; }
 .grading-toolbar label, .grading-border-control { display: grid; gap: .35rem; font-size: .82rem; font-weight: 750; }
 .grading-toolbar input, .grading-toolbar select, .grading-border-control input { width: 100%; }
 .grading-workspace { display: grid; grid-template-columns: minmax(18rem, 1.15fr) minmax(18rem, .85fr); gap: 1rem; align-items: start; }
@@ -10,6 +10,8 @@
 .grading-image-stage img { width: 100%; height: auto; max-height: 36rem; object-fit: contain; display: block; }
 .grading-image-empty { padding: 2rem; max-width: 30rem; text-align: center; color: rgba(255,255,255,.76); line-height: 1.55; }
 .grading-card-boundary { position: absolute; pointer-events: none; border: 2px solid #d6aa4a; box-shadow: 0 0 0 1px rgba(10,10,10,.5), 0 0 12px rgba(214,170,74,.35); z-index: 2; }
+.grading-surface-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+.grading-surface-box { position: absolute; display: block; min-width: 5px; min-height: 5px; border: 2px solid rgba(220, 66, 66, .95); background: rgba(220, 66, 66, .08); box-shadow: 0 0 0 1px rgba(255,255,255,.45), 0 0 8px rgba(220,66,66,.35); }
 .grading-guide { position: absolute; pointer-events: none; opacity: .9; box-shadow: 0 0 0 1px rgba(255,255,255,.35); z-index: 3; }
 .grading-guide-vertical { top: 0; bottom: 0; width: 2px; background: #d44; }
 .grading-guide-horizontal { left: 0; right: 0; height: 2px; background: #d44; }
