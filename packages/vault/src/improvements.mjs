@@ -168,7 +168,7 @@ export function createVaultImprovementService({ filename, setSummaryService = nu
       }));
     }
 
-    const incompleteSets = setSummaryService?.list
+    const incompleteSets = setSummaryService?.list && tableExists(database, "vault_collection_sets")
       ? setSummaryService.list(identity, { incompleteOnly: true, limit: 500 })
       : [];
     if (incompleteSets.length) {
