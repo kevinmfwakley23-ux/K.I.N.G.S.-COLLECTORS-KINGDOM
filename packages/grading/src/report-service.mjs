@@ -138,9 +138,14 @@ export function createExplainableGradingReportService({ vaultStore, analysisRepo
     requireTreasure(collector.id, treasureId);
     const analyses = analysisRepository.listForTreasure(collector.id, treasureId, { limit: 200 });
     const reviews = reviewRepository.listForTreasure(collector.id, treasureId, { limit: 1000 });
+    const rawEvidenceOverallEstimate = estimateAdvisoryGradeRange(analyses);
     return Object.freeze({
       treasureId,
-      overallEstimate: estimateAdvisoryGradeRange(analyses),
+      rawEvidenceOverallEstimate,
+      overallEstimate: rawEvidenceOverallEstimate,
+      overallEstimateAuthority: "raw-stored-analysis-evidence",
+      overallEstimateReviewAware: false,
+      dimensionInterpretationReviewAware: true,
       explainableReport: buildExplainableGradingReport(analyses, reviews),
       reviewHistory: Object.freeze(reviews.map(publicReview)),
       sourceAnalysisCount: analyses.length,
