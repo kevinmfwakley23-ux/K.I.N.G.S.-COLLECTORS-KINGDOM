@@ -74,6 +74,12 @@ function treasureMediaRoute(pathname) {
   return decodePathValue(match[1], "invalid_treasure_id", "The treasure identifier is invalid.");
 }
 
+function treasureMediaMatchRoute(pathname) {
+  const match = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/media-match$/);
+  if (!match) return null;
+  return decodePathValue(match[1], "invalid_treasure_id", "The treasure identifier is invalid.");
+}
+
 function mediaItemRoute(pathname) {
   const match = pathname.match(/^\/api\/vault\/media\/([^/]+)$/);
   if (!match) return null;
@@ -90,10 +96,11 @@ export async function handleVaultMediaRoute({
 } = {}) {
   const pathname = requestUrl.pathname;
   const treasureId = treasureMediaRoute(pathname);
+  const mediaMatchTreasureId = treasureMediaMatchRoute(pathname);
   const mediaId = mediaItemRoute(pathname);
   const usageRoute = pathname === "/api/vault/media-usage";
 
-  if (!treasureId && !mediaId && !usageRoute) return null;
+  if (!treasureId && !mediaMatchTreasureId && !mediaId && !usageRoute) return null;
   if (!vaultMediaService) throw new VaultError("vault_media_unavailable", "The Royal Vault media service is unavailable.", 503);
 
   const method = request.method ?? "GET";
@@ -102,6 +109,12 @@ export async function handleVaultMediaRoute({
   if (usageRoute) {
     if (method !== "GET" && method !== "HEAD") return false;
     return sendJson(response, 200, { usage: vaultMediaService.usage(identity) }, method, securityHeaders);
+  }
+
+  if (mediaMatchTreasureId) {
+    if (method !== "GET" && method !== "HEAD") return false;
+    const media = vaultMediaService.matchBySha256(identity, mediaMatchTreasureId, requestUrl.searchParams.get("sha256"));
+    return sendJson(response, 200, { matched: Boolean(media), media }, method, securityHeaders);
   }
 
   if (treasureId) {
