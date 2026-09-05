@@ -17,11 +17,11 @@ This file is the durable engineering recovery ledger. Read it before substantial
 
 **Date:** 2026-09-05  
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Latest verified checkpoint:** **AI Card Pre-Grading Foundation + SHA-Linked Evidence + Advisory Range Engine**  
-**Latest verified implementation gate:** **Kingdom Quality Gates #598** — run `33982767676` — **PASS**  
-**Verified implementation commit:** `bbe7bad9e4282fe987274e3d42403782e0c96bef`  
-**Working branch:** `imp-005-ai-card-pregrading-foundation`  
-**Pull request:** `#15` — `IMP-005: AI card pre-grading foundation`
+**Latest verified checkpoint:** **Official Kingdom Brand + Installable PWA Surface**, on top of the verified AI Card Pre-Grading Foundation + SHA-Linked Evidence + Advisory Range Engine  
+**Latest verified implementation gate:** **Kingdom Quality Gates #624** — run `33994905125` — **PASS**  
+**Verified implementation commit:** `6a9f7fb45f1239dad7215be3a6c6b8f89c4c40d3`  
+**Working branch:** `imp-005-official-brand-pwa`  
+**Pull request:** `#18` — `IMP-005: lock official Kingdom branding and install surface`
 
 ### Exact recovery point
 
@@ -54,7 +54,48 @@ Do **not** rebuild the following verified IMP-005 slices:
 - web-backed autograph visual-similarity comparison through authenticated Wikimedia Commons reference search/proxy;
 - append-only hashed pre-grade analysis persistence;
 - detector-completion coverage evidence;
-- server-computed read-only advisory grade range with fail-closed minimum evidence and conservative uncertainty widening.
+- server-computed read-only advisory grade range with fail-closed minimum evidence and conservative uncertainty widening;
+- official owner-approved Collector's Kingdom crest wired into landing/Royal Gate and shared Great Hall/Vault/room/Marketplace branding;
+- installable PWA manifest using the approved Kingdom crest;
+- progressive install prompt and static-only service worker with explicit API/document exclusions.
+
+### Latest official brand + install slice
+
+Primary implementation files include:
+
+- `apps/web/public/assets/kingdom-official-logo.svg`
+- `apps/web/public/brand.css`
+- `apps/web/public/brand-runtime.js`
+- `apps/web/public/manifest.json`
+- `apps/web/public/pwa.js`
+- `apps/web/public/service-worker.js`
+- `apps/web/public/index.html`
+- `apps/web/public/auth.html`
+- `apps/web/public/keeper.js`
+- `tests/branding-pwa.test.mjs`
+- `docs/research/2026-09-05-OFFICIAL-BRAND-AND-INSTALL-SURFACE.md`
+
+Verified behavior:
+
+- the product-owner supplied Collector's Kingdom crest is the canonical brand composition and is not replaced by a generic crown/logo;
+- landing and Royal Gate surfaces display the approved crest directly;
+- Great Hall, Royal Vault and room/Marketplace routes inherit official branding through the same shared browser bootstrap already loaded with The Keeper;
+- the existing topbar crown placeholder is visually replaced by the official crest without duplicating room-specific markup;
+- install metadata uses the approved crest, white-marble background and Kingdom gold theme;
+- install prompting is progressive and normal browser operation does not depend on PWA installation;
+- service-worker registration is restricted to secure contexts or localhost;
+- the service worker excludes `/api/` requests and document navigations from interception/caching;
+- authenticated identity, Vault records, grading evidence and other owner data are therefore not silently turned into an offline cache by this slice;
+- the manifest does not falsely label the full crest as a `maskable` Android adaptive icon;
+- fresh Android research confirms a later native APK requires proper foreground/background and themed/monochrome adaptive icon resources rather than unsafe launcher cropping;
+- fresh competitor review of Ludex and CollX reinforces fast scan/catalog/sell workflows and multi-item Marketplace deal negotiation as later parity targets, while Kingdom truth/evidence boundaries remain stricter.
+
+### Verification sequence for the brand/install checkpoint
+
+- **Quality Gates #623** — run `33994848927` — failed **1 of 235 tests** because the new brand regression test looked for `data.installKingdom` while the real browser code correctly uses `button.dataset.installKingdom`. This was a test assertion typo, not a runtime implementation failure.
+- The assertion was corrected to match the real DOM dataset API; production behavior was not weakened.
+- **Quality Gates #624** — run `33994905125` — **PASS** on `6a9f7fb45f1239dad7215be3a6c6b8f89c4c40d3`.
+- #624 passed lint, type contracts, all **235 tests**, production build/artifact verification and production dependency audit.
 
 ### Latest AI pre-grading slice
 
@@ -187,6 +228,7 @@ Build next in this order:
 - PSA Certification-Database Evidence — #490 — PASS.
 - Exact Sports-Card Catalog Evidence / The Card API — #495 — PASS.
 - AI Card Pre-Grading Foundation + SHA-Linked Evidence + Advisory Range Engine — **#598** — run `33982767676` — PASS on `bbe7bad9e4282fe987274e3d42403782e0c96bef`.
+- Official Kingdom Brand + Installable PWA Surface — **#624** — run `33994905125` — PASS on `6a9f7fb45f1239dad7215be3a6c6b8f89c4c40d3`.
 
 ---
 
@@ -210,6 +252,7 @@ Do not represent these as live until separately implemented and verified:
 - insurance/reporting expansion beyond portable JSON export;
 - universal camera scanning where browser native APIs are absent;
 - universal speech recognition where browser speech APIs are absent;
+- native Android APK packaging/signing/device verification and technically correct adaptive launcher assets;
 - destructive bulk archive/delete;
 - Marketplace ownership transfer/settlement.
 
