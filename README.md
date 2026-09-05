@@ -6,11 +6,11 @@ K.I.N.G.S. Collector's Kingdom is being built as a collector-first environment f
 
 Active milestone: **IMP-005 — Royal Vault, Phase 1**.
 
-**Latest verified checkpoint:** the Royal Vault now has persistent owner-scoped treasure records, secure private media, Kingdom voice command/talk-to-text, transactional JSON/CSV migration, and a cross-device **Royal Intake Queue** for rapid identifier capture and later review.
+**Latest verified checkpoint:** the Royal Vault now includes persistent owner-scoped treasure records, secure private media, Kingdom voice command/talk-to-text, transactional JSON/CSV migration, a cross-device **Royal Intake Queue**, and a **secure progressive Royal barcode scanner** that feeds camera detections into that same queue without auto-creating or auto-identifying treasures.
 
-Latest verified code gate: **Kingdom Quality Gates #347** — run `33959303126` — **PASS** on commit `58c60d605e107bdaeeaa5300b1de0c3fea164cfb`.
+Latest verified code gate: **Kingdom Quality Gates #361** — run `33959932759` — **PASS** on commit `9ea1053ae6be2cb8ba79664ff7e88cb232ccdf97`.
 
-The next engineering target is the **secure progressive barcode-camera scanner** on top of the verified Intake Queue. Camera scanning remains disabled until that implementation is real and tested. External catalog matching, image recognition, evidence-backed valuation, and Marketplace mutations are not yet represented as live.
+The next engineering target is **evidence-backed catalog candidate resolution**. The first slice will establish a provider-neutral candidate contract and a real low-volume ISBN lookup adapter with source evidence, timeout/cache/rate safeguards, explicit collector review, and no silent Vault mutation. External valuation, image recognition, broader collectible-provider matching, and Marketplace mutations are not yet represented as live.
 
 ## Durable engineering records
 
@@ -69,77 +69,55 @@ Current verified capability includes:
 - real record/unit/category statistics;
 - purchase totals separated by currency;
 - complete versioned JSON export including archived records;
-- Great Hall integration using real Vault counts;
 - responsive Royal Vault browser workspace;
 - The Keeper acting as Royal Curator.
 
 ### Secure treasure media
 
-Verified private-media support includes JPEG, PNG, WebP, GIF, AVIF, and PDF files stored outside the public webroot with generated storage keys, signature/MIME/extension checks, owner authorization, storage limits, private retrieval, deletion, and audit events.
+Private JPEG, PNG, WebP, GIF, AVIF, and PDF files are stored outside the public webroot with generated storage keys, file-signature/MIME/extension checks, owner authorization, storage limits, private retrieval, deletion, and audit events.
 
 ### Voice command and talk-to-text
 
-Where the browser supports speech recognition, the Kingdom provides user-initiated voice commands and dictation while keeping full typed fallback.
+Where browser speech recognition is available, the Kingdom supports spoken navigation, Keeper questions, Vault search, safe treasure-entry commands, and dictation into selected fields. Typed controls remain available everywhere, and destructive voice commands are intentionally excluded.
 
-Supported safe command classes include:
+### Transactional migration
 
-- Kingdom navigation such as “open the Vault”;
-- “call the Keeper” / “ask the Keeper…”;
-- spoken search;
-- “add a treasure”.
+The Vault accepts JSON and CSV migration sources through a review-first workflow:
 
-Dictation is available for Keeper messages, Great Hall/Vault search, and relevant treasure text fields. Destructive voice commands such as delete/archive/sell/buy/transfer are deliberately not executable. Microphone access is same-origin only.
-
-### Transactional JSON / CSV migration
-
-The Vault supports direct responsive migration rather than a blind bulk-write endpoint:
-
-- JSON input;
-- CSV file/paste input;
-- common collector-column inference;
-- explicit CSV field mapping;
-- custom-attribute preservation;
-- server-side two-hour review batches;
-- validation before writes;
-- existing-Vault and within-file duplicate detection;
-- explicit Import/Skip decisions for ambiguous rows;
-- stale-preview revalidation;
-- owner isolation;
-- idempotent commit retry behavior;
-- one SQLite transaction for selected treasure + provenance-event writes;
-- proven full rollback on mid-batch failure;
-- recovery of an unfinished review from the same browser session.
+- CSV parsing and field mapping;
+- persistent preview batches;
+- validation/rejected/duplicate-review rows;
+- explicit import/skip decisions;
+- atomic all-or-nothing commit;
+- stale-preview protection;
+- idempotent retry;
+- no blind import writes.
 
 ### Royal Intake Queue
 
-The verified cross-device intake workflow lets a collector capture identifiers quickly without turning uncertain evidence into false authoritative records:
+Collectors can rapidly capture UPC, EAN, ISBN, catalog, serial, SKU, or custom identifiers from phone, Chromebook, or desktop into an account-scoped server-side queue. Repeated pending captures merge into a capture count, dismissed history is preserved, owner isolation is enforced, and matching Vault identifiers are warnings—not automatic merges.
 
-- manual barcode, UPC, EAN, ISBN, catalog, serial, SKU, or custom-identifier capture;
-- owner-scoped server-side pending queue shared across signed-in devices;
-- repeated pending captures merged into one queue entry with a capture count;
-- exact existing-Vault identifier candidates shown as warnings, not automatic identity decisions;
-- pending/history views;
-- soft dismissal with preserved history;
-- responsive phone/Chromebook/desktop UI;
-- one-click identifier handoff into a new treasure editor while keeping the queue entry pending until explicitly dismissed;
-- audit events for capture/dismissal;
-- camera intentionally unavailable until the scanner milestone passes its own security and quality gates.
+### Royal barcode scanner
 
-Fresh intake/import/scanner research is recorded in [`docs/research/2026-09-05-IMP-005-INTAKE-IMPORT-SCANNER-RECON.md`](docs/research/2026-09-05-IMP-005-INTAKE-IMPORT-SCANNER-RECON.md).
+The Vault now offers progressive camera barcode capture on secure browsers that expose native `BarcodeDetector` support:
 
-## Product direction
+- explicit Start/Stop camera control;
+- environment-facing camera preference;
+- supported-format discovery;
+- repeated-frame debounce;
+- camera detections saved through the authenticated Intake Queue;
+- no automatic treasure creation or catalog identity claim;
+- camera tracks stop on Stop, page leave, or backgrounding;
+- manual intake stays available when the camera/detector APIs are unsupported.
 
-The Kingdom uses a premium royal-estate identity: polished white marble, black and gold veining, elegant modern castle/mansion organization, and immersive spaces without dashboard clutter.
+Camera permission is least-privilege: `/vault.html` receives `camera=(self)`, while ordinary Kingdom rooms and JSON APIs continue to receive `camera=()`.
 
-The Royal Vault is a grand high-security collection environment. The Marketplace District is the **Kingdom Street Market** outside the castle, designed as a refined open-air collector market rather than a generic storefront grid.
+## Truthfulness boundary
 
-The Keeper is the same upright anthropomorphic lion royal attendant throughout the product, adapting by location: Royal Host, Royal Curator, Royal Trade Advisor, and other role-appropriate forms without losing character continuity.
+Market values remain absent until a real evidence-backed valuation provider is implemented. A barcode, image, title match, external provider result, or AI suggestion is not automatically authoritative. Provider identifiers may support evidence and discovery, but the permanent Kingdom treasure UUID remains the authoritative item identity.
 
-## Verification
+## Current next target
 
-```bash
-npm ci
-npm run verify
-```
+**Catalog Candidate Resolution — first verified slice**
 
-`npm run verify` runs repository policy/syntax checks, module-contract checks, automated tests, the production build, and artifact verification. GitHub Actions additionally audits production dependencies and is the required remote quality gate before a major checkpoint is treated as verified.
+The next code batch will add a provider-neutral candidate-resolution boundary and a real low-volume ISBN metadata provider adapter. Results will include provider/source evidence and remain review-only until the collector explicitly applies selected fields to a treasure editor. Provider failures, no-match results, rate/timeout behavior, caching, and malformed responses will be tested before the capability is represented as live.
