@@ -1,6 +1,6 @@
 # 2026-09-04 — Extended Search & Royal Curator Competitive Recon
 
-Status: Engineering reconnaissance for IMP-005 Royal Vault Phase 1
+Status: Verified engineering reconnaissance and implementation record for IMP-005 Royal Vault Phase 1
 
 ## Authority order
 
@@ -20,7 +20,7 @@ The locked natural-search examples include requests such as:
 - What duplicates do I own?
 - Show everything from 1999.
 
-This means search cannot remain limited to a title box when important identity data may live in player, character, artist, variant, grade, certification, signer, provenance, storage, or other category-specific fields.
+The locked organization requirements also include saved searches. This means large-collection navigation should allow a collector to preserve useful combinations of natural query, category, physical/folder organization, sort order, and presentation mode rather than rebuilding the same search every session.
 
 ## Current competitor observations
 
@@ -111,27 +111,16 @@ Repository:
 ## Adopted and improved in this pass
 
 ### 1. Extended collector search index
-The new Vault search index combines:
-- core treasure record fields;
-- tags;
-- folder and physical-location context;
-- category-specific flexible fields;
-- source and verification status/provider information;
-- ownership/provenance event text;
-- acquisition/value-source context.
-
-The index remains collector-scoped.
+The Vault search index combines core treasure record fields, tags, folder and physical-location context, category-specific flexible fields, source/verification status, ownership/provenance event text, and acquisition/value-source context. The index remains collector-scoped.
 
 ### 2. Natural-query cleanup
-Common conversational filler terms are removed before FTS matching so a request such as `show me my Jordan Bulls PSA 9` searches the meaningful collector terms rather than failing on words such as `show`, `me`, or `my`.
+Common conversational filler terms are removed before FTS matching so a request such as `show me my Jordan Bulls PSA 9` searches the meaningful collector terms instead of failing on words such as `show`, `me`, or `my`.
 
 ### 3. Incremental synchronization
-The extended index records version information for the core treasure, flexible attributes, provenance, folder, and location. Small edits refresh only affected treasures; a first initialization or sufficiently large stale set performs a rebuild. This is intended to preserve responsiveness as collections grow.
+The extended index records version information for the core treasure, flexible attributes, provenance, folder, and location. Small edits refresh only affected treasures; a first initialization or sufficiently large stale set performs a rebuild.
 
 ### 4. One retrieval path for UI and AI
-Authenticated `/api/vault/treasures?query=...` uses the extended search layer when available, retaining the original core FTS as a fallback.
-
-The Royal Curator receives a bounded query-relevant retrieval context from the same search capability. The AI does not receive an unrestricted dump of the Vault.
+Authenticated `/api/vault/treasures?query=...` uses the extended search layer when available, retaining the original core FTS as a fallback. The Royal Curator receives a bounded query-relevant retrieval context from the same search capability rather than an unrestricted dump of the Vault.
 
 ### 5. Bounded Keeper context
 Per Keeper request:
@@ -141,6 +130,31 @@ Per Keeper request:
 - verification status/provider may be included;
 - certificate/source reference strings are intentionally withheld from model context;
 - collector-entered estimates and verification claims remain labeled by source/status.
+
+### 6. Persistent Saved Vault Views
+Saved Views are now implemented as collector-owned SQLite records reachable through authenticated Vault APIs and the live Vault sidebar.
+
+A Saved View may preserve:
+- a natural Vault query;
+- category;
+- collection folder;
+- physical location;
+- tag where supported;
+- sort order;
+- Grid/List display preference.
+
+Trust and lifecycle rules:
+- maximum 100 saved views per collector;
+- names are unique per collector without case sensitivity;
+- another collector cannot read or reuse a saved view;
+- referenced folder/location IDs must belong to the same collector;
+- deleting an empty referenced folder/location clears that filter with `ON DELETE SET NULL` rather than destroying the saved view;
+- omitted optional values are persisted as SQL NULL rather than unsafe JavaScript `undefined`;
+- explicit null during update clears a saved filter while omitted values preserve the prior setting;
+- applying a Saved View drives the normal Vault search/filter controls instead of a second hidden query engine;
+- browser-module wiring is regression-tested so packaged-but-unreachable UI assets fail CI.
+
+Verification: GitHub Actions run #76 passed the full repository quality gate and production dependency audit on the Saved View regression-test head.
 
 ## Rejected shortcuts
 
@@ -153,12 +167,14 @@ The following were explicitly rejected:
 - auto-merging possible duplicate records;
 - turning Vault records into Marketplace listings without a separate authorized action;
 - rebuilding a large search index after every minor edit;
+- storing Saved Views only in browser local storage;
+- allowing Saved Views to reference another collector's organization IDs;
+- creating a second search implementation only for Saved Views;
 - copying competitor source code or protected visual identity.
 
 ## Next competitive opportunities after this verified layer
 
 Subject to the Construction Documents and IMP-005 acceptance boundary:
-- saved searches / named filter presets;
 - supporting-document storage and evidence attachment;
 - Binder and Gallery views;
 - Favorites, Recently Added, Incomplete Sets, Marketplace Ready, and other locked Vault views;
