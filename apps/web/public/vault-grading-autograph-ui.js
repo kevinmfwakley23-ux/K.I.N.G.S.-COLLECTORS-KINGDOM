@@ -110,7 +110,6 @@ export function createVaultGradingAutographUi() {
   signer.id = "grading-autograph-signer";
   signer.maxLength = 120;
   signer.required = true;
-  signer.placeholder = "Example: Michael Jordan";
   signerLabel.append(signer);
   const searchButton = node("button", "dark-button", "Find public reference candidates");
   searchButton.type = "submit";
