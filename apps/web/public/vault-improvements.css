@@ -1,0 +1,79 @@
+.vault-improvements-panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.vault-improvements-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.vault-improvement-card {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.8rem;
+  border: 1px solid rgba(71, 58, 39, 0.16);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.vault-improvement-heading {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.vault-improvement-heading strong {
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.vault-improvement-priority {
+  width: fit-content;
+  padding: 0.18rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.vault-improvement-priority.priority-high {
+  font-weight: 800;
+}
+
+.vault-improvement-count,
+.vault-improvement-reason,
+.vault-improvement-action {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.vault-improvement-count {
+  font-weight: 700;
+}
+
+.vault-improvement-examples {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+}
+
+.vault-improvement-action strong {
+  font-weight: 750;
+}
+
+@media (max-width: 1000px) {
+  .vault-improvements-list {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .vault-improvements-list {
+    grid-template-columns: 1fr;
+  }
+}
