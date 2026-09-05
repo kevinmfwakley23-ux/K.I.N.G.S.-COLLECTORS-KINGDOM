@@ -119,7 +119,8 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
   const vaultIntelligence = createVaultIntelligence({
     vaultService,
     searchService: vaultSearchService,
-    attributeService: vaultOwnershipService.attributeService
+    attributeService: vaultOwnershipService.attributeService,
+    setSummaryService: vaultSetSummaryService
   });
   const greatHallService = createGreatHallService({ identityService, vaultService: vaultIntelligence });
   const kingsAiClient = createKingsAiClient({
