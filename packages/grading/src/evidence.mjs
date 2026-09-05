@@ -3,7 +3,8 @@ const DEFECT_TYPES = new Set([
   "edge-chipping", "edge-roughness", "edge-notch", "edge-layering",
   "surface-scratch", "surface-scuff", "surface-print-line", "surface-dent", "surface-indentation", "surface-stain",
   "surface-wrinkle", "surface-crease", "gloss-loss", "print-spot", "registration", "focus", "color-fade", "discoloration",
-  "suspected-trimming", "suspected-recoloration", "suspected-restoration", "suspected-cleaning", "suspected-altered-stock"
+  "suspected-trimming", "suspected-recoloration", "suspected-restoration", "suspected-cleaning", "suspected-altered-stock",
+  "corner-contour-anomaly", "edge-contour-anomaly", "surface-reflectance-anomaly"
 ]);
 
 function bounded(value, name) {
@@ -42,6 +43,7 @@ export function normalizeDefectEvidence(input = {}) {
     severity: bounded(input.severity, "Defect severity"),
     confidence: bounded(input.confidence, "Defect confidence"),
     sourceMediaId,
+    comparisonMediaId: input.comparisonMediaId == null ? null : safeText(input.comparisonMediaId, "Comparison media ID", 160),
     note: input.note == null ? null : safeText(input.note, "Defect note", 800),
     boundingBox: input.boundingBox == null ? null : {
       x: bounded(input.boundingBox.x, "Bounding box x"),
