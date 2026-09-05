@@ -71,7 +71,7 @@ export function createVaultGradingReportUi() {
   const overall = node("div", "grading-report-overall");
   const dimensionsRoot = node("div", "grading-dimension-grid");
   const findingsRoot = node("div", "grading-finding-review-list");
-  const reviewHistoryRoot = node("div", "grading-review-history");
+  const reviewHistoryRoot = node("div", "grading-finding-review-list grading-review-history");
   section.append(status, overall, dimensionsRoot, findingsRoot, reviewHistoryRoot);
 
   function treasureId() { return treasureSelect.value || null; }
@@ -213,17 +213,17 @@ export function createVaultGradingReportUi() {
       return;
     }
     for (const review of reviews) {
-      const card = node("article", "grading-review-history-card");
-      card.append(
-        node("div", "grading-finding-review-heading", ""),
-        node("span", "", `Finding ${review.findingHash.slice(0, 12)}… • source analysis ${review.sourceAnalysisId.slice(0, 12)}…`),
-        node("span", "", timestampLabel(review.createdAt)),
-        node("code", "grading-finding-hash", review.findingHash)
-      );
-      const heading = card.firstElementChild;
+      const card = node("article", "grading-finding-review-card grading-review-history-card");
+      const heading = node("div", "grading-finding-review-heading");
       heading.append(
         node("strong", "", titleCase(review.decision)),
         node("span", `grading-review-state state-${review.decision}`, "Append-only")
+      );
+      card.append(
+        heading,
+        node("span", "", `Finding ${review.findingHash.slice(0, 12)}… • source analysis ${review.sourceAnalysisId.slice(0, 12)}…`),
+        node("span", "", timestampLabel(review.createdAt)),
+        node("code", "grading-finding-hash", review.findingHash)
       );
       if (review.note) card.append(node("p", "muted-copy", review.note));
       card.append(node("p", "muted-copy", "Interpretation history only • raw detector evidence preserved • no authoritative grade mutation"));
