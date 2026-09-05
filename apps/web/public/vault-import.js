@@ -1,3 +1,5 @@
+import "./vault-categories.js";
+
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 function element(tag, className, text) {
