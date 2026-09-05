@@ -272,4 +272,10 @@ if (typeof document !== "undefined" && document.querySelector("#import-preview-f
     const status = document.querySelector("#vault-status");
     if (status) status.textContent = `The Royal Intake Queue interface could not load: ${error.message}`;
   });
+  import("./vault-scanner-ui.js")
+    .then(({ createVaultScannerUi }) => createVaultScannerUi())
+    .catch((error) => {
+      const status = document.querySelector("#vault-status");
+      if (status) status.textContent = `The Royal barcode scanner interface could not load: ${error.message}`;
+    });
 }
