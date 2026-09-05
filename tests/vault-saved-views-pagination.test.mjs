@@ -106,3 +106,36 @@ test("page cursors are query bound and cannot be reused with different filters",
     );
   });
 });
+
+test("SQLite query planning uses the paging indexes for default and collection-scoped large Vault retrieval", async () => {
+  await withVault(async ({ store, vaultService }) => {
+    const collection = vaultService.createCollection(owner, { name: "Indexed Collection" });
+    for (let index = 0; index < 12; index += 1) {
+      vaultService.createTreasure(owner, {
+        title: `Indexed ${index}`,
+        category: "Cards",
+        collectionId: collection.id
+      });
+    }
+
+    const indexNames = store.database.prepare("PRAGMA index_list(vault_treasures)").all().map((row) => row.name);
+    assert.ok(indexNames.includes("vault_treasures_owner_active_updated_page_idx"));
+    assert.ok(indexNames.includes("vault_treasures_owner_collection_updated_page_idx"));
+
+    const defaultPlan = store.database.prepare(`
+      EXPLAIN QUERY PLAN
+      SELECT * FROM vault_treasures
+      WHERE owner_account_id = ? AND archived_at IS NULL
+      ORDER BY updated_at DESC, id ASC LIMIT ?
+    `).all(owner.id, 51).map((row) => String(row.detail)).join("\n");
+    assert.match(defaultPlan, /vault_treasures_owner_active_updated_page_idx/);
+
+    const collectionPlan = store.database.prepare(`
+      EXPLAIN QUERY PLAN
+      SELECT * FROM vault_treasures
+      WHERE owner_account_id = ? AND archived_at IS NULL AND collection_id = ?
+      ORDER BY updated_at DESC, id ASC LIMIT ?
+    `).all(owner.id, collection.id, 51).map((row) => String(row.detail)).join("\n");
+    assert.match(collectionPlan, /vault_treasures_owner_collection_updated_page_idx/);
+  });
+});
