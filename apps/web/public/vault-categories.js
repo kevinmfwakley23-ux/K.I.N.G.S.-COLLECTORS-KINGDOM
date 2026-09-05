@@ -2,6 +2,7 @@ import "./vault-view-modes.js";
 import "./vault-system-views.js";
 import "./vault-saved-views.js";
 import "./vault-sets.js";
+import "./vault-accessibility.js";
 import "./vault-ui-styles.js";
 
 let categoryProfiles = [];
