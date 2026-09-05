@@ -43,15 +43,15 @@ function decodeTreasureId(value) {
   catch { throw new VaultError("invalid_treasure_id", "The treasure identifier is invalid."); }
 }
 
-function analysisRoute(pathname) {
-  const match = pathname.match(/^\/api\/grading\/treasures\/([^/]+)\/pregrade-analyses$/);
+function routeTreasureId(pathname, suffix) {
+  const match = pathname.match(new RegExp(`^\\/api\\/grading\\/treasures\\/([^/]+)\\/${suffix}$`));
   return match ? decodeTreasureId(match[1]) : null;
 }
 
-function estimateRoute(pathname) {
-  const match = pathname.match(/^\/api\/grading\/treasures\/([^/]+)\/pregrade-estimate$/);
-  return match ? decodeTreasureId(match[1]) : null;
-}
+function analysisRoute(pathname) { return routeTreasureId(pathname, "pregrade-analyses"); }
+function estimateRoute(pathname) { return routeTreasureId(pathname, "pregrade-estimate"); }
+function reportRoute(pathname) { return routeTreasureId(pathname, "pregrade-report"); }
+function findingReviewRoute(pathname) { return routeTreasureId(pathname, "finding-reviews"); }
 
 export async function handleGradingAnalysisRoute({
   request,
@@ -63,7 +63,9 @@ export async function handleGradingAnalysisRoute({
 } = {}) {
   const analysisTreasureId = analysisRoute(requestUrl.pathname);
   const estimateTreasureId = estimateRoute(requestUrl.pathname);
-  if (!analysisTreasureId && !estimateTreasureId) return null;
+  const reportTreasureId = reportRoute(requestUrl.pathname);
+  const reviewTreasureId = findingReviewRoute(requestUrl.pathname);
+  if (!analysisTreasureId && !estimateTreasureId && !reportTreasureId && !reviewTreasureId) return null;
   if (!gradingAnalysisService) throw new VaultError("pregrade_analysis_unavailable", "Stored pre-grade analysis is unavailable.", 503);
   const method = request.method ?? "GET";
   const identity = requireIdentity(identityService, request);
@@ -71,6 +73,45 @@ export async function handleGradingAnalysisRoute({
   if (estimateTreasureId) {
     if (method !== "GET" && method !== "HEAD") return false;
     return sendJson(response, 200, gradingAnalysisService.estimate(identity, estimateTreasureId), method, securityHeaders);
+  }
+
+  if (reportTreasureId) {
+    if (method !== "GET" && method !== "HEAD") return false;
+    if (typeof gradingAnalysisService.explainableReport !== "function") throw new VaultError("pregrade_report_unavailable", "Explainable pre-grade reporting is unavailable.", 503);
+    return sendJson(response, 200, gradingAnalysisService.explainableReport(identity, reportTreasureId), method, securityHeaders);
+  }
+
+  if (reviewTreasureId) {
+    if (typeof gradingAnalysisService.listFindingReviews !== "function" || typeof gradingAnalysisService.appendFindingReview !== "function") {
+      throw new VaultError("pregrade_finding_review_unavailable", "Pre-grade finding review is unavailable.", 503);
+    }
+    if (method === "GET" || method === "HEAD") {
+      const limitRaw = requestUrl.searchParams.get("limit");
+      const limit = limitRaw === null ? undefined : Number(limitRaw);
+      return sendJson(response, 200, {
+        reviews: gradingAnalysisService.listFindingReviews(identity, reviewTreasureId, { limit }),
+        policy: {
+          appendOnly: true,
+          ordinaryUpdateAvailable: false,
+          ordinaryDeleteAvailable: false,
+          changesInterpretationOnly: true,
+          rawDetectorEvidenceImmutable: true,
+          officialGradeMutation: false,
+          physicalAuthentication: false
+        }
+      }, method, securityHeaders);
+    }
+    if (method === "POST") {
+      const body = await readJson(request);
+      const review = gradingAnalysisService.appendFindingReview(identity, reviewTreasureId, {
+        sourceAnalysisId: body.sourceAnalysisId,
+        findingHash: body.findingHash,
+        decision: body.decision,
+        note: body.note
+      });
+      return sendJson(response, 201, { review }, method, securityHeaders);
+    }
+    return false;
   }
 
   if (method === "GET" || method === "HEAD") {
