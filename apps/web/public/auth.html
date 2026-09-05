@@ -4,16 +4,25 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Secure access to K.I.N.G.S. Collector's Kingdom" />
+    <meta name="theme-color" content="#b18a30" />
     <title>Royal Gate • K.I.N.G.S.</title>
+    <link rel="icon" href="/assets/kingdom-official-logo.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/manifest.json" />
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/brand.css" />
     <script src="/auth.js" defer></script>
+    <script src="/pwa.js" defer></script>
   </head>
   <body>
     <main class="shell">
-      <section class="foundation auth-card" aria-labelledby="gate-title">
+      <section class="foundation auth-card brand-foundation" aria-labelledby="gate-title">
+        <img class="brand-crest" src="/assets/kingdom-official-logo.svg" alt="K.I.N.G.S. Collector's Kingdom" />
         <p class="eyebrow">The Royal Gate</p>
         <h1 id="gate-title">Enter your Kingdom.</h1>
         <p id="auth-status" class="lede" role="status" aria-live="polite">Create a collector account or sign in securely.</p>
+        <div class="account-actions">
+          <button class="quiet-button install-kingdom-button" type="button" data-install-kingdom hidden>Install Kingdom app</button>
+        </div>
         <div class="forms">
           <form id="register-form">
             <h2>Create account</h2>
