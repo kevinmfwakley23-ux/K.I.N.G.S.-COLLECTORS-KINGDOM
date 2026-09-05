@@ -81,13 +81,25 @@ test("Royal Intake Queue HTTP API persists cross-device capture semantics and ow
     assert.equal(denied.response.status, 401);
     assert.match(denied.response.headers.get("permissions-policy"), /camera=\(\)/);
 
+    const vaultPage = await fetch(`${baseUrl}/vault.html`);
+    assert.equal(vaultPage.status, 200);
+    assert.match(vaultPage.headers.get("permissions-policy"), /camera=\(self\)/);
+    assert.match(vaultPage.headers.get("permissions-policy"), /microphone=\(self\)/);
+    assert.match(vaultPage.headers.get("permissions-policy"), /geolocation=\(\)/);
+
+    const greatHallPage = await fetch(`${baseUrl}/great-hall.html`);
+    assert.equal(greatHallPage.status, 200);
+    assert.match(greatHallPage.headers.get("permissions-policy"), /camera=\(\)/);
+
     const ownerCookie = await registerAndSignIn(baseUrl, "owner");
     const outsiderCookie = await registerAndSignIn(baseUrl, "outsider");
 
     const vaultSnapshot = await json(baseUrl, "/api/vault", { headers: { cookie: ownerCookie } });
     assert.equal(vaultSnapshot.response.status, 200);
     assert.equal(vaultSnapshot.body.intake.available, true);
-    assert.equal(vaultSnapshot.body.intake.cameraAvailable, false);
+    assert.equal(vaultSnapshot.body.intake.cameraAvailable, true);
+    assert.equal(vaultSnapshot.body.intake.cameraRequiresSecureContext, true);
+    assert.equal(vaultSnapshot.body.intake.cameraDetectionProvider, "browser-native-barcode-detector");
     assert.equal(vaultSnapshot.body.intake.pendingCount, 0);
 
     const first = await json(baseUrl, "/api/vault/intake", {
