@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises";
 const uiUrl = new URL("../apps/web/public/vault-grading-ui.js", import.meta.url);
 const cssUrl = new URL("../apps/web/public/vault-grading.css", import.meta.url);
 
-test("AI Pre-Grade Lab UI exposes local centering and real capture-quality analysis without fake grading claims", async () => {
+test("AI Pre-Grade Lab UI exposes local centering, capture quality and automatic card geometry without fake grading claims", async () => {
   const source = await readFile(uiUrl, "utf8");
   assert.match(source, /AI Pre-Grade Lab/);
   assert.match(source, /Measure first\. Estimate second\. Never fake an official grade/);
@@ -17,7 +17,10 @@ test("AI Pre-Grade Lab UI exposes local centering and real capture-quality analy
   assert.match(source, /measureBrowserCentering/);
   assert.match(source, /evaluateBrowserCentering/);
   assert.match(source, /analyzeBrowserCapturePixels/);
-  assert.match(source, /resolution, focus, glare, exposure and contrast/i);
+  assert.match(source, /detectCardGeometry/);
+  assert.match(source, /whole-card crop/i);
+  assert.match(source, /Perspective/);
+  assert.match(source, /Card aspect ratio/);
   assert.match(source, /corner views/i);
   assert.match(source, /Raking-light surface views/i);
   assert.match(source, /Autograph close-up/i);
@@ -26,9 +29,10 @@ test("AI Pre-Grade Lab UI exposes local centering and real capture-quality analy
   assert.doesNotMatch(source, /officialGrade\s*=\s*true|authenticationClaim\s*=\s*true|market value.*set/i);
 });
 
-test("AI Pre-Grade Lab stylesheet contains responsive image guides, quality states and mobile layout", async () => {
+test("AI Pre-Grade Lab stylesheet contains responsive geometry overlay, image guides, quality states and mobile layout", async () => {
   const source = await readFile(cssUrl, "utf8");
   assert.match(source, /\.grading-image-stage/);
+  assert.match(source, /\.grading-card-boundary/);
   assert.match(source, /\.grading-guide/);
   assert.match(source, /\.grading-quality-panel/);
   assert.match(source, /\.grading-quality-row\.pending/);
