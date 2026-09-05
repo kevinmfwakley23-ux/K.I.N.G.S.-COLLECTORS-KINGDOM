@@ -6,13 +6,35 @@ K.I.N.G.S. Collector's Kingdom is being built as a collector-first environment f
 
 Active milestone: **IMP-005 — Royal Vault, Phase 1**.
 
-**Latest verified implementation checkpoint:** **AI-assisted card pre-grading foundation with SHA-linked evidence persistence and a read-only Kingdom advisory grade-range engine**, alongside the already verified Royal Vault, Intake, scanner, provenance, saved-view/paging, bulk-reorganization, Pokémon, Magic/Scryfall, PSA certification-evidence and exact sports-card catalog slices.
+**Latest verified implementation checkpoint:** **official owner-approved Kingdom branding + installable PWA surface**, layered onto the verified AI-assisted card pre-grading foundation with SHA-linked evidence persistence and a read-only Kingdom advisory grade-range engine.
 
-**Latest verified gate:** **Kingdom Quality Gates #598** — run `33982767676` — **PASS** on implementation commit `bbe7bad9e4282fe987274e3d42403782e0c96bef`.
+**Latest verified gate:** **Kingdom Quality Gates #624** — run `33994905125` — **PASS** on implementation commit `6a9f7fb45f1239dad7215be3a6c6b8f89c4c40d3`.
+
+The official K.I.N.G.S. Collector's Kingdom crest is now wired into the landing page, Royal Gate, Great Hall/Vault/room topbars through the shared browser bootstrap, and the install manifest. The install service worker is deliberately static-only: it excludes `/api/` requests and document navigations so authenticated collector records, Vault data, grading evidence and other owner data are not silently cached by this slice.
 
 The verified grading foundation now includes card-size/grader reference profiles, centering math, browser capture-quality analysis, card geometry/crop/perspective detection, contour-based corner/edge review signals, paired raking-light surface analysis, same-printing color/fade comparison, web-backed autograph similarity review, append-only hashed pre-grade persistence, SHA-256 linkage to exact private Vault media, detector-completion coverage records, and a conservative server-computed advisory range.
 
 A Kingdom pre-grade remains **advisory evidence**. It is not an official PSA/BGS/CGC/SGC grade, does not authenticate a physical card or autograph, and cannot silently overwrite the treasure's condition, grade, authenticity, provenance, ownership or value.
+
+### Official brand & install surface — verified
+
+The product owner supplied and locked the official Collector's Kingdom crest. The repository uses that approved composition rather than a replacement crown/logo treatment.
+
+Verified capability includes:
+
+- official crest asset under `apps/web/public/assets/kingdom-official-logo.svg`;
+- branded landing and Royal Gate experiences;
+- shared room bootstrap that applies the crest to the persistent topbar used by the Great Hall, Royal Vault, castle rooms and Marketplace route;
+- install manifest with white-marble background and Kingdom gold theme color;
+- progressive install prompt that does not block ordinary browser use;
+- service-worker registration only in secure/localhost contexts;
+- static-only same-origin caching with explicit `/api/` and document-navigation exclusions;
+- install/brand regression tests;
+- current Android adaptive-icon research documenting why the full crest is not falsely declared `maskable` before a real native adaptive icon package exists.
+
+This is a real **installable web-app surface**, not a claim that a signed native Android APK already exists. Native Android packaging remains a separate verified distribution milestone requiring adaptive launcher layers, signing/build configuration, secure runtime access and device testing.
+
+Research record: `docs/research/2026-09-05-OFFICIAL-BRAND-AND-INSTALL-SURFACE.md`.
 
 ### AI card pre-grading — verified foundation
 
@@ -148,4 +170,4 @@ Current research shows the best direction is not a more mysterious single score.
 9. pass full Kingdom Quality Gates;
 10. update README and mission-progress ledger before merge.
 
-Later separate milestones remain: lawful evidence-backed market valuation/value history, image-based collectible identification, insurance/reporting expansion, additional official grader integrations, Marketplace ownership transfer/settlement, and destructive bulk archive/delete flows.
+Later separate milestones remain: lawful evidence-backed market valuation/value history, image-based collectible identification, insurance/reporting expansion, additional official grader integrations, **native Android APK packaging with adaptive launcher assets**, Marketplace ownership transfer/settlement, and destructive bulk archive/delete flows.
