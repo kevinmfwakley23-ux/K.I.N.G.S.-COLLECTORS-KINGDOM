@@ -18,20 +18,26 @@ test("catalog runtime defaults are bounded and use HTTPS provider transport", ()
   assert.equal(config.pokemonTcgApiKey, null);
   assert.equal(config.pokemonTcgTimeoutMs, 5000);
   assert.equal(config.pokemonTcgMinIntervalMs, 5000);
+  assert.equal(config.scryfallBaseUrl, "https://api.scryfall.com");
+  assert.equal(config.scryfallTimeoutMs, 5000);
+  assert.equal(config.scryfallMinIntervalMs, 150);
 });
 
 test("catalog runtime rejects insecure external provider transport and accepts local HTTP testing", () => {
   assert.throws(() => loadRuntimeConfig({ KINGDOM_OPEN_LIBRARY_BASE_URL: "http://example.com" }), /must use https outside local testing/i);
   assert.throws(() => loadRuntimeConfig({ KINGDOM_UPCITEMDB_BASE_URL: "http://example.com" }), /must use https outside local testing/i);
   assert.throws(() => loadRuntimeConfig({ KINGDOM_POKEMON_TCG_BASE_URL: "http://example.com" }), /must use https outside local testing/i);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_SCRYFALL_BASE_URL: "http://example.com" }), /must use https outside local testing/i);
   const local = loadRuntimeConfig({
     KINGDOM_OPEN_LIBRARY_BASE_URL: "http://127.0.0.1:9999",
     KINGDOM_UPCITEMDB_BASE_URL: "http://127.0.0.1:9998",
-    KINGDOM_POKEMON_TCG_BASE_URL: "http://127.0.0.1:9997"
+    KINGDOM_POKEMON_TCG_BASE_URL: "http://127.0.0.1:9997",
+    KINGDOM_SCRYFALL_BASE_URL: "http://127.0.0.1:9996"
   });
   assert.equal(local.openLibraryBaseUrl, "http://127.0.0.1:9999");
   assert.equal(local.upcItemDbBaseUrl, "http://127.0.0.1:9998");
   assert.equal(local.pokemonTcgBaseUrl, "http://127.0.0.1:9997");
+  assert.equal(local.scryfallBaseUrl, "http://127.0.0.1:9996");
 });
 
 test("catalog runtime validates optional contact, provider keys, and positive resource limits", () => {
@@ -44,6 +50,8 @@ test("catalog runtime validates optional contact, provider keys, and positive re
   assert.throws(() => loadRuntimeConfig({ KINGDOM_POKEMON_TCG_TIMEOUT_MS: "0" }), /positive integer/i);
   assert.throws(() => loadRuntimeConfig({ KINGDOM_POKEMON_TCG_MIN_INTERVAL_MS: "0" }), /positive integer/i);
   assert.throws(() => loadRuntimeConfig({ KINGDOM_POKEMON_TCG_API_KEY: "bad\nkey" }), /POKEMON_TCG_API_KEY.*invalid/i);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_SCRYFALL_TIMEOUT_MS: "0" }), /positive integer/i);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_SCRYFALL_MIN_INTERVAL_MS: "0" }), /positive integer/i);
 
   const configured = loadRuntimeConfig({
     KINGDOM_CATALOG_CONTACT_EMAIL: "catalog@example.com",
@@ -56,7 +64,9 @@ test("catalog runtime validates optional contact, provider keys, and positive re
     KINGDOM_UPCITEMDB_MIN_INTERVAL_MS: "10500",
     KINGDOM_POKEMON_TCG_API_KEY: "server-only-pokemon-key",
     KINGDOM_POKEMON_TCG_TIMEOUT_MS: "4300",
-    KINGDOM_POKEMON_TCG_MIN_INTERVAL_MS: "5100"
+    KINGDOM_POKEMON_TCG_MIN_INTERVAL_MS: "5100",
+    KINGDOM_SCRYFALL_TIMEOUT_MS: "4100",
+    KINGDOM_SCRYFALL_MIN_INTERVAL_MS: "200"
   });
   assert.equal(configured.catalogContactEmail, "catalog@example.com");
   assert.equal(configured.catalogTimeoutMs, 3500);
@@ -69,4 +79,6 @@ test("catalog runtime validates optional contact, provider keys, and positive re
   assert.equal(configured.pokemonTcgApiKey, "server-only-pokemon-key");
   assert.equal(configured.pokemonTcgTimeoutMs, 4300);
   assert.equal(configured.pokemonTcgMinIntervalMs, 5100);
+  assert.equal(configured.scryfallTimeoutMs, 4100);
+  assert.equal(configured.scryfallMinIntervalMs, 200);
 });

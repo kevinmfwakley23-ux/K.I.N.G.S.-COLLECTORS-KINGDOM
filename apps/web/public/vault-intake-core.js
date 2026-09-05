@@ -8,6 +8,8 @@ export function intakeTypeLabel(type) {
     isbn: "ISBN",
     "pokemon-card-id": "Pokémon card ID",
     "pokemon-set-number": "Pokémon set + card number",
+    "mtg-scryfall-id": "Magic Scryfall printing ID",
+    "mtg-set-number": "Magic set + collector number",
     catalog: "Catalog number",
     serial: "Serial number",
     sku: "SKU",

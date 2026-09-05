@@ -1,6 +1,7 @@
 import { MemoryCatalogCache } from "./cache.mjs";
 import { createOpenLibraryCatalogProvider } from "./open-library-provider.mjs";
 import { createPokemonTcgCatalogProvider } from "./pokemon-tcg-provider.mjs";
+import { createScryfallCatalogProvider } from "./scryfall-provider.mjs";
 import { createCatalogService } from "./service.mjs";
 import { createUpcItemDbCatalogProvider } from "./upcitemdb-provider.mjs";
 
@@ -58,7 +59,18 @@ export function createCatalogRuntime({
     sleep
   });
 
-  const providers = Object.freeze([openLibraryProvider, upcItemDbProvider, pokemonTcgProvider]);
+  const scryfallProvider = createScryfallCatalogProvider({
+    fetchImpl,
+    baseUrl: runtime.scryfallBaseUrl,
+    timeoutMs: runtime.scryfallTimeoutMs,
+    minIntervalMs: runtime.scryfallMinIntervalMs,
+    now: providerNow,
+    sleep,
+    version: runtime.version,
+    contactEmail: runtime.catalogContactEmail
+  });
+
+  const providers = Object.freeze([openLibraryProvider, upcItemDbProvider, pokemonTcgProvider, scryfallProvider]);
   const service = createCatalogService({ providers, cache, now: serviceNow });
 
   return Object.freeze({
@@ -71,6 +83,8 @@ export function createCatalogRuntime({
       genericBarcodeCandidates: true,
       pokemonCardIdCandidates: true,
       pokemonSetNumberCandidates: true,
+      mtgScryfallIdCandidates: true,
+      mtgSetNumberCandidates: true,
       automaticVaultMutation: false,
       valuationFromCatalogProviders: false
     })
