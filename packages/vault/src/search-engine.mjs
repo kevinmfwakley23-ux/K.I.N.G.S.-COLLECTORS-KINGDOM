@@ -8,6 +8,7 @@ import { VaultError } from "./service.mjs";
 const SEARCH_SCHEMA_VERSION = 4;
 const MAX_QUERY_TOKENS = 16;
 const MAX_INCREMENTAL_REFRESH = 300;
+const CORE_TRIGGER_GROUP = "core-v2";
 const SORTS = new Set(["updated-desc", "updated-asc", "created-desc", "title-asc", "title-desc", "value-desc", "year-desc"]);
 const FAVORITE_TERMS = new Set(["favorite", "favorites", "favourite", "favourites"]);
 const STOPWORDS = new Set([
@@ -51,6 +52,11 @@ CREATE INDEX IF NOT EXISTS vault_extended_search_dirty_account_idx
 CREATE TABLE IF NOT EXISTS vault_extended_search_trigger_state (
   trigger_group TEXT PRIMARY KEY,
   installed_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS vault_extended_search_account_state (
+  account_id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  indexed_at TEXT NOT NULL
 );
 `;
 
@@ -222,27 +228,43 @@ function ensureSearchMetaColumns(database) {
     database.exec("ALTER TABLE vault_extended_search_meta ADD COLUMN evidence_revision TEXT NOT NULL DEFAULT '0';");
   }
   if (!columns.has("marketplace_updated_at")) {
-    database.exec("ALTER TABLE vault_extended_search_meta ADD COLUMN marketplace_updated_at TEXT NOT NULL DEFAULT ''; ");
+    database.exec("ALTER TABLE vault_extended_search_meta ADD COLUMN marketplace_updated_at TEXT NOT NULL DEFAULT '';");
   }
 }
 
+function installTriggerGroup(database, { name, triggers, bootstrap }) {
+  database.exec(triggers);
+  const installed = database.prepare("SELECT 1 FROM vault_extended_search_trigger_state WHERE trigger_group = ?").get(name);
+  if (installed) return false;
+  database.exec("BEGIN IMMEDIATE;");
+  try {
+    database.exec(bootstrap);
+    database.prepare("INSERT INTO vault_extended_search_trigger_state(trigger_group, installed_at) VALUES (?, ?)")
+      .run(name, new Date().toISOString());
+    database.exec("COMMIT;");
+  } catch (error) {
+    database.exec("ROLLBACK;");
+    throw error;
+  }
+  return true;
+}
+
+function installCoreTriggers(database) {
+  return installTriggerGroup(database, {
+    name: CORE_TRIGGER_GROUP,
+    triggers: CORE_TRIGGERS,
+    bootstrap: `INSERT OR REPLACE INTO vault_extended_search_dirty(account_id, treasure_id, reason, marked_at)
+      SELECT account_id, id, 'core-bootstrap', strftime('%Y-%m-%dT%H:%M:%fZ','now') FROM vault_treasures`
+  });
+}
+
 function installOptionalTriggers(database) {
+  let installed = 0;
   for (const group of OPTIONAL_TRIGGER_GROUPS) {
     if (!tableExists(database, group.table)) continue;
-    database.exec(group.triggers);
-    const installed = database.prepare("SELECT 1 FROM vault_extended_search_trigger_state WHERE trigger_group = ?").get(group.name);
-    if (installed) continue;
-    database.exec("BEGIN IMMEDIATE;");
-    try {
-      database.exec(group.bootstrap);
-      database.prepare("INSERT INTO vault_extended_search_trigger_state(trigger_group, installed_at) VALUES (?, ?)")
-        .run(group.name, new Date().toISOString());
-      database.exec("COMMIT;");
-    } catch (error) {
-      database.exec("ROLLBACK;");
-      throw error;
-    }
+    if (installTriggerGroup(database, group)) installed += 1;
   }
+  return installed;
 }
 
 function optionalVersionExpressions(database) {
@@ -312,10 +334,7 @@ function contentExpression(database) {
     COALESCE(t.notes, '') || ' ' || COALESCE(t.valuation_source, '') || ' ' || COALESCE(t.purchase_date, '') || ' ' ||
     COALESCE(f.name, '') || ' ' || COALESCE(l.name, '') || ' ' ||
     COALESCE((SELECT GROUP_CONCAT(tg.tag, ' ') FROM vault_tags tg WHERE tg.treasure_id = t.id), '') || ' ' ||
-    ${attributeContent} || ' ' ||
-    ${ownershipContent} || ' ' ||
-    ${evidenceContent} || ' ' ||
-    ${marketplaceContent}
+    ${attributeContent} || ' ' || ${ownershipContent} || ' ' || ${evidenceContent} || ' ' || ${marketplaceContent}
   )`;
 }
 
@@ -355,24 +374,12 @@ export function createVaultSearchService({ filename } = {}) {
   database.exec("PRAGMA busy_timeout = 5000;");
   database.exec(SCHEMA);
   ensureSearchMetaColumns(database);
-  database.exec(CORE_TRIGGERS);
+  installCoreTriggers(database);
   installOptionalTriggers(database);
   const favorites = createVaultFavoriteService({ filename });
   const savedViews = createVaultSavedViewService({ filename });
-
-  function removeOrphans(accountId) {
-    const orphanRows = database.prepare(`SELECT m.treasure_id FROM vault_extended_search_meta m
-      LEFT JOIN vault_treasures t ON t.account_id = m.account_id AND t.id = m.treasure_id
-      WHERE m.account_id = ? AND t.id IS NULL`).all(accountId);
-    const deleteSearch = database.prepare("DELETE FROM vault_extended_search WHERE account_id = ? AND treasure_id = ?");
-    const deleteMeta = database.prepare("DELETE FROM vault_extended_search_meta WHERE account_id = ? AND treasure_id = ?");
-    const deleteDirty = database.prepare("DELETE FROM vault_extended_search_dirty WHERE account_id = ? AND treasure_id = ?");
-    for (const row of orphanRows) {
-      deleteSearch.run(accountId, row.treasure_id);
-      deleteMeta.run(accountId, row.treasure_id);
-      deleteDirty.run(accountId, row.treasure_id);
-    }
-  }
+  const metrics = { fullRebuilds: 0, incrementalRefreshes: 0, inspectedTreasures: 0 };
+  let lastSynchronization = Object.freeze({ mode: "not-run", refreshed: 0, dirtyCount: 0, inspectedTreasureCount: 0 });
 
   function insertMeta(accountId, row) {
     database.prepare(`INSERT INTO vault_extended_search_meta (
@@ -388,20 +395,19 @@ export function createVaultSearchService({ filename } = {}) {
       folder_updated_at=excluded.folder_updated_at,
       location_updated_at=excluded.location_updated_at,
       schema_version=excluded.schema_version`).run(
-      accountId,
-      row.treasure_id,
-      row.core_updated_at,
-      row.attribute_updated_at,
-      row.ownership_updated_at,
-      row.evidence_revision,
-      row.marketplace_updated_at,
-      row.folder_updated_at,
-      row.location_updated_at,
-      SEARCH_SCHEMA_VERSION
+      accountId, row.treasure_id, row.core_updated_at, row.attribute_updated_at, row.ownership_updated_at,
+      row.evidence_revision, row.marketplace_updated_at, row.folder_updated_at, row.location_updated_at, SEARCH_SCHEMA_VERSION
     );
   }
 
-  function fullRebuild(accountId) {
+  function setAccountState(accountId) {
+    database.prepare(`INSERT INTO vault_extended_search_account_state(account_id, schema_version, indexed_at)
+      VALUES (?, ?, ?) ON CONFLICT(account_id) DO UPDATE SET schema_version=excluded.schema_version, indexed_at=excluded.indexed_at`)
+      .run(accountId, SEARCH_SCHEMA_VERSION, new Date().toISOString());
+  }
+
+  function fullRebuild(accountId, mode = "manual-rebuild") {
+    installOptionalTriggers(database);
     const rows = versionRows(database, accountId);
     database.exec("BEGIN IMMEDIATE;");
     try {
@@ -415,96 +421,79 @@ export function createVaultSearchService({ filename } = {}) {
         WHERE t.account_id = ?`).run(accountId);
       for (const row of rows) insertMeta(accountId, row);
       database.prepare("DELETE FROM vault_extended_search_dirty WHERE account_id = ?").run(accountId);
+      setAccountState(accountId);
       database.exec("COMMIT;");
     } catch (error) {
       database.exec("ROLLBACK;");
       throw error;
     }
-    return rows.length;
+    metrics.fullRebuilds += 1;
+    metrics.inspectedTreasures += rows.length;
+    lastSynchronization = Object.freeze({ mode, refreshed: rows.length, dirtyCount: rows.length, inspectedTreasureCount: rows.length });
+    return lastSynchronization;
   }
 
   function refreshTreasure(accountId, treasureId) {
-    const row = versionRows(database, accountId, treasureId)[0];
+    const id = String(treasureId);
+    const row = versionRows(database, accountId, id)[0];
     if (!row) {
-      database.prepare("DELETE FROM vault_extended_search WHERE account_id = ? AND treasure_id = ?").run(accountId, String(treasureId));
-      database.prepare("DELETE FROM vault_extended_search_meta WHERE account_id = ? AND treasure_id = ?").run(accountId, String(treasureId));
-      database.prepare("DELETE FROM vault_extended_search_dirty WHERE account_id = ? AND treasure_id = ?").run(accountId, String(treasureId));
+      database.prepare("DELETE FROM vault_extended_search WHERE account_id = ? AND treasure_id = ?").run(accountId, id);
+      database.prepare("DELETE FROM vault_extended_search_meta WHERE account_id = ? AND treasure_id = ?").run(accountId, id);
+      database.prepare("DELETE FROM vault_extended_search_dirty WHERE account_id = ? AND treasure_id = ?").run(accountId, id);
       return false;
     }
     const content = database.prepare(`SELECT ${contentExpression(database)} AS content
       FROM vault_treasures t
       LEFT JOIN vault_folders f ON f.account_id = t.account_id AND f.id = t.folder_id
       LEFT JOIN vault_locations l ON l.account_id = t.account_id AND l.id = t.location_id
-      WHERE t.account_id = ? AND t.id = ?`).get(accountId, String(treasureId))?.content;
+      WHERE t.account_id = ? AND t.id = ?`).get(accountId, id)?.content;
     if (content === undefined) return false;
-    database.prepare("DELETE FROM vault_extended_search WHERE account_id = ? AND treasure_id = ?").run(accountId, String(treasureId));
-    database.prepare("INSERT INTO vault_extended_search (treasure_id, account_id, content) VALUES (?, ?, ?)").run(String(treasureId), accountId, content);
+    database.prepare("DELETE FROM vault_extended_search WHERE account_id = ? AND treasure_id = ?").run(accountId, id);
+    database.prepare("INSERT INTO vault_extended_search (treasure_id, account_id, content) VALUES (?, ?, ?)").run(id, accountId, content);
     insertMeta(accountId, row);
-    database.prepare("DELETE FROM vault_extended_search_dirty WHERE account_id = ? AND treasure_id = ?").run(accountId, String(treasureId));
+    database.prepare("DELETE FROM vault_extended_search_dirty WHERE account_id = ? AND treasure_id = ?").run(accountId, id);
     return true;
   }
 
   function synchronize(identity) {
     const collector = requireIdentity(identity);
     installOptionalTriggers(database);
-    removeOrphans(collector.id);
+    const state = database.prepare("SELECT schema_version FROM vault_extended_search_account_state WHERE account_id = ?").get(collector.id);
+    if (!state) return fullRebuild(collector.id, "initial-rebuild");
+    if (Number(state.schema_version) !== SEARCH_SCHEMA_VERSION) return fullRebuild(collector.id, "schema-rebuild");
 
-    const schemaMismatch = database.prepare("SELECT 1 FROM vault_extended_search_meta WHERE account_id = ? AND schema_version <> ? LIMIT 1")
-      .get(collector.id, SEARCH_SCHEMA_VERSION);
-    if (schemaMismatch) {
-      const refreshed = fullRebuild(collector.id);
-      return { refreshed, rebuilt: true, mode: "schema-rebuild", dirtyCount: 0 };
-    }
-
-    let dirtyRows = database.prepare(`SELECT treasure_id FROM vault_extended_search_dirty
+    const dirtyRows = database.prepare(`SELECT treasure_id FROM vault_extended_search_dirty
       WHERE account_id = ? ORDER BY marked_at ASC, treasure_id ASC LIMIT ?`).all(collector.id, MAX_INCREMENTAL_REFRESH + 1);
-    if (dirtyRows.length > MAX_INCREMENTAL_REFRESH) {
-      const refreshed = fullRebuild(collector.id);
-      return { refreshed, rebuilt: true, mode: "bulk-rebuild", dirtyCount: dirtyRows.length };
+    if (dirtyRows.length > MAX_INCREMENTAL_REFRESH) return fullRebuild(collector.id, "bulk-rebuild");
+    if (!dirtyRows.length) {
+      lastSynchronization = Object.freeze({ mode: "clean", refreshed: 0, dirtyCount: 0, inspectedTreasureCount: 0 });
+      return lastSynchronization;
     }
 
     let refreshed = 0;
-    if (dirtyRows.length) {
-      database.exec("BEGIN IMMEDIATE;");
-      try {
-        for (const row of dirtyRows) if (refreshTreasure(collector.id, row.treasure_id)) refreshed += 1;
-        database.exec("COMMIT;");
-      } catch (error) {
-        database.exec("ROLLBACK;");
-        throw error;
-      }
+    database.exec("BEGIN IMMEDIATE;");
+    try {
+      for (const row of dirtyRows) if (refreshTreasure(collector.id, row.treasure_id)) refreshed += 1;
+      setAccountState(collector.id);
+      database.exec("COMMIT;");
+    } catch (error) {
+      database.exec("ROLLBACK;");
+      throw error;
     }
-
-    const unindexedRows = database.prepare(`SELECT t.id AS treasure_id FROM vault_treasures t
-      LEFT JOIN vault_extended_search_meta m ON m.account_id = t.account_id AND m.treasure_id = t.id
-      WHERE t.account_id = ? AND m.treasure_id IS NULL LIMIT ?`).all(collector.id, MAX_INCREMENTAL_REFRESH + 1);
-    if (unindexedRows.length > MAX_INCREMENTAL_REFRESH) {
-      const rebuilt = fullRebuild(collector.id);
-      return { refreshed: rebuilt, rebuilt: true, mode: "recovery-rebuild", dirtyCount: dirtyRows.length };
-    }
-    if (unindexedRows.length) {
-      database.exec("BEGIN IMMEDIATE;");
-      try {
-        for (const row of unindexedRows) if (refreshTreasure(collector.id, row.treasure_id)) refreshed += 1;
-        database.exec("COMMIT;");
-      } catch (error) {
-        database.exec("ROLLBACK;");
-        throw error;
-      }
-    }
-
-    dirtyRows = database.prepare("SELECT treasure_id FROM vault_extended_search_dirty WHERE account_id = ? LIMIT 1").all(collector.id);
-    if (dirtyRows.length) {
-      const rebuilt = fullRebuild(collector.id);
-      return { refreshed: rebuilt, rebuilt: true, mode: "recovery-rebuild", dirtyCount: 1 };
-    }
-
-    return {
+    metrics.incrementalRefreshes += dirtyRows.length;
+    metrics.inspectedTreasures += dirtyRows.length;
+    lastSynchronization = Object.freeze({
+      mode: "incremental",
       refreshed,
-      rebuilt: false,
-      mode: refreshed ? "incremental" : "clean",
-      dirtyCount: refreshed
-    };
+      dirtyCount: dirtyRows.length,
+      inspectedTreasureCount: dirtyRows.length
+    });
+    return lastSynchronization;
+  }
+
+  function rebuild(identity) {
+    const collector = requireIdentity(identity);
+    return fullRebuild(collector.id, "manual-rebuild");
   }
 
   function search(identity, query, options = {}) {
@@ -550,20 +539,25 @@ export function createVaultSearchService({ filename } = {}) {
     return search(identity, query, { limit, offset: 0, sort: "updated-desc" }).ids;
   }
 
+  function diagnostics(identity = null) {
+    const accountId = identity ? requireIdentity(identity).id : null;
+    return Object.freeze({
+      schemaVersion: SEARCH_SCHEMA_VERSION,
+      maximumIncrementalRefresh: MAX_INCREMENTAL_REFRESH,
+      lastSynchronization,
+      metrics: Object.freeze({ ...metrics }),
+      ...(accountId ? {
+        dirtyCount: Number(database.prepare("SELECT COUNT(*) AS count FROM vault_extended_search_dirty WHERE account_id = ?").get(accountId)?.count ?? 0),
+        indexedCount: Number(database.prepare("SELECT COUNT(*) AS count FROM vault_extended_search_meta WHERE account_id = ?").get(accountId)?.count ?? 0)
+      } : {})
+    });
+  }
+
   function close() {
     savedViews.close();
     favorites.close();
     database.close();
   }
 
-  return Object.freeze({
-    synchronize,
-    search,
-    searchTreasureIds,
-    favorites,
-    savedViews,
-    close,
-    searchSchemaVersion: SEARCH_SCHEMA_VERSION,
-    maximumIncrementalRefresh: MAX_INCREMENTAL_REFRESH
-  });
+  return Object.freeze({ synchronize, rebuild, search, searchTreasureIds, diagnostics, favorites, savedViews, close });
 }
