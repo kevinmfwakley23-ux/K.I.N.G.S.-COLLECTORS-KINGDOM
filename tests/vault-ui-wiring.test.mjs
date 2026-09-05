@@ -9,13 +9,14 @@ async function source(relative) {
   return readFile(resolve(root, relative), "utf8");
 }
 
-test("Vault browser entry points reach category guidance, collectible details, provenance, evidence, import UI, saved views, collection sets, and Marketplace preparation", async () => {
-  const [html, vault, provenance, categories, details, evidence, savedViews, sets, marketplace, styles] = await Promise.all([
+test("Vault browser entry points reach category guidance, collectible details, Curator tag suggestions, provenance, evidence, import UI, saved views, collection sets, and Marketplace preparation", async () => {
+  const [html, vault, provenance, categories, details, recommendations, evidence, savedViews, sets, marketplace, styles] = await Promise.all([
     source("apps/web/public/vault.html"),
     source("apps/web/public/vault.js"),
     source("apps/web/public/vault-provenance.js"),
     source("apps/web/public/vault-categories.js"),
     source("apps/web/public/vault-details.js"),
+    source("apps/web/public/vault-tag-recommendations.js"),
     source("apps/web/public/vault-evidence.js"),
     source("apps/web/public/vault-saved-views.js"),
     source("apps/web/public/vault-sets.js"),
@@ -27,6 +28,7 @@ test("Vault browser entry points reach category guidance, collectible details, p
   assert.match(html, /src="\/vault-import\.js"/);
   assert.match(vault, /from "\.\/vault-provenance\.js"/);
   assert.match(provenance, /from "\.\/vault-details\.js"/);
+  assert.match(provenance, /from "\.\/vault-tag-recommendations\.js"/);
   assert.match(provenance, /from "\.\/vault-evidence\.js"/);
   assert.match(provenance, /from "\.\/vault-marketplace-readiness\.js"/);
   assert.match(provenance, /import "\.\/vault-categories\.js"/);
@@ -35,6 +37,9 @@ test("Vault browser entry points reach category guidance, collectible details, p
   assert.match(categories, /import "\.\/vault-ui-styles\.js"/);
   assert.match(details, /\/api\/vault\/categories/);
   assert.match(details, /\/attributes/);
+  assert.match(recommendations, /\/tag-recommendations\?limit=6/);
+  assert.match(recommendations, /Suggestions come only from patterns in your own Vault/);
+  assert.match(recommendations, /never applies a tag automatically/);
   assert.match(evidence, /\/evidence/);
   assert.match(evidence, /Not independently checked/);
   assert.match(savedViews, /\/api\/vault\/saved-views/);
@@ -50,22 +55,27 @@ test("Vault browser entry points reach category guidance, collectible details, p
   assert.match(styles, /\/vault-evidence\.css/);
   assert.match(styles, /\/vault-sets\.css/);
   assert.match(styles, /\/vault-marketplace-readiness\.css/);
+  assert.match(styles, /\/vault-tag-recommendations\.css/);
 });
 
-test("Vault production UI does not leave enrichment, evidence, saved-view, set, or Marketplace readiness intelligence as unreachable packaged assets", async () => {
-  const [provenance, categories, styles] = await Promise.all([
+test("Vault production UI does not leave enrichment, Curator recommendations, evidence, saved-view, set, or Marketplace readiness intelligence as unreachable packaged assets", async () => {
+  const [provenance, categories, recommendations, styles] = await Promise.all([
     source("apps/web/public/vault-provenance.js"),
     source("apps/web/public/vault-categories.js"),
+    source("apps/web/public/vault-tag-recommendations.js"),
     source("apps/web/public/vault-ui-styles.js")
   ]);
   assert.ok(provenance.includes("./vault-categories.js"));
   assert.ok(provenance.includes("createCollectibleDetailsSection"));
+  assert.ok(provenance.includes("createTagRecommendationSection"));
   assert.ok(provenance.includes("createEvidenceSection"));
   assert.ok(provenance.includes("createMarketplacePreparationSection"));
   assert.ok(categories.includes("./vault-saved-views.js"));
   assert.ok(categories.includes("./vault-sets.js"));
   assert.ok(categories.includes("./vault-ui-styles.js"));
+  assert.ok(recommendations.includes("/tag-recommendations?limit=6"));
   assert.ok(styles.includes("/vault-evidence.css"));
   assert.ok(styles.includes("/vault-sets.css"));
   assert.ok(styles.includes("/vault-marketplace-readiness.css"));
+  assert.ok(styles.includes("/vault-tag-recommendations.css"));
 });
