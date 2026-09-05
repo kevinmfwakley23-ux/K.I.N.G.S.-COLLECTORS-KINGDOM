@@ -11,11 +11,14 @@ import { SqliteIdentityStore } from "../../packages/identity/src/sqlite-store.mj
 import { clearSessionCookie, parseCookies, sessionCookie } from "../../packages/identity/src/tokens.mjs";
 import { createKingsAiClient, KingsAiClientError } from "../../packages/kings-ai/src/client.mjs";
 import { createLogger } from "../../packages/observability/src/logger.mjs";
+import { createVaultImportRepository } from "../../packages/vault/src/import-repository.mjs";
+import { createVaultImportService } from "../../packages/vault/src/import-service.mjs";
 import { createVaultMediaRepository } from "../../packages/vault/src/media-repository.mjs";
 import { createVaultMediaService } from "../../packages/vault/src/media-service.mjs";
 import { LocalVaultMediaStorage } from "../../packages/vault/src/media-storage.mjs";
 import { createVaultService, VaultError } from "../../packages/vault/src/service.mjs";
 import { SqliteVaultStore } from "../../packages/vault/src/sqlite-store.mjs";
+import { handleVaultImportRoute } from "./vault-import-http.mjs";
 import { handleVaultMediaRoute } from "./vault-media-http.mjs";
 
 const CONTENT_TYPES = Object.freeze({
@@ -36,7 +39,6 @@ const SECURITY_HEADERS = Object.freeze({
 });
 
 const DEFAULT_MAX_JSON_BYTES = 64 * 1024;
-const IMPORT_PREVIEW_MAX_JSON_BYTES = 1024 * 1024;
 
 class HttpError extends Error {
   constructor(statusCode, code, message) {
@@ -250,7 +252,7 @@ function vaultTreasureRoute(pathname) {
   }
 }
 
-async function handleVaultRoute({ request, response, requestUrl, identityService, vaultService, vaultMediaService }) {
+async function handleVaultRoute({ request, response, requestUrl, identityService, vaultService, vaultMediaService, vaultImportService }) {
   if (!vaultService) throw new HttpError(503, "vault_unavailable", "The Royal Vault service is unavailable.");
   const method = request.method ?? "GET";
   const identity = requireIdentity(identityService, request);
@@ -258,15 +260,24 @@ async function handleVaultRoute({ request, response, requestUrl, identityService
 
   if (pathname === "/api/vault" && method === "GET") {
     const snapshot = vaultService.snapshot(identity);
-    if (!vaultMediaService) return sendJson(response, 200, snapshot, method);
     return sendJson(response, 200, {
       ...snapshot,
-      media: {
-        ...snapshot.media,
-        uploadsAvailable: true,
-        privateRetrievalAvailable: true,
-        usage: vaultMediaService.usage(identity),
-        message: "Private treasure images and PDF documents are stored outside the public webroot and served only through authenticated owner-scoped Vault routes."
+      media: vaultMediaService
+        ? {
+            ...snapshot.media,
+            uploadsAvailable: true,
+            privateRetrievalAvailable: true,
+            usage: vaultMediaService.usage(identity),
+            message: "Private treasure images and PDF documents are stored outside the public webroot and served only through authenticated owner-scoped Vault routes."
+          }
+        : snapshot.media,
+      import: {
+        transactionalPreviewAvailable: Boolean(vaultImportService),
+        atomicCommitAvailable: Boolean(vaultImportService),
+        maxRecordsPerBatch: vaultImportService ? 1000 : null,
+        message: vaultImportService
+          ? "Bulk intake uses persistent preview batches, duplicate review, explicit commit, and all-or-nothing transaction semantics."
+          : "Transactional bulk intake is unavailable until the Vault import service is wired."
       }
     }, method);
   }
@@ -306,11 +317,6 @@ async function handleVaultRoute({ request, response, requestUrl, identityService
     });
   }
 
-  if (pathname === "/api/vault/import/preview" && method === "POST") {
-    const body = await readJson(request, { maxBytes: IMPORT_PREVIEW_MAX_JSON_BYTES });
-    return sendJson(response, 200, vaultService.previewImport(identity, body), method);
-  }
-
   const treasureRoute = vaultTreasureRoute(pathname);
   if (treasureRoute) {
     if (treasureRoute.action === "duplicates" && method === "GET") {
@@ -348,7 +354,8 @@ export function createKingdomServer({
   greatHallService = null,
   kingsAiClient = null,
   vaultService = null,
-  vaultMediaService = null
+  vaultMediaService = null,
+  vaultImportService = null
 } = {}) {
   return createServer(async (request, response) => {
     const requestStartedAt = performance.now();
@@ -421,13 +428,27 @@ export function createKingdomServer({
           return sendJson(response, 405, { error: "method_not_allowed" }, method);
         }
 
+        const importHandled = await handleVaultImportRoute({
+          request,
+          response,
+          requestUrl,
+          identityService,
+          vaultImportService,
+          securityHeaders: SECURITY_HEADERS
+        });
+        if (importHandled !== null) {
+          if (importHandled !== false) return;
+          return sendJson(response, 405, { error: "method_not_allowed" }, method);
+        }
+
         const handled = await handleVaultRoute({
           request,
           response,
           requestUrl,
           identityService,
           vaultService,
-          vaultMediaService
+          vaultMediaService,
+          vaultImportService
         });
         if (handled !== false) return;
         return sendJson(response, 405, { error: "method_not_allowed" }, method);
@@ -468,6 +489,12 @@ async function run() {
     sessionTtlMs: config.sessionTtlHours * 60 * 60 * 1000
   });
   const vaultService = createVaultService({ store: vaultStore });
+  const vaultImportRepository = createVaultImportRepository({ vaultStore });
+  const vaultImportService = createVaultImportService({
+    vaultService,
+    vaultStore,
+    importRepository: vaultImportRepository
+  });
   const vaultMediaRepository = createVaultMediaRepository({ vaultStore });
   const vaultMediaStorage = new LocalVaultMediaStorage(resolve(config.dataDir, "vault-media"));
   const vaultMediaService = createVaultMediaService({
@@ -488,7 +515,8 @@ async function run() {
     greatHallService,
     kingsAiClient,
     vaultService,
-    vaultMediaService
+    vaultMediaService,
+    vaultImportService
   });
 
   server.on("error", (error) => {
