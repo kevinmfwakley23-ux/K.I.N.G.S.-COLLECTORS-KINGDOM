@@ -6,11 +6,13 @@ A place for collectors to keep inventory logs of their treasures, get A.I.-assis
 
 Active milestone: **IMP-005 — Royal Vault, Phase 1**.
 
-**Latest verified checkpoint:** the first authoritative Royal Vault foundation is implemented and passing the repository quality gate. The Vault now has persistent owner-scoped treasure records, collection groups, arbitrary-depth physical locations, search/filter/sort, condition/variant/acquisition data, duplicate candidates, treasure history, real statistics, currency-separated recorded purchase totals, complete JSON export, non-mutating import validation, authenticated APIs, Great Hall integration, and a functional responsive `/vault.html` workspace.
+**Latest verified checkpoint:** the Royal Vault now includes its authoritative collection foundation, secure private treasure media, and Kingdom-wide progressive voice command / speech-to-text capability. GitHub Quality Gates #309 passed after the media capability contract was corrected to match the live implementation.
+
+The Vault currently has persistent owner-scoped treasure records, collection groups, arbitrary-depth physical locations, normalized search/filter/sort, condition/variant/acquisition data, duplicate candidates, treasure and media history, real statistics, currency-separated purchase totals, complete JSON export, validation-only import preview, secure private images/PDFs, authenticated APIs, Great Hall integration, voice search, spoken safe navigation/intake commands, targeted dictation, and a functional responsive `/vault.html` workspace.
 
 **IMP-004 — Great Hall & Navigation remains complete.** Do not rebuild earlier milestones unless a verified regression requires it.
 
-The next validated IMP-005 work is the secure treasure image/document media pipeline, followed by transactional validated import/bulk intake. Camera/barcode scanning, external recognition/catalog providers, and evidence-backed market valuation are not yet claimed as live.
+The next validated IMP-005 target is **transactional import / bulk intake** with preview, duplicate review, explicit commit, all-or-nothing persistence, audit evidence, and idempotent retry protection. Camera/barcode scanning, external recognition/catalog providers, and evidence-backed market valuation are not yet claimed as live.
 
 ## Durable mission progress ledger
 
@@ -70,11 +72,29 @@ IMP-004 established the authenticated central Kingdom experience:
 - room-aware Keeper continuity at Kingdom entrances;
 - responsive mobile, tablet, Chromebook, and desktop layouts.
 
-With the authoritative Vault service wired, the Great Hall now opens the Vault entrance and shows real Vault record/unit counts. Marketplace highlights, notifications, and evidence-backed market value remain unavailable until their real services exist; the Great Hall does not fabricate them.
+With the authoritative Vault service wired, the Great Hall opens the Vault entrance and shows real Vault record/unit counts. It also exposes the shared voice-command layer where browser speech recognition is available. Marketplace highlights, notifications, and evidence-backed market value remain unavailable until their real services exist; the Great Hall does not fabricate them.
+
+## Kingdom voice & talk-to-text
+
+Voice is a progressive enhancement rather than an always-on microphone service.
+
+Current verified voice capability includes:
+
+- same-origin-only microphone permission;
+- browser `SpeechRecognition` with prefixed fallback where supported;
+- local/on-device recognition preference when the browser exposes an available local recognition pack;
+- typed fallback on browsers without speech recognition;
+- spoken navigation to Kingdom locations;
+- `call the Keeper`, `close the Keeper`, and spoken Keeper questions;
+- voice search in the Great Hall and Royal Vault;
+- spoken `add a treasure` inside the Vault;
+- targeted dictation into Vault treasure fields and Keeper messages;
+- destructive commands such as delete/archive/sell/buy/transfer intentionally excluded from executable voice grammar;
+- camera permission remains disabled until the approved scanner workflow is actually implemented.
 
 ## Royal Vault — active build
 
-The Royal Vault now establishes one permanent treasure identity that later Kingdom services can reuse rather than duplicating item records.
+The Royal Vault establishes one permanent treasure identity that later Kingdom services can reuse rather than duplicating item records.
 
 ### Verified current capability
 
@@ -94,7 +114,9 @@ The Royal Vault now establishes one permanent treasure identity that later Kingd
 - authenticated Vault APIs;
 - functional responsive Royal Vault browser workspace;
 - The Keeper acting as Royal Curator;
-- media persistence schema ready for the next implementation step, without pretending file uploads are already live.
+- private JPEG, PNG, WebP, GIF, AVIF, and PDF treasure media stored outside the public webroot;
+- file-signature/MIME/extension validation, safe generated storage keys, owner-only retrieval/removal, size/storage limits, and media audit events;
+- voice search, safe spoken commands, and targeted speech-to-text dictation.
 
 Current Vault competitive research is recorded under `docs/research/2026-09-05-IMP-005-VAULT-COMPETITIVE-RECON.md`.
 
@@ -119,6 +141,6 @@ npm run verify
 
 `npm run verify` runs repository policy/syntax checks, module-contract checks, automated tests, the production build, and artifact verification. GitHub Actions also audits production dependencies and is the required remote quality gate before a milestone is treated as verified.
 
-Latest verified Vault foundation quality run: **Kingdom Quality Gates #286**, verify job passed after the normalized-search correction.
+Latest verified checkpoint quality run: **Kingdom Quality Gates #309** (`33956000131`) — verify job passed after secure media + Kingdom voice integration and the final media capability consistency correction.
 
 Architecture notes live in `docs/architecture/`.
