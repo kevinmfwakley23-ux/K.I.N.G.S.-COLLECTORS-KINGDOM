@@ -1,11 +1,16 @@
 import { createKeeperController } from "./keeper.js";
 import { createVoiceController } from "./voice.js";
+import { buildPagedVaultQuery, loadedResultLabel, mergeTreasurePage } from "./vault-pagination-core.js";
 
 const keeper = createKeeperController({ roomId: "vault" });
 
 const state = {
   snapshot: null,
-  treasures: []
+  treasures: [],
+  nextCursor: null,
+  hasNext: false,
+  loadingMore: false,
+  filterOverride: null
 };
 
 const elements = {
@@ -64,7 +69,9 @@ const elements = {
   mediaList: document.querySelector("#treasure-media-list"),
   importForm: document.querySelector("#import-preview-form"),
   importJson: document.querySelector("#import-json"),
-  importResult: document.querySelector("#import-preview-result")
+  importResult: document.querySelector("#import-preview-result"),
+  paginationControls: null,
+  loadMore: null
 };
 
 async function api(path, options = {}) {
@@ -135,6 +142,28 @@ function node(tag, className, text) {
   return element;
 }
 
+function ensurePaginationControls() {
+  if (elements.paginationControls) return;
+  const shell = node("div", "vault-pagination-controls");
+  shell.hidden = true;
+  const button = node("button", "dark-button", "Load more treasures");
+  button.type = "button";
+  button.addEventListener("click", () => {
+    loadTreasures({ append: true }).catch((error) => { elements.resultCount.textContent = error.message; });
+  });
+  shell.append(button);
+  elements.treasureList.after(shell);
+  elements.paginationControls = shell;
+  elements.loadMore = button;
+}
+
+function renderPagination() {
+  ensurePaginationControls();
+  elements.paginationControls.hidden = !state.hasNext;
+  elements.loadMore.disabled = state.loadingMore;
+  elements.loadMore.textContent = state.loadingMore ? "Loading more…" : "Load more treasures";
+}
+
 function replaceOptions(select, baseLabel, records, valueKey, label) {
   const selected = select.value;
   select.replaceChildren();
@@ -187,6 +216,10 @@ function sideButton(label, meta, onClick) {
   return button;
 }
 
+function clearFilterOverride() {
+  state.filterOverride = null;
+}
+
 function renderCollections() {
   const collections = state.snapshot?.collections ?? [];
   elements.collectionList.replaceChildren();
@@ -196,6 +229,7 @@ function renderCollections() {
       collection.name,
       `${collection.treasureCount} records • ${collection.unitCount} units`,
       () => {
+        clearFilterOverride();
         elements.filterCollection.value = collection.id;
         loadTreasures();
       }
@@ -214,6 +248,7 @@ function renderLocations() {
       location.path,
       `${location.locationType} • ${location.treasureCount} records`,
       () => {
+        clearFilterOverride();
         elements.filterLocation.value = location.id;
         loadTreasures();
       }
@@ -231,19 +266,26 @@ function renderCategoryFilter() {
   if ([...elements.filterCategory.options].some((option) => option.value === selected)) elements.filterCategory.value = selected;
 }
 
-function filterQuery() {
-  const params = new URLSearchParams();
-  const values = {
-    q: elements.search.value.trim(),
-    category: elements.filterCategory.value,
-    collectionId: elements.filterCollection.value,
-    locationId: elements.filterLocation.value,
-    sort: elements.filterSort.value,
-    order: elements.filterSort.value === "title" || elements.filterSort.value === "category" ? "asc" : "desc"
-  };
-  for (const [key, value] of Object.entries(values)) if (value) params.set(key, value);
-  params.set("limit", "500");
-  return params.toString();
+function visibleFilterState() {
+  const sort = elements.filterSort.value || "updatedAt";
+  return Object.freeze({
+    query: elements.search.value.trim() || null,
+    category: elements.filterCategory.value || null,
+    collectionId: elements.filterCollection.value || null,
+    locationId: elements.filterLocation.value || null,
+    condition: null,
+    sort,
+    order: sort === "title" || sort === "category" ? "asc" : "desc",
+    includeArchived: false
+  });
+}
+
+function activeFilterState() {
+  return state.filterOverride ?? visibleFilterState();
+}
+
+function filterQuery({ cursor = null } = {}) {
+  return buildPagedVaultQuery(activeFilterState(), { cursor, pageSize: 50 });
 }
 
 function treasureSubtitle(treasure) {
@@ -274,11 +316,12 @@ async function showDuplicates(treasure, output) {
 
 function renderTreasures() {
   elements.treasureList.replaceChildren();
-  elements.resultCount.textContent = `${state.treasures.length} result${state.treasures.length === 1 ? "" : "s"}`;
+  elements.resultCount.textContent = loadedResultLabel(state.treasures.length, state.hasNext);
   if (!state.treasures.length) {
     const empty = node("div", "vault-empty-state");
     empty.append(node("strong", "", "No treasures match this view."), node("p", "", "Add a treasure or change the filters. The Vault will never fill empty space with invented collection records."));
     elements.treasureList.append(empty);
+    renderPagination();
     return;
   }
 
@@ -307,6 +350,7 @@ function renderTreasures() {
     card.append(duplicateOutput);
     elements.treasureList.append(card);
   }
+  renderPagination();
 }
 
 function findIdentifier(identifiers, preferredKeys) {
@@ -468,10 +512,21 @@ async function refreshSnapshot() {
   renderCategoryFilter();
 }
 
-async function loadTreasures() {
-  const result = await api(`/api/vault/treasures?${filterQuery()}`);
-  state.treasures = result.treasures;
-  renderTreasures();
+async function loadTreasures({ append = false } = {}) {
+  if (append && (!state.hasNext || !state.nextCursor || state.loadingMore)) return;
+  const cursor = append ? state.nextCursor : null;
+  state.loadingMore = true;
+  renderPagination();
+  try {
+    const result = await api(`/api/vault/query?${filterQuery({ cursor })}`);
+    state.treasures = mergeTreasurePage(state.treasures, result.treasures, { append });
+    state.nextCursor = result.pageInfo?.nextCursor ?? null;
+    state.hasNext = Boolean(result.pageInfo?.hasNext && state.nextCursor);
+    renderTreasures();
+  } finally {
+    state.loadingMore = false;
+    renderPagination();
+  }
 }
 
 async function refreshAll() {
@@ -484,9 +539,21 @@ function toggleForm(form) {
   if (!form.hidden) form.querySelector("input, select, textarea")?.focus();
 }
 
+function syncVisibleControls(filters) {
+  elements.search.value = filters.query ?? "";
+  if ([...elements.filterCategory.options].some((option) => option.value === (filters.category ?? ""))) elements.filterCategory.value = filters.category ?? "";
+  else elements.filterCategory.value = "";
+  if ([...elements.filterCollection.options].some((option) => option.value === (filters.collectionId ?? ""))) elements.filterCollection.value = filters.collectionId ?? "";
+  else elements.filterCollection.value = "";
+  if ([...elements.filterLocation.options].some((option) => option.value === (filters.locationId ?? ""))) elements.filterLocation.value = filters.locationId ?? "";
+  else elements.filterLocation.value = "";
+  if ([...elements.filterSort.options].some((option) => option.value === (filters.sort ?? "updatedAt"))) elements.filterSort.value = filters.sort ?? "updatedAt";
+}
+
 createVoiceController({
   keeper,
   onSearch: async (query) => {
+    clearFilterOverride();
     elements.search.value = query;
     await loadTreasures();
   },
@@ -540,19 +607,32 @@ elements.locationForm.addEventListener("submit", async (event) => {
 
 elements.searchForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  clearFilterOverride();
   loadTreasures().catch((error) => { elements.resultCount.textContent = error.message; });
 });
 
 for (const select of [elements.filterCategory, elements.filterCollection, elements.filterLocation, elements.filterSort]) {
-  select.addEventListener("change", () => loadTreasures().catch((error) => { elements.resultCount.textContent = error.message; }));
+  select.addEventListener("change", () => {
+    clearFilterOverride();
+    loadTreasures().catch((error) => { elements.resultCount.textContent = error.message; });
+  });
 }
 
 document.querySelector("#clear-filters").addEventListener("click", () => {
+  clearFilterOverride();
   elements.search.value = "";
   elements.filterCategory.value = "";
   elements.filterCollection.value = "";
   elements.filterLocation.value = "";
   elements.filterSort.value = "updatedAt";
+  loadTreasures().catch((error) => { elements.resultCount.textContent = error.message; });
+});
+
+window.addEventListener("vault:apply-saved-view", (event) => {
+  const filters = event.detail?.view?.filters;
+  if (!filters || typeof filters !== "object") return;
+  state.filterOverride = Object.freeze({ ...filters });
+  syncVisibleControls(filters);
   loadTreasures().catch((error) => { elements.resultCount.textContent = error.message; });
 });
 
@@ -633,6 +713,7 @@ elements.importForm.addEventListener("submit", async (event) => {
   }
 });
 
+ensurePaginationControls();
 refreshAll().catch((error) => {
   elements.treasureList.replaceChildren(node("div", "vault-empty-state", error.message));
 });

@@ -9,6 +9,7 @@ const required = [
   "dist/apps/web/vault-intake-http.mjs",
   "dist/apps/web/vault-media-http.mjs",
   "dist/apps/web/vault-provenance-http.mjs",
+  "dist/apps/web/vault-query-http.mjs",
   "dist/apps/web/vault-reorganization-http.mjs",
   "dist/apps/web/public/index.html",
   "dist/apps/web/public/auth.html",
@@ -41,6 +42,10 @@ const required = [
   "dist/apps/web/public/vault-bulk-reorganization-core.js",
   "dist/apps/web/public/vault-bulk-reorganization-ui.js",
   "dist/apps/web/public/vault-bulk-reorganization.css",
+  "dist/apps/web/public/vault-pagination-core.js",
+  "dist/apps/web/public/vault-saved-views-core.js",
+  "dist/apps/web/public/vault-saved-views-ui.js",
+  "dist/apps/web/public/vault-saved-views.css",
   "dist/apps/web/public/vault-extras.js",
   "dist/apps/web/public/styles.css",
   "dist/apps/web/public/world.css",
@@ -71,6 +76,8 @@ const required = [
   "dist/packages/vault/src/media-service.mjs",
   "dist/packages/vault/src/provenance-repository.mjs",
   "dist/packages/vault/src/provenance-service.mjs",
+  "dist/packages/vault/src/query-repository.mjs",
+  "dist/packages/vault/src/query-service.mjs",
   "dist/packages/vault/src/reorganization-repository.mjs",
   "dist/packages/vault/src/reorganization-service.mjs",
   "dist/build-manifest.json"
@@ -79,4 +86,4 @@ const required = [
 for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
 if (manifest.phase !== "IMP-005-ROYAL-VAULT-PHASE-1") throw new Error("Unexpected build phase in manifest.");
-console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1, cycle-safe individual and previewed atomic bulk reorganization API/UI, append-only provenance API/UI, review-only ISBN/UPC/EAN catalog candidates, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice output.");
+console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1, saved Vault views and deterministic keyset retrieval API/UI, cycle-safe individual and previewed atomic bulk reorganization API/UI, append-only provenance API/UI, review-only ISBN/UPC/EAN catalog candidates, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice output.");
