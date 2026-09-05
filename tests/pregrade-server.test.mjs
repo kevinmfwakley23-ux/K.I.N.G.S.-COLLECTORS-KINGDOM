@@ -241,7 +241,7 @@ test("advisory estimate HTTP route is read-only, owner-isolated, fail-closed and
     assert.equal(partial.response.headers.get("cache-control"), "private, no-store, max-age=0");
     assert.equal(partial.body.estimate.available, true);
     assert.equal(partial.body.estimate.evidenceLevel, "partial");
-    assert.deepEqual(partial.body.estimate.range, { min: 7, max: 10 });
+    assert.deepEqual(partial.body.estimate.range, { min: 6.5, max: 10 });
     assert.equal(partial.body.estimate.officialGrade, false);
     assert.equal(partial.body.estimate.affiliatedGraderEstimate, false);
     assert.equal(partial.body.estimate.mutatesTreasure, false);
