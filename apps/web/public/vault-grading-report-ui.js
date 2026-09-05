@@ -44,6 +44,11 @@ function findingExtentLabel(extent) {
   return `${extent.affectedFacePercent}% bounding area • ${extent.estimatedMajorSpanPercent}% major normalized span`;
 }
 
+function timestampLabel(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value ?? "Unknown time") : date.toLocaleString();
+}
+
 export function createVaultGradingReportUi() {
   const gradingPanel = document.querySelector("#ai-pregrade-panel");
   const treasureSelect = document.querySelector("#grading-pregrade-treasure");
@@ -66,7 +71,8 @@ export function createVaultGradingReportUi() {
   const overall = node("div", "grading-report-overall");
   const dimensionsRoot = node("div", "grading-dimension-grid");
   const findingsRoot = node("div", "grading-finding-review-list");
-  section.append(status, overall, dimensionsRoot, findingsRoot);
+  const reviewHistoryRoot = node("div", "grading-review-history");
+  section.append(status, overall, dimensionsRoot, findingsRoot, reviewHistoryRoot);
 
   function treasureId() { return treasureSelect.value || null; }
 
@@ -196,11 +202,41 @@ export function createVaultGradingReportUi() {
     if (!count) findingsRoot.append(node("p", "muted-copy", "No stored detector candidates are available for review. A zero-candidate completed detector run is shown through the dimension coverage instead of being treated as missing analysis."));
   }
 
+  function renderReviewHistory(reviews = []) {
+    reviewHistoryRoot.replaceChildren();
+    reviewHistoryRoot.append(
+      node("h4", "", "Append-only collector review history"),
+      node("p", "muted-copy", "Every review decision remains in history. A newer review can change the current interpretation, but earlier decisions and the original detector evidence are never overwritten or deleted.")
+    );
+    if (!reviews.length) {
+      reviewHistoryRoot.append(node("p", "muted-copy", "No collector finding reviews have been appended for this treasure."));
+      return;
+    }
+    for (const review of reviews) {
+      const card = node("article", "grading-review-history-card");
+      card.append(
+        node("div", "grading-finding-review-heading", ""),
+        node("span", "", `Finding ${review.findingHash.slice(0, 12)}… • source analysis ${review.sourceAnalysisId.slice(0, 12)}…`),
+        node("span", "", timestampLabel(review.createdAt)),
+        node("code", "grading-finding-hash", review.findingHash)
+      );
+      const heading = card.firstElementChild;
+      heading.append(
+        node("strong", "", titleCase(review.decision)),
+        node("span", `grading-review-state state-${review.decision}`, "Append-only")
+      );
+      if (review.note) card.append(node("p", "muted-copy", review.note));
+      card.append(node("p", "muted-copy", "Interpretation history only • raw detector evidence preserved • no authoritative grade mutation"));
+      reviewHistoryRoot.append(card);
+    }
+  }
+
   async function loadReport() {
     const selected = treasureId();
     overall.replaceChildren();
     dimensionsRoot.replaceChildren();
     findingsRoot.replaceChildren();
+    reviewHistoryRoot.replaceChildren();
     if (!selected) {
       status.textContent = "Choose a treasure in the Save advisory pre-grade evidence panel to view its report.";
       status.className = "grading-quality-summary";
@@ -214,6 +250,7 @@ export function createVaultGradingReportUi() {
       renderOverall(payload);
       renderDimensions(payload.explainableReport);
       renderFindings(payload.explainableReport);
+      renderReviewHistory(payload.reviewHistory ?? []);
       status.textContent = "Explainable report loaded from immutable stored pre-grade evidence and append-only collector reviews.";
       status.className = "grading-quality-summary pass";
       return payload;
