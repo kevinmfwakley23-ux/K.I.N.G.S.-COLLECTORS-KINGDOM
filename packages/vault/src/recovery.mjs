@@ -77,8 +77,8 @@ function databaseCounts(database) {
     "vault_ownership_history",
     "vault_treasure_attributes",
     "vault_collection_sets",
-    "vault_collection_set_entries",
-    "vault_collection_set_links",
+    "vault_set_entries",
+    "vault_set_links",
     "vault_marketplace_preparation"
   ];
   const counts = {};
