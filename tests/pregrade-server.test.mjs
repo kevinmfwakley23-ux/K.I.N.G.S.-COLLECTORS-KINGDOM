@@ -40,7 +40,7 @@ async function registerAndSignIn(baseUrl, suffix = "pregrade-owner") {
     body: JSON.stringify({ email, password })
   });
   assert.equal(signIn.response.status, 200);
-  return Object.freeze({ cookie: signIn.response.headers.get("set-cookie"), accountId: registration.body.identity.id });
+  return Object.freeze({ cookie: signIn.response.headers.get("set-cookie"), accountId: registration.body.account.id });
 }
 
 async function withServer(run) {
