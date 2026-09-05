@@ -1,4 +1,5 @@
 import "./vault-saved-views.js";
+import "./vault-ui-styles.js";
 
 let categoryProfiles = [];
 
