@@ -5,10 +5,10 @@
   "type": "module",
   "engines": { "node": ">=22.13" },
   "scripts": {
-    "dev": "node apps/web/server.mjs",
-    "start": "node apps/web/server.mjs",
+    "dev": "node apps/web/server-runtime.mjs",
+    "start": "node apps/web/server-runtime.mjs",
     "build": "node tools/build.mjs",
-    "start:prod": "node dist/apps/web/server.mjs",
+    "start:prod": "node dist/apps/web/server-runtime.mjs",
     "lint": "node tools/lint.mjs",
     "typecheck": "node tools/typecheck.mjs",
     "test": "node --test tests/*.test.mjs",
