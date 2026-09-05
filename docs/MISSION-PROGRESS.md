@@ -4,7 +4,7 @@ This file is the durable engineering ledger for K.I.N.G.S. Collector's Kingdom. 
 
 ## Progress rule
 
-A progress entry must record what was actually implemented, the important architecture changed, verification evidence, known limitations, and the exact next engineering target. Functionality is not called complete until it is wired, real, and supported by the strongest available quality gates.
+A progress entry must record what was actually implemented, the important architecture changed, verification evidence, known limitations, and the exact next engineering target. Functionality is not called complete until it is wired, real, persistent/integrated where required, and supported by the strongest available quality gates.
 
 ---
 
@@ -12,248 +12,282 @@ A progress entry must record what was actually implemented, the important archit
 
 **Date:** 2026-09-05  
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Latest verified checkpoint:** **Royal Intake Queue + transactional JSON/CSV import + secure media + Kingdom voice**  
-**Latest verified code gate:** **Kingdom Quality Gates #347** — run `33959303126` — **PASS**  
-**Verified code commit:** `58c60d605e107bdaeeaa5300b1de0c3fea164cfb`  
+**Latest verified checkpoint:** **Secure progressive Royal barcode scanner on the cross-device Royal Intake Queue**  
+**Latest verified code gate:** **Kingdom Quality Gates #361** — run `33959932759` — **PASS**  
+**Verified code commit:** `9ea1053ae6be2cb8ba79664ff7e88cb232ccdf97`  
 **Default branch:** `main`
 
 ### Exact recovery point
 
 Do **not** restart IMP-005.
 
-The Royal Vault is now a real owner-scoped collection domain with persistent treasure identity, authenticated APIs, a responsive browser workspace, secure private media, voice command/talk-to-text support, transactional bulk migration, and a cross-device Royal Intake Queue.
+The Royal Vault is now a real owner-scoped collection system with durable treasure identities, hierarchical physical storage, search/filter/sort, duplicate candidates, history, secure private media, portable export, transactional JSON/CSV migration, Kingdom voice/talk-to-text, a persistent cross-device Royal Intake Queue, and a progressive camera barcode scanner that feeds that same queue.
 
-The latest verified Royal Intake capability includes:
+The scanner is intentionally an **evidence-capture tool**, not an automatic identification authority. A camera detection stores the observed identifier and barcode format in the collector's queue. It does not create a treasure, merge records, invent metadata, or claim that a barcode proves an exact collectible variant.
 
-- persistent owner-scoped pending intake records;
-- manual capture of barcode, UPC, EAN, ISBN, catalog, serial, SKU, and custom identifiers;
-- server-side queue storage so capture can begin on a phone and continue on Chromebook/desktop;
-- repeated pending captures of the same normalized identifier merged into one queue record with a capture count rather than noisy duplicate queue rows;
-- pending counts and total pending-capture counts;
-- exact existing-Vault identifier candidates surfaced as warnings/evidence without asserting that the captured identifier proves exact collectible identity;
-- owner isolation for listing and dismissing queue items;
-- soft dismissal that preserves intake history;
-- re-capture after dismissal creates a new pending intake event rather than mutating old history;
-- responsive phone/desktop Royal Intake Queue UI;
-- one-click handoff into the treasure editor that copies the identifier but intentionally leaves the queue item pending until the collector explicitly dismisses it;
-- warnings to review exact identity and quantity before saving a treasure, especially when the same identifier was captured more than once;
-- authenticated no-store HTTP API;
-- audit events for capture and dismissal;
-- camera remains intentionally disabled and reported unavailable until the real scanner is implemented and verified.
+The **next validated engineering target** is **evidence-backed catalog candidate resolution**:
 
-The **next validated engineering target** is the progressive secure barcode-camera scanner on top of the verified Intake Queue. It must remain user-initiated, same-origin, secure-context-only, and optional. Manual intake remains first-class on unsupported browsers. Camera detections must feed the same server-side queue and must never silently create or identify authoritative treasures.
+1. establish a provider-neutral catalog-candidate contract owned by Collector's Kingdom;
+2. resolve supported identifiers only on explicit collector action;
+3. start with a real low-volume ISBN provider adapter suitable for human lookup;
+4. include source/provider identity, retrieval time, evidence URL/identifier, candidate confidence/reasoning, and raw-provider reference without making the provider ID the permanent treasure ID;
+5. use bounded timeout, caching, rate awareness, and honest provider-unavailable states;
+6. let the collector review/apply candidate metadata to a treasure editor rather than silently writing authoritative Vault data;
+7. preserve the existing manual workflow when no provider supports an identifier.
 
-External catalog adapters, image-recognition candidates, evidence-backed valuation, and Marketplace mutations remain unimplemented and must not be represented as live.
+Open Library is a candidate first ISBN evidence provider because its current API documentation supports low-volume real-time book discovery/lookup. Its own usage guidance says it is not intended to be a third-party bulk/high-traffic backend, so any adapter must remain replaceable and must follow caching, request-identification, and rate guidance. Broader UPC/EAN/comics/cards/games/catalog adapters will require separate provider research and licensing/credential decisions.
 
 ---
 
-## Verified capability inventory
+## Verified product history
 
-### IMP-002 — Production foundation
+### IMP-002 — Production-ready Kingdom foundation
 
-Implemented:
+Implemented and verified:
 
-- executable Node.js production runtime;
-- validated runtime configuration;
+- executable Node.js runtime;
+- configuration validation;
 - health/readiness endpoints;
 - structured logging;
-- secure static serving and security headers;
-- CI workflow;
-- dependency auditing;
-- production build/artifact verification;
+- secure static serving;
+- production build verification;
+- CI workflow and dependency audit;
 - architecture documentation.
 
-Representative commit: `963945881892ce3405da0187b7d2da9a71bc336f`
+Key commit: `963945881892ce3405da0187b7d2da9a71bc336f`
 
-### IMP-003 — Identity core
+### IMP-003 — Persistent identity core
 
-Implemented:
+Implemented and verified core:
 
 - persistent accounts/profiles;
 - scrypt credential hashing;
 - server-side expiring sessions;
 - secure session cookies;
-- role enforcement foundation;
+- role foundation;
 - identity audit events;
-- authentication APIs and Royal Gate UI.
+- authentication APIs;
+- Royal Gate/account UI.
 
-Representative commit: `6fc42a088b07d02b1f64a3270bec5838cd272ea3`
+Advanced recovery, verification, MFA, trusted-device, and abuse-control work remains later identity hardening.
 
-Still later identity hardening: recovery, completed email verification, MFA/trusted devices, and broader abuse/notification controls.
+Key commit: `6fc42a088b07d02b1f64a3270bec5838cd272ea3`
 
-### Shared K.I.N.G.S. AI boundary
+### Shared K.I.N.G.S. AI application boundary
 
 Implemented:
 
-- Collector's Kingdom routes AI tasks server-to-server through K.I.N.G.S. AI;
-- model/provider credentials stay out of browser code;
-- K.I.N.G.S. AI owns model routing while Collector's Kingdom owns collection/identity/Marketplace authorization;
-- The Keeper may advise through AI but cannot silently mutate Kingdom records.
+- Collector's Kingdom routes governed AI requests server-to-server through K.I.N.G.S. AI;
+- model/provider credentials stay outside browser code;
+- Collector's Kingdom retains authority over identity, authorization, Vault records, ownership, Marketplace rules, and product actions;
+- The Keeper may advise but does not silently execute ownership/destructive mutations.
 
-Representative commit: `e98674f6d5977e607db50695cbcc87f78b96e2f8`
+Key commit: `e98674f6d5977e607db50695cbcc87f78b96e2f8`
 
 ### IMP-004 — Great Hall & Navigation
 
-Implemented:
+Implemented and verified:
 
 - authenticated personalized Great Hall;
-- permanent castle-and-grounds navigation;
+- permanent castle-and-grounds geography;
+- Royal Vault inside the castle;
 - Kingdom Street Market outside the castle;
-- real identity activity;
-- honest availability states for staged services;
-- quick actions and conversational Keeper entry;
-- room-aware persistent Keeper roles;
-- Royal Vault and Marketplace entrances;
-- responsive royal-estate UI foundation.
+- real recent identity activity;
+- honest staged-service states;
+- quick actions;
+- room-aware Keeper roles;
+- responsive mobile/tablet/Chromebook/desktop royal-estate UI.
 
-Representative commit: `8e5fd453e477997b9257977f8ace07e617e7fc7a`
-
-### IMP-005 — Royal Vault verified capabilities
-
-Implemented and verified:
-
-- permanent owner-scoped treasure UUIDs;
-- treasure create/read/update/archive;
-- collection groups;
-- arbitrary-depth physical storage hierarchy such as room → safe → shelf → binder → page → pocket;
-- broad/custom collectible categories;
-- condition, variant, quantity, acquisition date, purchase cost, identifiers, descriptions, notes, and custom attributes;
-- normalized accent-tolerant search/filter/sort;
-- duplicate candidate detection without destructive automatic merging;
-- treasure history/audit events;
-- real record/unit/category statistics;
-- purchase totals kept separate by currency;
-- versioned JSON export including archived records;
-- authenticated Great Hall integration with real Vault counts;
-- responsive `/vault.html` workspace;
-- The Keeper acting as Royal Curator.
-
-#### Secure private media
-
-Implemented and verified:
-
-- private owner-scoped JPEG/PNG/WebP/GIF/AVIF/PDF storage outside the public webroot;
-- generated storage keys;
-- file-signature detection plus declared MIME and extension agreement;
-- unsafe filename/path rejection;
-- size/count/account storage limits;
-- authenticated list/read/delete;
-- private no-store retrieval;
-- media audit events;
-- responsive image/document UI.
-
-Key verification checkpoint: Quality Gates #309, run `33956000131`, **PASS**.
-
-#### Kingdom voice command / talk-to-text
-
-Implemented and verified:
-
-- reusable `SpeechRecognition` / prefixed recognition layer where supported;
-- same-origin-only microphone policy;
-- on-device speech preference where browser support exists;
-- voice navigation across Kingdom locations;
-- spoken Keeper questions;
-- voice search;
-- spoken `add treasure` command;
-- dictation for Great Hall/Vault search, Keeper messages, treasure title, description, condition notes, and collector notes;
-- typed fallback when recognition is unavailable;
-- destructive commands such as delete/archive/sell/buy/transfer intentionally excluded from executable voice grammar.
-
-Camera remains `camera=()` until the scanner feature is real.
-
-#### Transactional import / bulk migration
-
-Implemented and verified:
-
-- `packages/vault/src/import-repository.mjs` — persisted review batches/rows and atomic commit boundary;
-- `packages/vault/src/import-service.mjs` — validation, duplicate review, expiry, stale-checking, idempotency, provenance, and commit orchestration;
-- `apps/web/vault-import-http.mjs` — authenticated preview/get/commit API;
-- `apps/web/public/vault-import-core.js` — JSON/CSV parsing, common collector-header inference, field mapping, price conversion, identifier mapping, custom attributes, and decision construction;
-- `apps/web/public/vault-import-ui.js` — recoverable responsive review/commit workflow;
-- `apps/web/public/vault-import.css` — responsive review chamber styling;
-- automated tests for parser edge cases, mapping, duplicate decisions, API preview/commit/retry, expiry, owner isolation, stale duplicates, and forced rollback;
-- required production build artifacts for all import modules.
-
-Important verification history:
-
-- initial integration run correctly failed because the older server test harness did not instantiate the newly required import service; production wiring was correct and the harness was fixed;
-- forced mid-batch failure test proved complete SQLite rollback;
-- later UI gate correctly caught the repository's anti-placeholder policy on an ordinary DOM property name; implementation was changed without weakening the policy;
-- **Quality Gates #328 (`33958812569`) passed** after that correction.
-
-#### Royal Intake Queue
-
-Implemented and verified:
-
-- `packages/vault/src/intake-repository.mjs` — persistent owner-scoped pending/dismissed intake records and capture counts;
-- `packages/vault/src/intake-service.mjs` — validation, identifier normalization, owner authorization, Vault-candidate evidence, audit events, and queue statistics;
-- `apps/web/vault-intake-http.mjs` — authenticated list/capture/dismiss boundary with bounded request size and no-store responses;
-- production server wiring and `/api/vault` capability/count reporting;
-- `apps/web/public/vault-intake-core.js` — safe editor-handoff and collector-facing status helpers;
-- `apps/web/public/vault-intake-ui.js` — responsive cross-device capture, queue, history, warnings, dismissal, and editor handoff;
-- `apps/web/public/vault-intake.css` — responsive phone/desktop styling;
-- tests covering repeat-capture merging, capture counts, owner isolation, history, re-capture after dismissal, identifier validation, exact existing-Vault candidate warnings, authenticated HTTP behavior, editor handoff, and camera-still-disabled policy;
-- build/type/artifact gates require all Intake Queue production modules.
-
-**Verification:** Kingdom Quality Gates #347, run `33959303126`, verify job **SUCCESS** including full repository quality gates and production dependency audit.
-
-The CLZ-style phone-to-web scan-queue pattern influenced this direction, but the Kingdom improves it by using one owner-scoped server queue for both manual and future camera capture, preserving repeated-capture counts/history, surfacing existing-Vault evidence, and refusing to equate capture with authoritative identity.
+Key commit: `8e5fd453e477997b9257977f8ace07e617e7fc7a`
 
 ---
 
-## Competitive research records
+## Active mission — IMP-005: Royal Vault, Phase 1
 
-Current dated reconnaissance:
+### Verified authoritative Vault foundation
 
-- `docs/research/2026-09-05-IMP-005-VAULT-COMPETITIVE-RECON.md`
-- `docs/research/2026-09-05-IMP-005-INTAKE-IMPORT-SCANNER-RECON.md`
+- SQLite Vault persistence boundary under `packages/vault/`;
+- permanent owner-scoped treasure UUIDs;
+- treasure create/read/update/archive;
+- collection groups;
+- arbitrary-depth physical storage locations;
+- condition, variant, quantity, acquisition, purchase-cost, identifiers, descriptions, notes, and custom attributes;
+- normalized accent-tolerant search;
+- filter/sort;
+- candidate-only duplicate detection;
+- treasure change history;
+- real record/unit/category statistics;
+- purchase totals separated by currency;
+- complete versioned JSON export including archived records;
+- authenticated Vault HTTP APIs;
+- Great Hall real Vault counts;
+- responsive `/vault.html` workspace;
+- Royal Curator Keeper context.
 
-The latest intake research compares current iCollect/CLZ migration and scan workflows and records browser camera constraints. The Kingdom improvement direction is cross-device server-side intake, recoverable review, explicit uncertainty, atomic writes, idempotent retries, and manual fallbacks rather than device-specific or blind automation.
+Physical-location example supported by the model:
+
+`Vault Room → North Safe → Shelf 2 → Pokémon Binder → Page 7 → Pocket 4`
+
+### Secure private treasure media — verified
+
+- owner-scoped media metadata repository;
+- private filesystem storage outside public webroot;
+- generated storage keys unrelated to user filenames;
+- JPEG, PNG, WebP, GIF, AVIF, and PDF allowlist;
+- signature + declared MIME + extension agreement checks;
+- unsafe path/name rejection;
+- bounded image/PDF/account limits;
+- authenticated list/read/remove;
+- private/no-store retrieval;
+- media add/remove audit events;
+- browser upload/gallery/download/remove UI.
+
+Latest media/voice verified checkpoint previously passed Quality Gates #309 (`33956000131`).
+
+Known media limitation: no antivirus/sandbox/CDR pipeline is currently claimed. PDF/media validation is structural/type/authorization/storage hardening, not malware scanning.
+
+### Kingdom voice command and talk-to-text — verified
+
+- reusable browser speech controller;
+- standard/prefixed SpeechRecognition where supported;
+- local recognition preference where browser reports an available local pack;
+- same-origin microphone policy;
+- navigation, Keeper, Vault search, and safe `add treasure` voice commands;
+- dictation for Vault/Great Hall/treasure/Keeper fields;
+- destructive voice commands intentionally excluded;
+- full typed fallback on unsupported browsers.
+
+### Transactional JSON/CSV migration — verified
+
+Latest transactional import UI checkpoint passed Quality Gates #328 (`33958812569`).
+
+Implemented:
+
+- JSON and CSV intake in the responsive Vault;
+- CSV header parsing and collector-controlled field mapping;
+- persistent server-side preview batches;
+- row validation and duplicate-review states;
+- explicit import/skip decisions;
+- all-or-nothing transaction semantics;
+- stale-preview/duplicate protection;
+- idempotency keys for safe commit retry;
+- recoverable browser review state;
+- production artifact requirements and parser/mapping tests.
+
+No blind import writes occur before explicit commit.
+
+### Royal Intake Queue — verified
+
+Latest complete Queue checkpoint passed Quality Gates #347 (`33959303126`) on commit `58c60d605e107bdaeeaa5300b1de0c3fea164cfb`.
+
+Implemented:
+
+- account-scoped persistent intake queue in the Vault database;
+- manual UPC/EAN/ISBN/catalog/serial/SKU/custom identifier capture;
+- repeated pending captures merge into one queue item with a capture count;
+- dismissed items remain in history rather than being destructively erased;
+- owner isolation on list/dismiss operations;
+- authenticated intake API;
+- responsive phone/desktop Vault queue UI;
+- one-click identifier prefill into a new treasure editor while keeping queue state explicit;
+- existing Vault identifier candidates surfaced as warnings only;
+- provider-specific unknown treasure identifier keys safely ignored during queue matching;
+- intake audit events;
+- production artifact and contract verification.
+
+### Secure progressive Royal barcode scanner — verified
+
+**Quality Gates #361** — run `33959932759` — **PASS**  
+**Verified head commit:** `9ea1053ae6be2cb8ba79664ff7e88cb232ccdf97`
+
+Implemented:
+
+- `apps/web/public/vault-scanner-core.js` for format normalization, preferred-format selection, detection validation, debounce rules, and support-state logic;
+- `apps/web/public/vault-scanner-ui.js` for explicit camera start/stop, supported-format discovery, live preview, detection, queue persistence, and shutdown lifecycle;
+- `apps/web/public/vault-scanner.css` responsive scanner presentation;
+- browser-native `BarcodeDetector` only when actually exposed by the browser;
+- `BarcodeDetector.getSupportedFormats()` discovery rather than assuming formats;
+- rear/environment-facing camera preference;
+- secure-context requirement;
+- 1.5-second repeated-frame debounce to prevent one stationary barcode from flooding the queue;
+- detected format mapped to UPC/EAN/general barcode evidence without asserting exact catalog identity;
+- every accepted detection written through the existing authenticated Royal Intake Queue API;
+- scanner stops tracks when the collector presses Stop, leaves the page, or backgrounds the Kingdom;
+- scanner load is sequenced after the Intake Queue UI to avoid a module timing race;
+- manual intake remains fully available when camera, media devices, or native barcode detection are unsupported.
+
+Security/permission design:
+
+- ordinary Kingdom pages and JSON APIs retain `camera=()`;
+- only `/vault.html` receives `Permissions-Policy: camera=(self)`;
+- microphone remains same-origin;
+- geolocation remains disabled;
+- camera access still requires a browser permission prompt and a secure browser context;
+- the app never starts the camera automatically.
+
+Verification added:
+
+- scanner core tests for barcode-format mapping;
+- unsafe/empty detection rejection;
+- preferred-format selection;
+- repeated-frame debounce;
+- secure-context/media-device/native-detector support states;
+- server integration proof that `/vault.html` has camera permission while Great Hall/API responses remain camera-blocked;
+- production type-contract and artifact gates require scanner core/UI/CSS files.
+
+Current browser limitation: native `BarcodeDetector` remains limited/experimental across browsers. This is why camera scanning is progressive rather than required. Manual Intake Queue entry is the universal fallback.
+
+---
+
+## Research records
+
+Meaningful engineering research is stored under `docs/research/`.
+
+Important IMP-005 records include:
+
+- `2026-09-05-IMP-005-VAULT-COMPETITIVE-RECON.md` — collector competitors and open-source inventory patterns;
+- `2026-09-05-IMP-005-VAULT-MEDIA-SECURITY.md` — upload/media security design;
+- `2026-09-05-IMP-005-INTAKE-IMPORT-SCANNER-RECON.md` — CSV mapping, bulk intake, scan queues, and browser scanner direction.
+
+Research-before-build remains a permanent repository rule.
 
 ---
 
 ## Known unfinished IMP-005 work
 
-- progressive secure camera/barcode scanner;
-- external catalog/recognition candidate adapters;
-- image recognition candidate workflow;
-- bulk update/archive beyond import creation;
-- editing/reorganization of existing collection groups and location nodes;
-- saved filters/views and further very-large-collection performance work;
-- insurance/reporting outputs beyond JSON export;
-- evidence-backed market valuation feeds/history.
+Do not represent these as live until separately implemented and verified:
 
-None of these should be presented as live until their real services and tests exist.
+- external catalog candidate adapters beyond existing Vault-record matching;
+- evidence-backed market valuation feeds and valuation history;
+- image recognition / visual collectible identification;
+- broad UPC/EAN/comic/card/game provider coverage;
+- bulk update/archive/reorganization workflows;
+- edit/reorganization workflows for collection groups and physical location nodes;
+- saved searches/views and additional very-large-collection search performance work;
+- insurance/reporting outputs beyond portable JSON export;
+- universal camera barcode scanning on browsers without native `BarcodeDetector`;
+- universal speech recognition on browsers without a Web Speech recognition implementation.
+
+### Permanent truthfulness boundary
+
+Market value stays absent/null until backed by real evidence. A barcode, image, AI answer, provider candidate, or matching title is never silently upgraded into an authoritative exact-item claim. Permanent Kingdom treasure IDs remain provider-independent.
 
 ---
 
 ## Exact next engineering target
 
-### IMP-005 — Secure barcode-camera scanner
+**IMP-005 — Catalog Candidate Resolution, first verified slice**
 
-Build the scanner as a progressive enhancement on the verified Royal Intake Queue:
+Build a real low-volume identifier-resolution path that improves intake without weakening collector authority:
 
-1. harden identifier matching against arbitrary provider-specific external identifier keys;
-2. add pure scanner format/detection/debounce helpers with tests;
-3. expose a camera button only when the browser is in a secure context and supports both `mediaDevices.getUserMedia` and `BarcodeDetector`;
-4. query supported barcode formats rather than assuming availability;
-5. request an environment-facing camera only after explicit collector action;
-6. stop camera tracks when the scanner closes, page leaves, or becomes inactive;
-7. feed detections into `/api/vault/intake` with `sourceType: camera`;
-8. debounce frame-repeat noise while retaining meaningful repeated scan counts;
-9. enable `Permissions-Policy: camera=(self)` only when the scanner is implemented/tested;
-10. preserve manual intake whenever the scanner APIs are unavailable;
-11. never auto-create an authoritative treasure or claim an exact catalog match from a scan alone.
-
----
-
-## Verification standard
-
-Full repository verification:
-
-```bash
-npm ci
-npm run verify
-```
-
-`npm run verify` runs lint/policy checks, module-contract checks, automated tests, production build, and production-artifact verification. GitHub Actions also performs the production dependency audit and is the required remote quality gate before a milestone is recorded as verified.
+- provider-neutral catalog candidate types and service boundary;
+- cache with bounded TTL and owner-independent safe public lookup reuse where licensing permits;
+- strict outbound timeout and bounded payload handling;
+- provider source/evidence metadata;
+- real ISBN lookup adapter with current provider usage requirements honored;
+- normalized candidate output for title, author/manufacturer/publisher, edition/date/identifiers where evidence exists;
+- no mutation during lookup;
+- collector review/apply UI from Intake Queue to treasure editor;
+- tests for provider failure, malformed data, timeout, no-match, candidate match, cache behavior, and no-write semantics;
+- production build/artifact verification;
+- then research and add additional collectible-domain providers only when their APIs, licensing, authentication, and evidence quality are acceptable.
