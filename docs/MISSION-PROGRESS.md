@@ -25,7 +25,7 @@ The repository README should always contain the short current-status summary. Th
 
 **Date:** 2026-09-05  
 **Current product milestone:** **IMP-005 — Royal Vault, Phase 1 — active**  
-**Latest verified Vault checkpoint:** **Authoritative persistence/API/browser foundation with normalized search**  
+**Latest verified Vault checkpoint:** **Secure private treasure media + Kingdom voice command/dictation capability**  
 **Previous completed product milestone:** **IMP-004 — Great Hall & Navigation**  
 **Repository default branch:** `main`
 
@@ -33,13 +33,32 @@ The repository README should always contain the short current-status summary. Th
 
 Do **not** restart IMP-005 from the beginning.
 
-The Royal Vault now has a real owner-scoped persistent domain, authenticated APIs, Great Hall integration, and a functional responsive browser workspace. Treasure records use permanent Collector's Kingdom UUIDs and survive independently of future catalog, Marketplace, grading, valuation, legacy, or AI providers.
+The Royal Vault has a real owner-scoped persistent domain, authenticated APIs, Great Hall integration, a functional responsive browser workspace, secure private treasure media, and a progressive Kingdom-wide voice layer. Treasure records use permanent Collector's Kingdom UUIDs and survive independently of future catalog, Marketplace, grading, valuation, legacy, or AI providers.
 
-The verified Vault foundation currently includes real treasure create/read/update/archive behavior, collection groups, arbitrary-depth physical storage locations, condition/variant/acquisition data, extensible identifiers and custom attributes, owner-scoped search/filter/sort, normalized accent-tolerant search, candidate-only duplicate detection, treasure change history, real collection statistics, currency-separated purchase-cost totals, complete JSON export including archived records, non-mutating import validation, and The Keeper as Royal Curator.
+Verified Vault capability now includes:
 
-The Vault is now injected into the production Great Hall service. When the authoritative service is wired, Great Hall navigation marks the Vault `available`, links to `/vault.html`, and reports real Vault record/unit counts instead of placeholder totals.
+- treasure create/read/update/archive;
+- collection groups;
+- arbitrary-depth physical storage locations;
+- condition, variant, quantity, acquisition, cost, identifiers, and custom attributes;
+- owner-scoped normalized accent-tolerant search/filter/sort;
+- candidate-only duplicate detection;
+- treasure change history;
+- real collection statistics;
+- currency-separated purchase-cost totals;
+- complete versioned JSON export including archived records;
+- validation-only import preview;
+- authenticated Royal Vault APIs and browser workspace;
+- secure owner-scoped private images and PDF documents stored outside the public webroot;
+- file signature, declared MIME type, extension, filename, size, ownership, and storage-limit validation for media;
+- authenticated media listing/retrieval/removal and media audit events;
+- same-origin-only microphone policy;
+- voice commands for Kingdom navigation, Keeper control/questions, search, and safe treasure intake;
+- speech-to-text dictation controls in Great Hall search, Keeper messages, Vault search, treasure title/description/condition notes/collector notes, and Keeper messages;
+- destructive voice mutations intentionally excluded from the executable voice grammar;
+- typed controls preserved when browser speech recognition is unavailable.
 
-The **next validated engineering target** is to continue IMP-005 by implementing the secure Vault media pipeline and then the transactional validated import/bulk-intake commit path. Camera/barcode recognition, external catalog adapters, evidence-backed market valuation, and other later intelligence capabilities remain unimplemented and must not be represented as live.
+The **next validated engineering target** is the transactional import/bulk-intake path: preview, duplicate review, explicit commit, all-or-nothing persistence, auditability, and safe bulk creation. Camera/barcode recognition, external catalog adapters, evidence-backed market valuation, and other later intelligence capabilities remain unimplemented and must not be represented as live.
 
 ---
 
@@ -214,11 +233,11 @@ Competitive ideas must be implemented as Kingdom-native solutions and must not c
 
 ### Current IMP-005 status
 
-Implemented and verified in the current foundation:
+Implemented and verified:
 
 - Vault-specific SQLite persistence boundary under `packages/vault/`;
 - permanent treasure UUIDs;
-- owner-scoped collection, location, treasure, history, stats, duplicate, export, and import-preview behavior;
+- owner-scoped collection, location, treasure, history, stats, duplicate, export, import-preview, and media behavior;
 - treasure CRUD with archive semantics instead of ordinary destructive deletion;
 - arbitrary-depth hierarchical physical locations with computed human-readable paths;
 - structured title/category/manufacturer/series/variant/condition/acquisition/cost fields;
@@ -228,20 +247,25 @@ Implemented and verified in the current foundation:
 - candidate-only duplicate detection using external-identifier and normalized-content fingerprints;
 - real record/unit/category statistics;
 - recorded purchase-cost totals separated by currency rather than misleadingly combined;
-- treasure change history;
+- treasure and media audit history;
 - complete versioned JSON export including archived records;
 - bounded validation-only JSON import preview that writes nothing;
 - authenticated Vault HTTP APIs;
 - Great Hall integration using real Vault counts;
-- functional `/vault.html` workspace for collections, locations, treasures, search, editing, archiving, duplicate review, export, and import validation;
+- functional `/vault.html` workspace for collections, locations, treasures, search, editing, archiving, duplicate review, export, import validation, and private media;
+- secure private media storage outside the public webroot using generated storage keys;
+- validated JPEG, PNG, WebP, GIF, AVIF, and PDF media ingestion;
+- media ownership isolation, authenticated retrieval, deletion, storage limits, and audit events;
+- same-origin browser microphone permission with camera still disabled;
+- progressive `SpeechRecognition` / prefixed speech recognition support where the browser implements it;
+- Kingdom-wide voice command grammar for safe navigation/Keeper/search/intake actions;
+- targeted voice dictation controls rather than uncontrolled always-on microphone capture;
 - Royal Curator Keeper context;
-- responsive Vault styling;
-- production build and artifact verification aware of the Vault package/page.
+- responsive Vault and voice styling;
+- production build and artifact verification aware of Vault, media, and voice files.
 
 Not yet complete in IMP-005:
 
-- secure binary image/document upload, retrieval, lifecycle, and storage implementation;
-- media UI tied to real stored files (metadata schema exists only);
 - transactional import commit after successful preview;
 - bulk create/update/archive operations;
 - camera/barcode scanner workflow;
@@ -249,7 +273,8 @@ Not yet complete in IMP-005:
 - evidence-backed market valuation feeds and valuation history;
 - edit/reorganization workflows for existing collection groups and location nodes;
 - saved views/filters and additional large-collection performance work;
-- insurance/reporting outputs beyond portable JSON export.
+- insurance/reporting outputs beyond portable JSON export;
+- universal speech recognition on browsers that do not expose the Web Speech recognition interface.
 
 ---
 
@@ -258,7 +283,6 @@ Not yet complete in IMP-005:
 ### 2026-09-05 — IMP-005 progress: authoritative Vault foundation and browser workspace
 
 **Status:** **VERIFIED FOUNDATION — IMP-005 remains in progress**  
-**Latest verified code commit:** `9fb1815402fc0b23103dde6d22fe26e10aec54f5`  
 **GitHub Actions:** Kingdom Quality Gates run `33953011873` / run #286 — verify job **PASS**
 
 Research completed:
@@ -269,41 +293,97 @@ Research completed:
 
 Implemented:
 
-- `packages/vault/src/sqlite-store.mjs` — persistent collections, nested storage locations, treasures, media metadata schema, treasure events, statistics, duplicate candidate queries, export, and normalized search storage.
-- `packages/vault/src/service.mjs` — owner-scoped validation and domain rules for collections, locations, treasures, duplicate review, history, stats, export, and non-mutating import preview.
-- `apps/web/server.mjs` — authenticated Vault APIs, Vault persistence startup/shutdown, production Great Hall injection, Vault error handling, and a separately bounded larger request size for import preview only.
-- `packages/great-hall/src/service.mjs` — opens the Vault only when the authoritative service is actually wired, adds real Vault counts, and preserves the no-fake-market-value rule.
-- `apps/web/public/vault.html`, `vault.js`, and `vault.css` — usable responsive Royal Vault workspace with real APIs rather than sample inventory.
-- `tests/vault.test.mjs` and `tests/vault-server.test.mjs` — persistence, hierarchy, search, ownership isolation, statistics, API, Great Hall integration, import/export, archive, duplicate, and history coverage.
-- `tools/typecheck.mjs`, `tools/build.mjs`, and `tools/verify-build.mjs` — Vault package and production artifacts are now part of repository quality gates.
+- persistent collections, nested storage locations, treasures, media metadata schema, treasure events, statistics, duplicate candidate queries, export, and normalized search storage;
+- owner-scoped service validation and domain rules;
+- authenticated Vault APIs;
+- real Great Hall Vault integration;
+- functional responsive Royal Vault browser workspace;
+- automated persistence/API/ownership/search/history/import/export/duplicate/statistics tests;
+- Vault-aware module, build, and artifact quality gates.
 
 Important defects found and corrected during verification:
 
 1. Recorded purchase costs were initially summarized into one total. That was corrected so currencies are reported separately and USD/EUR values are never silently added together.
-2. The first full CI run exposed that SQLite `LIKE` search for `pokemon` did not match `Pokémon`. The Vault now maintains normalized diacritic-insensitive search text so ordinary collector searches are more forgiving without weakening exact stored data.
+2. The first full CI run exposed that SQLite `LIKE` search for `pokemon` did not match `Pokémon`. The Vault now maintains normalized diacritic-insensitive search text.
 3. Import preview advertised up to 1,000 records while the default JSON parser capped requests at 64 KiB. The import-preview route now has its own bounded 1 MiB limit while ordinary JSON APIs retain the tighter 64 KiB limit.
-4. Production initialization initially created the Great Hall before injecting the Vault service. Startup now creates the Vault service first and passes it to Great Hall, and the integration test verifies `/api/navigation` exposes `/vault.html` only when the real service exists.
+4. Production initialization initially created the Great Hall before injecting the Vault service. Startup now injects the real Vault before Great Hall navigation is considered available.
+
+Verification:
+
+- repository lint/policy — **PASS**;
+- module contract/type boundary — **PASS**;
+- automated tests — **PASS**;
+- production build — **PASS**;
+- production artifact verification — **PASS**;
+- production dependency audit — **PASS**.
+
+---
+
+### 2026-09-05 — IMP-005 progress: secure private media and Kingdom voice control
+
+**Status:** **VERIFIED — IMP-005 remains in progress**  
+**Latest verified code commit:** `4584539453dc7585556b037b3186e1e124e86481`  
+**GitHub Actions:** Kingdom Quality Gates run `33956000131` / run #309 — verify job **PASS**
+
+Implemented — secure media:
+
+- `packages/vault/src/media-repository.mjs` for owner-scoped media metadata persistence;
+- `packages/vault/src/media-storage.mjs` for private filesystem storage under the Kingdom data directory rather than the public webroot;
+- generated storage keys using hashed owner/treasure segments and random media UUIDs;
+- `packages/vault/src/media-service.mjs` for file inspection, storage quotas, owner authorization, audit events, read/list/remove workflows, and storage lifecycle;
+- allowlisted JPEG, PNG, WebP, GIF, AVIF, and PDF files;
+- signature-based content detection plus declared MIME-type and extension agreement checks;
+- unsafe filename/path rejection;
+- 12 MiB image and 20 MiB PDF limits, 24 media files per treasure, and a bounded account media allowance;
+- SVG and unsupported/script-capable file formats rejected rather than served as trusted images;
+- `apps/web/vault-media-http.mjs` authenticated binary upload/list/read/delete HTTP boundary;
+- private no-store retrieval headers and same-origin resource policy;
+- Royal Vault media upload/gallery/download/remove UI for saved treasure records;
+- media add/remove audit events with stored SHA-256 evidence for added files;
+- `/api/vault` now reports media as available only when the real media service is wired.
+
+Implemented — voice command / speech-to-text:
+
+- reusable `apps/web/public/voice.js` controller;
+- standard `SpeechRecognition` plus `webkitSpeechRecognition` fallback where exposed by the browser;
+- on-device recognition preference when the browser reports a local language pack as available;
+- same-origin microphone permission via `Permissions-Policy: microphone=(self)`;
+- `on-device-speech-recognition=(self)` permission for supporting browsers;
+- camera remains explicitly disabled until the scanner milestone;
+- Great Hall voice command button and search dictation;
+- voice commands across Kingdom locations;
+- Royal Vault voice search and spoken `add treasure` command;
+- dictation for treasure title, description, condition notes, collector notes, Vault search, and Keeper message fields;
+- spoken Keeper questions such as `ask the Keeper ...` routed through the existing governed K.I.N.G.S. AI boundary;
+- commands for Great Hall, Vault, Marketplace, Library, Observatory, War Room, Treasury, Workshop, Hall of Legacy, and Royal Chambers navigation;
+- destructive phrases such as archive/delete/sell/buy/transfer are intentionally not executable voice commands;
+- unsupported browsers hide microphone controls and retain complete typed functionality.
+
+Verification added:
+
+- `tests/voice.test.mjs` verifies voice grammar, safe dictation insertion, and destructive-command exclusion;
+- `tests/vault-media.test.mjs` verifies private storage, ownership isolation, retrieval/deletion, audit events, and rejection of spoofed/unsafe/unsupported files;
+- `tests/vault-server.test.mjs` verifies authenticated media HTTP behavior plus same-origin microphone and disabled-camera policy;
+- `tools/typecheck.mjs` now requires voice/media module contracts;
+- `tools/verify-build.mjs` now requires voice/media production artifacts.
 
 Verification evidence:
 
-- Repository lint / placeholder-policy gate — **PASS**.
-- Module contract/type boundary gate — **PASS**.
-- Automated test suite — **PASS** after normalized-search fix.
-- Production build — **PASS**.
-- Production artifact verification — **PASS**.
-- Production dependency audit — **PASS**, 0 vulnerabilities reported by the quality run.
-- GitHub Actions quality gate run #286 (`33953011873`) — verify job **SUCCESS**.
+- Kingdom Quality Gates #308 — **PASS** for the full voice/media integration and security tests;
+- consistency correction made so `/api/vault` no longer falsely reports uploads unavailable;
+- Kingdom Quality Gates #309 (`33956000131`) — **PASS** after the consistency correction;
+- production dependency audit — **PASS**.
 
-Known limitations remain explicit:
+Known limitations:
 
-- `vault_treasure_media` establishes the persistence boundary, but no binary file is yet accepted or claimed as stored.
-- Import preview validates but intentionally cannot commit records yet.
-- Barcode values may be entered as identifiers, but camera/barcode scanning is not yet implemented.
-- No external recognition/catalog provider is currently claimed as connected.
-- No market value is shown as authoritative; estimated value remains `null` until evidence-backed valuation services exist.
-- No Marketplace mutation can originate from Vault records yet; that remains a later approved phase.
+- Web Speech recognition is not implemented uniformly by all browsers, so voice remains progressive enhancement with typed fallback;
+- browser/vendor speech services may process recognition remotely when local recognition is unavailable; the Kingdom itself does not receive raw microphone audio through these browser speech controls;
+- camera access remains disabled and no camera/barcode scanner is claimed as implemented;
+- current private media storage is local server filesystem storage under `KINGDOM_DATA_DIR`; production multi-instance/object-storage evolution remains a future scale milestone;
+- PDF documents are served as attachments rather than trusted inline active content;
+- transactional bulk import is still validation-only and cannot yet commit records.
 
-**Exact next target:** Continue IMP-005 with a secure owner-scoped media pipeline for treasure images/documents (validated MIME/type/size, safe storage keys, retrieval authorization, deletion/lifecycle, tests, and Vault UI), then build a transactional import-commit/bulk-intake path that only writes records which passed validation and duplicate review.
+**Exact next target:** Build transactional import/bulk intake with preview tokens, duplicate review, explicit user commit, owner-scoped all-or-nothing persistence, audit evidence, retry/idempotency protection, and Vault UI review/commit controls.
 
 ---
 
@@ -314,11 +394,15 @@ Known limitations remain explicit:
 - Identity authority: `packages/identity`.
 - Great Hall / navigation authority: `packages/great-hall`.
 - Vault authority: `packages/vault`.
+- Vault private media: `packages/vault/src/media-*` + `apps/web/vault-media-http.mjs`.
+- Shared browser voice layer: `apps/web/public/voice.js`.
 - Shared AI boundary: `packages/kings-ai`.
 - Web runtime: `apps/web/server.mjs` and static web assets under `apps/web/public`.
 - Verification entry point: `npm run verify`.
 
-The Vault owns treasure records, collection grouping, physical storage locations, treasure history, Vault search/index behavior, and Vault-specific validation. It does not own model-provider routing.
+The Vault owns treasure records, collection grouping, physical storage locations, treasure/media history, Vault search/index behavior, and Vault-specific validation. It does not own model-provider routing.
+
+Voice commands may initiate only approved low-risk UI/navigation/search/Keeper actions. Destructive product mutations remain controlled by explicit product workflows rather than speech-recognition guesses.
 
 ---
 
