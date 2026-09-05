@@ -51,15 +51,40 @@
 .grading-capture-plan h3, .grading-controls h3, .grading-quality-panel h3 { margin: 0; }
 .grading-capture-plan ul { margin: .55rem 0; padding-left: 1.2rem; display: grid; gap: .35rem; }
 .grading-image-status { margin: 0; }
+.grading-report-overall { display: grid; gap: .6rem; }
+.grading-report-overall-card { display: grid; gap: .35rem; padding: .8rem; border: 1px solid rgba(138, 94, 20, .24); border-radius: .85rem; background: rgba(214, 170, 74, .08); }
+.grading-report-range { font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.grading-dimension-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .65rem; }
+.grading-dimension-card { display: grid; gap: .3rem; min-width: 0; padding: .7rem; border-radius: .8rem; border: 1px solid rgba(35, 28, 20, .14); background: rgba(255,255,255,.36); }
+.grading-dimension-card.missing { background: rgba(160,58,45,.05); border-color: rgba(160,58,45,.16); }
+.grading-dimension-heading { font-size: .78rem; font-weight: 850; text-transform: uppercase; letter-spacing: .035em; }
+.grading-dimension-range { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.grading-dimension-card > span { font-size: .76rem; line-height: 1.35; }
+.grading-finding-review-list { display: grid; gap: .65rem; }
+.grading-finding-review-list > h4 { margin: .25rem 0 0; }
+.grading-finding-review-card { display: grid; gap: .45rem; padding: .75rem; border-radius: .85rem; border: 1px solid rgba(35,28,20,.14); background: rgba(255,255,255,.4); min-width: 0; }
+.grading-finding-review-heading { display: flex; justify-content: space-between; gap: .75rem; align-items: flex-start; }
+.grading-finding-review-card > span { font-size: .8rem; }
+.grading-finding-hash { overflow-wrap: anywhere; font-size: .7rem; padding: .3rem .4rem; border-radius: .4rem; background: rgba(20,17,14,.07); }
+.grading-review-state { display: inline-flex; border-radius: 999px; padding: .25rem .5rem; font-size: .7rem; font-weight: 850; white-space: nowrap; border: 1px solid rgba(35,28,20,.12); }
+.grading-review-state.state-accepted { background: rgba(34,128,80,.1); }
+.grading-review-state.state-rejected { background: rgba(160,58,45,.08); }
+.grading-review-state.state-uncertain, .grading-review-state.state-unreviewed { background: rgba(165,123,35,.09); }
+.grading-review-note { display: grid; gap: .3rem; font-size: .8rem; font-weight: 750; }
+.grading-review-note textarea { width: 100%; resize: vertical; min-height: 3.5rem; }
+.grading-finding-review-actions { display: flex; flex-wrap: wrap; gap: .45rem; }
+@media (max-width: 1100px) {
+  .grading-dimension-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 960px) {
   .grading-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .grading-workspace { grid-template-columns: 1fr; }
 }
 @media (max-width: 620px) {
-  .grading-toolbar, .grading-border-grid, .grading-reference-form, .grading-reference-candidates { grid-template-columns: 1fr; }
+  .grading-toolbar, .grading-border-grid, .grading-reference-form, .grading-reference-candidates, .grading-dimension-grid { grid-template-columns: 1fr; }
   .grading-heading { display: grid; }
   .grading-advisory-badge { white-space: normal; width: fit-content; }
   .grading-image-stage { min-height: 18rem; }
-  .grading-threshold, .grading-result-row, .grading-quality-row { align-items: flex-start; flex-direction: column; gap: .2rem; }
-  .grading-autograph-panel > .gold-button, .grading-persistence-actions > button { width: 100%; }
+  .grading-threshold, .grading-result-row, .grading-quality-row, .grading-finding-review-heading { align-items: flex-start; flex-direction: column; gap: .2rem; }
+  .grading-autograph-panel > .gold-button, .grading-persistence-actions > button, .grading-finding-review-actions > button { width: 100%; }
 }

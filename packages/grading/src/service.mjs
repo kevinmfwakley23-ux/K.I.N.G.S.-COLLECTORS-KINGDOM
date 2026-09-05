@@ -3,6 +3,8 @@ import { estimateAdvisoryGradeRange } from "./aggregate.mjs";
 import { measureCentering, evaluateCenteringAgainstProfile } from "./centering.mjs";
 import { createPregradeAnalysis } from "./evidence.mjs";
 import { getCardSizeProfile, getGradingStandardProfile } from "./profiles.mjs";
+import { createGradingFindingReviewRepository } from "./review-repository.mjs";
+import { createExplainableGradingReportService } from "./report-service.mjs";
 import { VaultError } from "../../vault/src/service.mjs";
 
 const MAX_SOURCE_MEDIA = 24;
@@ -139,6 +141,14 @@ export function createPregradeAnalysisService({ vaultStore, mediaRepository, ana
   }
   if (typeof now !== "function") throw new TypeError("Pre-grade analysis service now must be a function.");
 
+  const findingReviewRepository = createGradingFindingReviewRepository({ vaultStore });
+  const explainableReportService = createExplainableGradingReportService({
+    vaultStore,
+    analysisRepository,
+    reviewRepository: findingReviewRepository,
+    now
+  });
+
   function requireTreasure(ownerAccountId, treasureId) {
     const treasure = vaultStore.findTreasureById(ownerAccountId, treasureId, { includeArchived: true });
     if (!treasure) throw new VaultError("treasure_not_found", "The requested treasure does not exist in this Vault.", 404);
@@ -272,5 +282,17 @@ export function createPregradeAnalysisService({ vaultStore, mediaRepository, ana
     });
   }
 
-  return Object.freeze({ append, list, estimate });
+  function appendFindingReview(identity, treasureIdValue, input) {
+    return explainableReportService.appendReview(identity, treasureIdValue, input);
+  }
+
+  function listFindingReviews(identity, treasureIdValue, options) {
+    return explainableReportService.listReviews(identity, treasureIdValue, options);
+  }
+
+  function explainableReport(identity, treasureIdValue) {
+    return explainableReportService.report(identity, treasureIdValue);
+  }
+
+  return Object.freeze({ append, list, estimate, appendFindingReview, listFindingReviews, explainableReport });
 }
