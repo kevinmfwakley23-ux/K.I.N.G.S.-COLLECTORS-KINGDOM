@@ -1,4 +1,5 @@
 import { createKeeperController } from "./keeper.js";
+import { createVoiceController } from "./voice.js";
 
 const hallTitle = document.querySelector("#hall-title");
 const hallGreeting = document.querySelector("#hall-greeting");
@@ -139,6 +140,18 @@ async function loadGreatHall() {
   renderQuickActions(hall.quickActions);
   announcement.replaceChildren(element("strong", "", hall.announcement.title), element("p", "", hall.announcement.message));
 }
+
+async function runKingdomSearch(query) {
+  const cleaned = String(query ?? "").trim();
+  if (!cleaned) return;
+  searchInput.value = cleaned;
+  await keeper.send(`Search the Kingdom for: ${cleaned}`);
+}
+
+createVoiceController({
+  keeper,
+  onSearch: runKingdomSearch
+});
 
 searchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
