@@ -184,6 +184,25 @@ Build next in this order:
 12. pass full Kingdom Quality Gates;
 13. update README and this recovery ledger before merge.
 
+### In-progress calibrated measurement branch
+
+**Branch:** `imp-005-calibrated-physical-measurement`
+
+Implementation now being staged for verification:
+
+- versioned physical-scale calibration contract in `packages/grading/src/calibration.mjs`;
+- same-plane known-size marker evidence with fail-closed cropped/ambiguous/distorted/reference-skew/card-skew validation;
+- pixel-to-millimeter conversion derived only from independent reference geometry;
+- perspective-aware card width/height estimates with uncertainty;
+- advisory comparison against the selected card-size profile without authenticity promotion;
+- calibrated defect bounding-box millimeter spans only when the source media has valid calibration;
+- report-level physical measurement summary and UI display;
+- browser calibration input/preview panel connected to the existing SHA-linked private Vault media persistence path;
+- focused calibration tests and updated explainable-report version tests;
+- research note `docs/research/2026-09-05-IMP-005-CALIBRATED-PHYSICAL-MEASUREMENT.md`.
+
+This section is not yet a verified production checkpoint until the branch passes the full Kingdom Quality Gates.
+
 ---
 
 ## Verified IMP-005 milestone checkpoints
@@ -211,7 +230,7 @@ Build next in this order:
 
 Do not represent these as live until separately implemented and verified:
 
-- independent scale calibration / physical millimeter measurement;
+- independent scale calibration / physical millimeter measurement until `imp-005-calibrated-physical-measurement` passes gates and merges;
 - review-aware overall advisory estimate;
 - reliable manufacturing-vs-handling defect classification;
 - macro corner/edge detector refinement;
