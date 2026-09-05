@@ -24,17 +24,22 @@ The repository README should always contain the short current-status summary. Th
 ## Current checkpoint
 
 **Date:** 2026-09-05  
-**Current product milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Previous product milestone:** **IMP-004 — Great Hall & Navigation — implemented and committed**  
+**Current product milestone:** **IMP-005 — Royal Vault, Phase 1 — active**  
+**Latest verified Vault checkpoint:** **Authoritative persistence/API/browser foundation with normalized search**  
+**Previous completed product milestone:** **IMP-004 — Great Hall & Navigation**  
 **Repository default branch:** `main`
 
 ### Exact recovery point
 
-The authenticated Kingdom foundation, persistent identity/session core, shared K.I.N.G.S. AI application boundary, Great Hall, castle-and-grounds navigation, persistent room-aware Keeper, Royal Vault entrance, and Kingdom Street Market entrance are present in the repository.
+Do **not** restart IMP-005 from the beginning.
 
-The next product implementation is the **Royal Vault Phase 1**. Do not rebuild IMP-004 unless a regression is discovered.
+The Royal Vault now has a real owner-scoped persistent domain, authenticated APIs, Great Hall integration, and a functional responsive browser workspace. Treasure records use permanent Collector's Kingdom UUIDs and survive independently of future catalog, Marketplace, grading, valuation, legacy, or AI providers.
 
-Recent commits after IMP-004 primarily addressed Render deployment and shared K.I.N.G.S. AI routing configuration. They did not replace the next product milestone.
+The verified Vault foundation currently includes real treasure create/read/update/archive behavior, collection groups, arbitrary-depth physical storage locations, condition/variant/acquisition data, extensible identifiers and custom attributes, owner-scoped search/filter/sort, normalized accent-tolerant search, candidate-only duplicate detection, treasure change history, real collection statistics, currency-separated purchase-cost totals, complete JSON export including archived records, non-mutating import validation, and The Keeper as Royal Curator.
+
+The Vault is now injected into the production Great Hall service. When the authoritative service is wired, Great Hall navigation marks the Vault `available`, links to `/vault.html`, and reports real Vault record/unit counts instead of placeholder totals.
+
+The **next validated engineering target** is to continue IMP-005 by implementing the secure Vault media pipeline and then the transactional validated import/bulk-intake commit path. Camera/barcode recognition, external catalog adapters, evidence-backed market valuation, and other later intelligence capabilities remain unimplemented and must not be represented as live.
 
 ---
 
@@ -144,8 +149,6 @@ Recent deployment commits:
 - `4d91753d3b98c93bc02650a30bd906cf1fd78a67` — Test Render private K.I.N.G.S. router config.
 - `8374d16a779415f5f7687c66ed8b99f0566d3193` — Use unified ecosystem Render blueprint.
 
-These commits are infrastructure/deployment work. The product build recovery point remains the beginning of IMP-005.
-
 ---
 
 ## Active mission — IMP-005: Royal Vault, Phase 1
@@ -180,22 +183,11 @@ The first Vault milestone must establish real implementations for:
 
 ### Physical-location model direction
 
-The Vault must support real-world storage rather than a single free-text location field. The architecture should be able to represent structures such as:
+The Vault supports arbitrary-depth real-world storage rather than a single free-text location field. Current tested examples include:
 
-- room;
-- vault or safe;
-- cabinet;
-- display case;
-- shelf;
-- binder;
-- page;
-- pocket;
-- box;
-- row;
-- divider;
-- custom nested storage positions.
+`Vault Room → North Safe → Shelf 2 → Pokémon Binder → Page 7 → Pocket 4`
 
-Direct location retrieval must remain fast for large collections.
+The architecture supports room, vault, safe, cabinet, display case, shelf, binder, page, pocket, box, row, divider, and custom location nodes.
 
 ### Competitive engineering priorities for IMP-005
 
@@ -220,15 +212,98 @@ Research and improve on current collector platforms in these areas:
 
 Competitive ideas must be implemented as Kingdom-native solutions and must not copy incompatible source code or proprietary visual design.
 
-### Immediate engineering target
+### Current IMP-005 status
 
-1. Perform fresh Vault-specific competitive and technical research.
-2. Record the research under `docs/research/`.
-3. Define and implement the authoritative Vault persistence model and service boundary.
-4. Add tests for ownership isolation, CRUD behavior, validation, search/filter/sort, storage location, duplicates, and statistics.
-5. Wire Vault APIs into the existing authenticated server.
-6. Replace the planned Vault entrance with a real Phase 1 Vault experience as functionality becomes authoritative.
-7. Update this ledger after the major implementation commit and record the verification evidence.
+Implemented and verified in the current foundation:
+
+- Vault-specific SQLite persistence boundary under `packages/vault/`;
+- permanent treasure UUIDs;
+- owner-scoped collection, location, treasure, history, stats, duplicate, export, and import-preview behavior;
+- treasure CRUD with archive semantics instead of ordinary destructive deletion;
+- arbitrary-depth hierarchical physical locations with computed human-readable paths;
+- structured title/category/manufacturer/series/variant/condition/acquisition/cost fields;
+- provider-agnostic external identifiers and extensible custom attributes;
+- normalized accent-tolerant search across meaningful treasure data;
+- server-side search/filter/sort;
+- candidate-only duplicate detection using external-identifier and normalized-content fingerprints;
+- real record/unit/category statistics;
+- recorded purchase-cost totals separated by currency rather than misleadingly combined;
+- treasure change history;
+- complete versioned JSON export including archived records;
+- bounded validation-only JSON import preview that writes nothing;
+- authenticated Vault HTTP APIs;
+- Great Hall integration using real Vault counts;
+- functional `/vault.html` workspace for collections, locations, treasures, search, editing, archiving, duplicate review, export, and import validation;
+- Royal Curator Keeper context;
+- responsive Vault styling;
+- production build and artifact verification aware of the Vault package/page.
+
+Not yet complete in IMP-005:
+
+- secure binary image/document upload, retrieval, lifecycle, and storage implementation;
+- media UI tied to real stored files (metadata schema exists only);
+- transactional import commit after successful preview;
+- bulk create/update/archive operations;
+- camera/barcode scanner workflow;
+- image recognition / external catalog candidate adapters;
+- evidence-backed market valuation feeds and valuation history;
+- edit/reorganization workflows for existing collection groups and location nodes;
+- saved views/filters and additional large-collection performance work;
+- insurance/reporting outputs beyond portable JSON export.
+
+---
+
+## Progress entries
+
+### 2026-09-05 — IMP-005 progress: authoritative Vault foundation and browser workspace
+
+**Status:** **VERIFIED FOUNDATION — IMP-005 remains in progress**  
+**Latest verified code commit:** `9fb1815402fc0b23103dde6d22fe26e10aec54f5`  
+**GitHub Actions:** Kingdom Quality Gates run `33953011873` / run #286 — verify job **PASS**
+
+Research completed:
+
+- Fresh Vault-specific competitor and technical reconnaissance was recorded in `docs/research/2026-09-05-IMP-005-VAULT-COMPETITIVE-RECON.md`.
+- Research covered current collection tracker workflows plus HomeBox, Snipe-IT, HomeAsset, and Grocy architecture patterns.
+- Key adopted improvements: permanent treasure identity, owner isolation, archive semantics, hierarchical storage, portable data, audit history, flexible attributes, uncertainty-aware duplicates, and provider-independent identifiers.
+
+Implemented:
+
+- `packages/vault/src/sqlite-store.mjs` — persistent collections, nested storage locations, treasures, media metadata schema, treasure events, statistics, duplicate candidate queries, export, and normalized search storage.
+- `packages/vault/src/service.mjs` — owner-scoped validation and domain rules for collections, locations, treasures, duplicate review, history, stats, export, and non-mutating import preview.
+- `apps/web/server.mjs` — authenticated Vault APIs, Vault persistence startup/shutdown, production Great Hall injection, Vault error handling, and a separately bounded larger request size for import preview only.
+- `packages/great-hall/src/service.mjs` — opens the Vault only when the authoritative service is actually wired, adds real Vault counts, and preserves the no-fake-market-value rule.
+- `apps/web/public/vault.html`, `vault.js`, and `vault.css` — usable responsive Royal Vault workspace with real APIs rather than sample inventory.
+- `tests/vault.test.mjs` and `tests/vault-server.test.mjs` — persistence, hierarchy, search, ownership isolation, statistics, API, Great Hall integration, import/export, archive, duplicate, and history coverage.
+- `tools/typecheck.mjs`, `tools/build.mjs`, and `tools/verify-build.mjs` — Vault package and production artifacts are now part of repository quality gates.
+
+Important defects found and corrected during verification:
+
+1. Recorded purchase costs were initially summarized into one total. That was corrected so currencies are reported separately and USD/EUR values are never silently added together.
+2. The first full CI run exposed that SQLite `LIKE` search for `pokemon` did not match `Pokémon`. The Vault now maintains normalized diacritic-insensitive search text so ordinary collector searches are more forgiving without weakening exact stored data.
+3. Import preview advertised up to 1,000 records while the default JSON parser capped requests at 64 KiB. The import-preview route now has its own bounded 1 MiB limit while ordinary JSON APIs retain the tighter 64 KiB limit.
+4. Production initialization initially created the Great Hall before injecting the Vault service. Startup now creates the Vault service first and passes it to Great Hall, and the integration test verifies `/api/navigation` exposes `/vault.html` only when the real service exists.
+
+Verification evidence:
+
+- Repository lint / placeholder-policy gate — **PASS**.
+- Module contract/type boundary gate — **PASS**.
+- Automated test suite — **PASS** after normalized-search fix.
+- Production build — **PASS**.
+- Production artifact verification — **PASS**.
+- Production dependency audit — **PASS**, 0 vulnerabilities reported by the quality run.
+- GitHub Actions quality gate run #286 (`33953011873`) — verify job **SUCCESS**.
+
+Known limitations remain explicit:
+
+- `vault_treasure_media` establishes the persistence boundary, but no binary file is yet accepted or claimed as stored.
+- Import preview validates but intentionally cannot commit records yet.
+- Barcode values may be entered as identifiers, but camera/barcode scanning is not yet implemented.
+- No external recognition/catalog provider is currently claimed as connected.
+- No market value is shown as authoritative; estimated value remains `null` until evidence-backed valuation services exist.
+- No Marketplace mutation can originate from Vault records yet; that remains a later approved phase.
+
+**Exact next target:** Continue IMP-005 with a secure owner-scoped media pipeline for treasure images/documents (validated MIME/type/size, safe storage keys, retrieval authorization, deletion/lifecycle, tests, and Vault UI), then build a transactional import-commit/bulk-intake path that only writes records which passed validation and duplicate review.
 
 ---
 
@@ -238,17 +313,12 @@ Competitive ideas must be implemented as Kingdom-native solutions and must not c
 - Persistence foundation: SQLite via `node:sqlite` for current server-side persistent services.
 - Identity authority: `packages/identity`.
 - Great Hall / navigation authority: `packages/great-hall`.
+- Vault authority: `packages/vault`.
 - Shared AI boundary: `packages/kings-ai`.
 - Web runtime: `apps/web/server.mjs` and static web assets under `apps/web/public`.
 - Verification entry point: `npm run verify`.
 
-The Vault should be introduced as its own product-domain package rather than hidden inside Great Hall or identity code.
-
-Recommended boundary:
-
-`packages/vault/`
-
-The Vault owns treasure records, collection grouping, physical storage locations, treasure history, Vault search/index behavior, and Vault-specific validation. It must not own model-provider routing.
+The Vault owns treasure records, collection grouping, physical storage locations, treasure history, Vault search/index behavior, and Vault-specific validation. It does not own model-provider routing.
 
 ---
 
