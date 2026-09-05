@@ -76,6 +76,7 @@ const contractFiles = [
   "apps/web/public/vault-grading-color-ui.js",
   "apps/web/public/vault-grading-autograph-core.js",
   "apps/web/public/vault-grading-autograph-ui.js",
+  "apps/web/public/vault-grading-persistence-ui.js",
   "apps/web/public/vault-grading-ui.js",
   "apps/web/public/voice.js",
   "apps/web/server.mjs"
@@ -89,4 +90,4 @@ for (const relative of contractFiles) {
 const entries = await readdir(resolve(root, "packages"), { withFileTypes: true });
 if (!entries.some((entry) => entry.isDirectory())) throw new Error("No package boundaries found.");
 
-console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, provider-neutral catalog/cert evidence, AI card pre-grading profiles/centering/evidence contracts, append-only hashed pre-grade persistence, browser capture-quality/card-geometry/contour/paired-surface/color/autograph analysis UI, authenticated Commons autograph reference search/proxy, append-only provenance API/UI, saved Vault views and deterministic keyset retrieval API/UI, cycle-safe individual and previewed atomic bulk reorganization API/UI, Vault, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice boundaries.");
+console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, provider-neutral catalog/cert evidence, AI card pre-grading profiles/centering/evidence contracts, append-only hashed pre-grade persistence API/UI, browser capture-quality/card-geometry/contour/paired-surface/color/autograph analysis UI, authenticated Commons autograph reference search/proxy, append-only provenance API/UI, saved Vault views and deterministic keyset retrieval API/UI, cycle-safe individual and previewed atomic bulk reorganization API/UI, Vault, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice boundaries.");
