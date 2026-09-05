@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 const root = resolve(new URL("..", import.meta.url).pathname);
 const required = [
   "dist/apps/web/server.mjs",
+  "dist/apps/web/server-runtime.mjs",
   "dist/apps/web/public/index.html",
   "dist/apps/web/public/auth.html",
   "dist/apps/web/public/auth.js",
@@ -53,6 +54,8 @@ const required = [
   "dist/packages/vault/src/search.mjs",
   "dist/packages/vault/src/saved-searches.mjs",
   "dist/packages/vault/src/evidence.mjs",
+  "dist/packages/vault/src/sets.mjs",
+  "dist/packages/vault/src/sets-http.mjs",
   "dist/packages/vault/src/intelligence.mjs",
   "dist/build-manifest.json"
 ];
@@ -60,4 +63,5 @@ const required = [
 for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
 if (manifest.phase !== "IMP-005-VAULT-PHASE-1") throw new Error("Unexpected build phase in manifest.");
-console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 output, including portable intake, provenance, category intelligence, extended search, saved Vault views, protected evidence documents, Grid/List/Binder/Gallery presentation assets, authoritative recent/duplicate system views, live enrichment UI assets, and bounded Royal Curator context.");
+if (manifest.entrypoint !== "apps/web/server-runtime.mjs") throw new Error("Production manifest does not point to the composed Kingdom runtime.");
+console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 output, including portable intake, provenance, category intelligence, extended search, saved Vault views, protected evidence documents, explicit collection-set completion services, Grid/List/Binder/Gallery presentation assets, authoritative recent/duplicate system views, live enrichment UI assets, and bounded Royal Curator context.");
