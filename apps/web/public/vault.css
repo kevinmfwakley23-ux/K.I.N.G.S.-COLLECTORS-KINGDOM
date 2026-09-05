@@ -284,6 +284,84 @@
   color: white;
 }
 
+.vault-media-section {
+  min-width: 0;
+  margin: 6px 0 0;
+  padding: 16px;
+  border: 1px solid rgba(161,121,34,.3);
+  border-radius: 14px;
+  background: rgba(255,252,242,.56);
+}
+
+.vault-media-section legend {
+  padding: 0 .5rem;
+  color: #302a1f;
+  font-weight: 850;
+}
+
+.vault-media-upload-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin: 12px 0 8px;
+}
+
+.vault-media-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.vault-media-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(29,28,26,.12);
+  border-radius: 13px;
+  background: rgba(255,255,255,.86);
+}
+
+.vault-media-card img,
+.vault-media-document {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: #ece9df;
+}
+
+.vault-media-document {
+  display: grid;
+  place-items: center;
+  color: #4a402d;
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+
+.vault-media-copy {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+}
+
+.vault-media-copy strong,
+.vault-media-copy small {
+  overflow-wrap: anywhere;
+}
+
+.vault-media-copy small {
+  color: #6b665b;
+}
+
+.vault-media-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 5px;
+}
+
 .treasure-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -419,7 +497,9 @@
   .treasure-list,
   .treasure-form,
   .vault-search-form,
-  .import-form {
+  .import-form,
+  .vault-media-list,
+  .vault-media-upload-row {
     grid-template-columns: 1fr;
   }
 
