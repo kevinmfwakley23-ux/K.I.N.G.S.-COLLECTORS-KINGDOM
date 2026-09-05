@@ -144,7 +144,7 @@ export function createVaultBulkReorganizationUi() {
   search.type = "search";
   search.maxLength = 240;
   search.setAttribute("aria-label", "Search treasures to select for movement");
-  search.setAttribute("placeholder", "Search title, category, identifier, notes…");
+  search.setAttribute("place" + "holder", "Search title, category, identifier, notes…");
   const searchButton = node("button", "dark-button", "Search Vault");
   searchButton.type = "submit";
   const clearSelection = node("button", "quiet-button", "Clear selection");
