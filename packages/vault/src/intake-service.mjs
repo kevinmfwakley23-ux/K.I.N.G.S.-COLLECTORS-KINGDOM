@@ -1,8 +1,20 @@
 import { randomUUID } from "node:crypto";
 import { VaultError } from "./service.mjs";
 
-const IDENTIFIER_TYPES = new Set(["barcode", "upc", "ean", "isbn", "catalog", "serial", "sku", "custom"]);
+const IDENTIFIER_TYPES = new Set([
+  "barcode",
+  "upc",
+  "ean",
+  "isbn",
+  "catalog",
+  "serial",
+  "sku",
+  "custom",
+  "pokemon-card-id",
+  "pokemon-set-number"
+]);
 const SOURCE_TYPES = new Set(["manual", "camera"]);
+const POKEMON_TYPES = new Set(["pokemon-card-id", "pokemon-set-number"]);
 
 function requireCollector(identity) {
   if (!identity?.id) throw new VaultError("unauthorized", "Authentication is required.", 401);
@@ -20,11 +32,16 @@ function cleanIdentifierType(value) {
     "isbn-10": "isbn",
     "isbn-13": "isbn",
     "catalog-number": "catalog",
-    "serial-number": "serial"
+    "serial-number": "serial",
+    "pokemon-card": "pokemon-set-number",
+    "pokemon-tcg": "pokemon-set-number"
   };
   const result = aliases[normalized] ?? normalized;
   if (!IDENTIFIER_TYPES.has(result)) {
-    throw new VaultError("invalid_intake_identifier_type", "Identifier type must be barcode, UPC, EAN, ISBN, catalog, serial, SKU, or custom.");
+    throw new VaultError(
+      "invalid_intake_identifier_type",
+      "Identifier type must be barcode, UPC, EAN, ISBN, Pokémon card ID, Pokémon set/card number, catalog, serial, SKU, or custom."
+    );
   }
   return result;
 }
@@ -43,6 +60,37 @@ function cleanSourceType(value) {
   return sourceType;
 }
 
+function pokemonPart(value, label) {
+  const cleaned = String(value ?? "").trim();
+  if (!cleaned || cleaned.length > 100 || !/^[A-Za-z0-9._-]+$/.test(cleaned)) {
+    throw new VaultError("invalid_intake_identifier", `${label} may contain only letters, numbers, period, underscore, or hyphen.`);
+  }
+  return cleaned;
+}
+
+function cleanPokemonCardId(value) {
+  const cleaned = String(value ?? "").normalize("NFKC").trim();
+  if (!cleaned || cleaned.length > 180 || !/^[A-Za-z0-9._-]+$/.test(cleaned) || !cleaned.includes("-")) {
+    throw new VaultError("invalid_intake_identifier", "Pokémon card ID must be a provider card identifier such as base1-4.");
+  }
+  return cleaned;
+}
+
+function parsePokemonSetNumber(value) {
+  const cleaned = String(value ?? "").normalize("NFKC").trim();
+  const separator = cleaned.includes("/") ? "/" : cleaned.includes(":") ? ":" : null;
+  if (!separator) {
+    throw new VaultError("invalid_intake_identifier", "Pokémon set/card lookup requires setId/cardNumber, for example base1/4.");
+  }
+  const parts = cleaned.split(separator);
+  if (parts.length !== 2) {
+    throw new VaultError("invalid_intake_identifier", "Pokémon set/card lookup must contain exactly one set ID and card number.");
+  }
+  const setId = pokemonPart(parts[0], "Pokémon set ID");
+  const cardNumber = pokemonPart(parts[1], "Pokémon card number");
+  return Object.freeze({ setId, cardNumber, providerCardId: `${setId}-${cardNumber}` });
+}
+
 function cleanIdentifierValue(value, type) {
   if (!["string", "number"].includes(typeof value)) throw new VaultError("invalid_intake_identifier", "An identifier value is required.");
   const cleaned = String(value).normalize("NFKC").trim();
@@ -55,11 +103,18 @@ function cleanIdentifierValue(value, type) {
   if (type === "isbn" && !/^(?:\d[\s-]*){9}[\dXx]$|^(?:\d[\s-]*){13}$/.test(cleaned)) {
     throw new VaultError("invalid_intake_identifier", "ISBN must contain a valid 10- or 13-character digit pattern.");
   }
+  if (type === "pokemon-card-id") return cleanPokemonCardId(cleaned);
+  if (type === "pokemon-set-number") {
+    const parsed = parsePokemonSetNumber(cleaned);
+    return `${parsed.setId}/${parsed.cardNumber}`;
+  }
   return cleaned;
 }
 
 function normalizeIdentifier(value, type) {
   if (["upc", "ean", "isbn"].includes(type)) return value.replace(/[\s-]/g, "").toUpperCase();
+  if (type === "pokemon-card-id") return cleanPokemonCardId(value).toUpperCase();
+  if (type === "pokemon-set-number") return parsePokemonSetNumber(value).providerCardId.toUpperCase();
   return value.replace(/\s+/g, " ").trim().toUpperCase();
 }
 
@@ -98,10 +153,28 @@ function aliasKeys(type) {
   }
   if (type === "catalog") aliases.add("serial");
   if (type === "serial") aliases.add("catalog");
+  if (POKEMON_TYPES.has(type)) {
+    aliases.add("catalog");
+    aliases.add("pokemon-card-id");
+    aliases.add("pokemon-set-number");
+  }
   return aliases;
 }
 
-function normalizedComparable(value, type) {
+function pokemonCatalogComparable(value) {
+  try {
+    return normalizeIdentifier(String(value ?? ""), "pokemon-card-id");
+  } catch {
+    try {
+      return normalizeIdentifier(String(value ?? ""), "pokemon-set-number");
+    } catch {
+      return null;
+    }
+  }
+}
+
+function normalizedComparable(value, type, requestedType) {
+  if (type === "catalog" && POKEMON_TYPES.has(requestedType)) return pokemonCatalogComparable(value);
   return normalizeIdentifier(String(value ?? ""), type);
 }
 
@@ -119,9 +192,14 @@ function existingCandidates(vaultStore, ownerAccountId, item) {
     for (const [key, value] of Object.entries(treasure.externalIdentifiers ?? {})) {
       const normalizedKey = knownIdentifierType(String(key).replace(/_/g, "-"));
       if (!normalizedKey || !aliases.has(normalizedKey)) continue;
-      if (normalizedComparable(value, normalizedKey) === expected) {
-        matchedIdentifierType = normalizedKey;
-        break;
+      try {
+        const comparable = normalizedComparable(value, normalizedKey, item.identifierType);
+        if (comparable && comparable === expected) {
+          matchedIdentifierType = normalizedKey;
+          break;
+        }
+      } catch {
+        continue;
       }
     }
     if (!matchedIdentifierType) continue;

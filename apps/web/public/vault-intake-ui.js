@@ -98,19 +98,21 @@ function prefillCatalogCandidate(item, candidate, status) {
   const titleField = setEditorValue("#treasure-title", draft.title);
   setEditorValue("#treasure-category", draft.category);
   setEditorValue("#treasure-manufacturer", draft.manufacturer);
+  setEditorValue("#treasure-series", draft.series);
   setEditorValue("#treasure-description", draft.description);
   setEditorValue("#treasure-barcode", draft.barcode);
+  setEditorValue("#treasure-catalog", draft.catalogIdentifier);
   if (Object.keys(draft.attributes).length) {
     setEditorValue("#treasure-attributes", JSON.stringify(draft.attributes, null, 2));
   }
 
   const editorStatus = document.querySelector("#treasure-status");
   if (editorStatus) {
-    editorStatus.textContent = `${candidate.providerName || "Catalog provider"} candidate copied into this unsaved editor. Review title, model or edition, maker or publisher, condition, category, and every identifier before saving. No Vault record has been written and no provider price was applied.`;
+    editorStatus.textContent = `${candidate.providerName || "Catalog provider"} candidate copied into this unsaved editor. Review title, set/edition, exact physical variant, maker/publisher, condition, grade, category, and every identifier before saving. No Vault record has been written and no provider price was applied.`;
   }
   titleField?.focus();
   document.querySelector("#treasure-editor")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  status.textContent = "Catalog candidate copied into a new unsaved treasure editor. The Intake Queue item remains pending and no authoritative record or value was changed.";
+  status.textContent = "Catalog candidate copied into a new unsaved treasure editor. The Intake Queue item remains pending and no authoritative record, physical variant, grade, or value was changed.";
 }
 
 export function createVaultIntakeUi() {
@@ -130,7 +132,7 @@ export function createVaultIntakeUi() {
   headingCopy.append(
     node("p", "eyebrow", "Royal Intake Queue"),
     node("h2", "", "Capture now. Identify carefully. Finish anywhere."),
-    node("p", "muted-copy", "Save UPC, EAN, ISBN, barcode, catalog, serial, SKU, or custom identifiers to your account queue. Repeated pending captures become a count instead of noisy duplicate rows. A captured identifier is evidence, not proof of exact collectible identity.")
+    node("p", "muted-copy", "Save UPC, EAN, ISBN, Pokémon card, barcode, catalog, serial, SKU, or custom identifiers to your account queue. Repeated pending captures become a count instead of noisy duplicate rows. A captured identifier or provider candidate is evidence, not proof of exact collectible identity, physical variant, grade, or value.")
   );
   headingCopy.querySelector("h2").id = "royal-intake-title";
   const cameraNote = node("aside", "intake-camera-note", "Secure camera scanning is progressive and appears only when this browser exposes the required camera and native barcode APIs. Manual capture remains available on every supported device.");
@@ -152,7 +154,18 @@ export function createVaultIntakeUi() {
   typeLabel.append(node("span", "", "Identifier type"));
   const type = document.createElement("select");
   type.id = "intake-identifier-type";
-  for (const identifierType of ["barcode", "upc", "ean", "isbn", "catalog", "serial", "sku", "custom"]) {
+  for (const identifierType of [
+    "barcode",
+    "upc",
+    "ean",
+    "isbn",
+    "pokemon-set-number",
+    "pokemon-card-id",
+    "catalog",
+    "serial",
+    "sku",
+    "custom"
+  ]) {
     const option = document.createElement("option");
     option.value = identifierType;
     option.textContent = intakeTypeLabel(identifierType);
@@ -170,6 +183,19 @@ export function createVaultIntakeUi() {
   value.inputMode = "text";
   setHint(value, "Scan result or type the identifier");
   valueLabel.append(value);
+
+  function updateIdentifierHint() {
+    if (type.value === "pokemon-set-number") {
+      setHint(value, "Set ID/card number, for example base1/4");
+      return;
+    }
+    if (type.value === "pokemon-card-id") {
+      setHint(value, "Provider card ID, for example base1-4");
+      return;
+    }
+    setHint(value, "Scan result or type the identifier");
+  }
+  type.addEventListener("change", updateIdentifierHint);
 
   const countLabel = node("label", "");
   countLabel.append(node("span", "", "Capture count"));
