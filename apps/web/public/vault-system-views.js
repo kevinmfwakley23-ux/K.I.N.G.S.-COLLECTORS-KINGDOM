@@ -57,7 +57,7 @@ function install() {
   head.append(element("h3", "", "Royal Vault views"));
   section.append(
     head,
-    element("p", "empty-copy", "Open trustworthy collection views built from your explicit Favorites, real Vault timestamps, and duplicate analysis.")
+    element("p", "empty-copy", "Open trustworthy collection views built from explicit Favorites, real Vault timestamps, duplicate analysis, and durable set checklists.")
   );
 
   const list = element("div", "system-view-list");
@@ -80,6 +80,13 @@ function install() {
   favorites.append(count);
   favorites.addEventListener("click", applyFavoritesView);
   list.append(favorites);
+
+  const incompleteSets = element("button", "system-view-button", "Incomplete sets");
+  incompleteSets.type = "button";
+  incompleteSets.addEventListener("click", () => {
+    window.dispatchEvent(new CustomEvent("kingdom:vault-open-incomplete-sets"));
+  });
+  list.append(incompleteSets);
 
   const duplicates = element("button", "system-view-button", "Possible duplicates");
   duplicates.type = "button";
