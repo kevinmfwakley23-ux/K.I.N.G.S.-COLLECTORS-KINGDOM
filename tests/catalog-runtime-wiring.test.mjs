@@ -10,7 +10,7 @@ function jsonResponse(payload, { status = 200, headers = {} } = {}) {
   });
 }
 
-test("production catalog runtime composes ISBN and retail-code providers behind one review-only service", async () => {
+test("production catalog runtime composes ISBN, retail-code, and Pokémon providers behind one review-only service", async () => {
   const calls = [];
   const fetchImpl = async (url) => {
     const requestUrl = new URL(url);
@@ -66,7 +66,9 @@ test("production catalog runtime composes ISBN and retail-code providers behind 
   };
 
   const runtime = createCatalogRuntime({ config, fetchImpl: routedFetch });
-  assert.deepEqual(runtime.providers.map((provider) => provider.id), ["open-library", "upcitemdb"]);
+  assert.deepEqual(runtime.providers.map((provider) => provider.id), ["open-library", "upcitemdb", "pokemon-tcg"]);
+  assert.equal(runtime.capabilities.pokemonCardIdCandidates, true);
+  assert.equal(runtime.capabilities.pokemonSetNumberCandidates, true);
   assert.equal(runtime.capabilities.automaticVaultMutation, false);
   assert.equal(runtime.capabilities.valuationFromCatalogProviders, false);
 
