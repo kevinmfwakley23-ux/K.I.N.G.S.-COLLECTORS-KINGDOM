@@ -29,11 +29,16 @@ export async function handleCatalogRoute({
   securityHeaders
 } = {}) {
   if (requestUrl.pathname !== "/api/catalog/candidates") return null;
-  if (!catalogService) throw new CatalogError("catalog_unavailable", "Catalog candidate resolution is unavailable.", { statusCode: 503 });
 
   const method = request.method ?? "GET";
   if (!["GET", "HEAD"].includes(method)) return false;
   const identity = requireIdentity(identityService, request);
+  if (!catalogService) {
+    return sendJson(response, 503, {
+      error: "catalog_unavailable",
+      message: "Catalog candidate resolution is unavailable. No Vault data was changed."
+    }, method, securityHeaders);
+  }
 
   try {
     const result = await catalogService.lookup(identity, {
