@@ -6,34 +6,38 @@ K.I.N.G.S. Collector's Kingdom is being built as a collector-first environment f
 
 Active milestone: **IMP-005 — Royal Vault, Phase 1**.
 
-**Latest verified implementation checkpoint:** exact, review-only sports-card catalog evidence via The Card API, alongside the already verified Royal Vault, Intake, scanner, provenance, saved-view/paging, bulk-reorganization, Pokémon, Magic/Scryfall, and PSA certification-evidence slices.
+**Latest verified implementation checkpoint:** **AI-assisted card pre-grading foundation with SHA-linked evidence persistence and a read-only Kingdom advisory grade-range engine**, alongside the already verified Royal Vault, Intake, scanner, provenance, saved-view/paging, bulk-reorganization, Pokémon, Magic/Scryfall, PSA certification-evidence and exact sports-card catalog slices.
 
-**Latest verified gate:** **Kingdom Quality Gates #495** — run `33974730681` — **PASS** on implementation commit `e51c0751675746e3d9b3fa22f97815dd1450df2b`.
+**Latest verified gate:** **Kingdom Quality Gates #598** — run `33982767676` — **PASS** on implementation commit `bbe7bad9e4282fe987274e3d42403782e0c96bef`.
 
-The sports-card provider supports permanent The Card API UCIDs and exact set-USID/printed-card-number lookup. The referenced set is independently verified and must be classified by the provider as `sports`. Credentials remain server-only, paid Catalog entitlement is not falsely inferred from key presence, exact ambiguity fails closed, and The Card API Market/Sales price data is deliberately excluded from this identity path.
+The verified grading foundation now includes card-size/grader reference profiles, centering math, browser capture-quality analysis, card geometry/crop/perspective detection, contour-based corner/edge review signals, paired raking-light surface analysis, same-printing color/fade comparison, web-backed autograph similarity review, append-only hashed pre-grade persistence, SHA-256 linkage to exact private Vault media, detector-completion coverage records, and a conservative server-computed advisory range.
 
-A returned sports-card candidate is **review evidence**, not proof that the collector's physical card is the exact printing/parallel and not proof of condition, grade, authenticity, provenance, ownership, or value. Candidate evidence can be copied only into a new unsaved treasure editor; no authoritative record is silently changed.
+A Kingdom pre-grade remains **advisory evidence**. It is not an official PSA/BGS/CGC/SGC grade, does not authenticate a physical card or autograph, and cannot silently overwrite the treasure's condition, grade, authenticity, provenance, ownership or value.
 
-### Newly locked product requirement — AI card pre-grading
+### AI card pre-grading — verified foundation
 
-The Kingdom will include **AI-assisted card pre-grading/condition analysis**. This is a real measurement and evidence system, not a fake official grade generator.
+The Kingdom includes a real AI-assisted card pre-grading/condition-analysis foundation rather than a fake official-grade generator.
 
-The target capability includes:
+Verified capability includes:
 
 - card-size/calibration profiles for standard western trading cards and Japanese-size TCG cards;
 - front/back border and centering measurement with left/right/top/bottom ratios;
-- grader-profile comparison for PSA/BGS/CGC-style thresholds without claiming affiliation or official grading;
-- individual corner analysis;
-- edge/chipping/roughness analysis;
-- surface scratch, scuff, print-line, crease, wrinkle, stain and dent evidence;
-- color/fading, gloss and registration review where image quality allows;
-- possible trimming/recoloring/restoration/cleaning warning signals where detectable;
-- an image-quality capture protocol including straight-on, macro corner, and raking-light views;
-- transparent sub-scores, estimated grade **range**, confidence and limitations;
-- autograph scan isolation and sourced similarity comparison against lawful known-reference signatures available through web/reference research;
-- explicit separation between **AI autograph comparison** and professional autograph authentication.
+- grader-profile comparison for published PSA/BGS/CGC centering references without claiming affiliation or official grading;
+- browser image-quality analysis for resolution, sharpness/focus, glare/overexposure, underexposure and contrast;
+- automatic whole-card geometry detection on contrasting backgrounds;
+- crop-completeness, perspective/skew and profile-aspect checks;
+- contour-based possible corner and edge anomaly signals;
+- paired raking-light surface comparison that suppresses stable artwork and surfaces possible scratch/scuff/print-line/dent/gloss anomalies;
+- same-printing reference color comparison for possible fading/chroma loss/color drift after brightness/channel normalization;
+- autograph scan isolation and visual similarity comparison across multiple sourced references;
+- authenticated Wikimedia Commons reference discovery/proxy with source/license metadata preserved;
+- append-only pre-grade records linked to permanent treasure UUIDs;
+- SHA-256 matching that allows pixel-derived evidence to persist only when the exact analyzed file matches private media on that treasure;
+- detector-completion coverage that distinguishes `ran and found zero candidates` from `never ran`;
+- a deterministic server-side advisory grade range that fails closed on insufficient evidence and deliberately widens when front/back/surface coverage is incomplete;
+- explicit non-mutation flags for official grade, condition, authenticity and value.
 
-PSA and Beckett describe professional autograph authentication as involving more than visual similarity, including ink/structure analysis, side-by-side exemplars, object evaluation and specialized inspection tools. The Kingdom therefore will never call an autograph genuine merely because AI finds a visual match.
+The current rubric does **not** reverse-engineer any third-party grader's proprietary overall score. Published grader material is used only as reference evidence. The Kingdom range is its own versioned advisory condition rubric.
 
 Research record: `docs/research/2026-09-05-IMP-005-AI-CARD-PREGRADING.md`.
 
@@ -49,7 +53,7 @@ After each substantial verified code batch, `docs/MISSION-PROGRESS.md` must be u
 
 - The locked K.I.N.G.S. construction documents remain the primary product guide.
 - Research current competitors, open-source patterns, official APIs and provider terms before meaningful integration work.
-- Build real executable functionality; never present simulated integrations, mock totals, fake market data, placeholder AI, or decorative-only interfaces as complete.
+- Build real executable functionality; never present simulated integrations, mock totals, fake market data, decorative-only interfaces, or unverified AI analysis as complete.
 - Never commit secrets or expose provider credentials in browser code.
 - Preserve collector authority over destructive, ownership-changing, grading, authentication and authoritative record actions.
 - External catalog results, AI analysis and image similarity must surface uncertainty instead of silently inventing identity, physical variant, condition, grade, authenticity, provenance or value.
@@ -60,7 +64,7 @@ After each substantial verified code batch, `docs/MISSION-PROGRESS.md` must be u
 
 K.I.N.G.S. AI is the shared intelligence/router core for the K.I.N.G.S. application family. Collector's Kingdom owns collector identity, authorization, Vault records, Marketplace rules, ownership state and product actions. Model/provider routing stays behind the governed server-to-server K.I.N.G.S. AI boundary.
 
-The Keeper can advise through K.I.N.G.S. AI, including future vision/pre-grading workflows, but Collector's Kingdom and the collector remain the authority for record mutation.
+The Keeper can advise through K.I.N.G.S. AI, including grading/vision workflows, but Collector's Kingdom and the collector remain the authority for record mutation.
 
 ## Royal Vault — verified capability
 
@@ -73,10 +77,11 @@ Current verified Vault capability includes:
 - previewed atomic bulk movement of up to 100 treasures;
 - private Saved Vault Views storing query/filter/sort definitions rather than frozen results;
 - deterministic keyset pagination with bounded pages and verified paging indexes;
-- secure private treasure media;
+- secure private treasure media with SHA-256 integrity metadata for new uploads;
 - structured condition/variant/quantity/acquisition/cost/identifier/custom attributes;
 - duplicate-review warnings and normalized search/filter/sort;
 - append-only audit/provenance history;
+- append-only hashed pre-grade analysis history;
 - real statistics and currency-separated purchase totals;
 - portable versioned JSON export;
 - transactional review-first JSON/CSV migration;
@@ -93,9 +98,10 @@ The provider-neutral evidence boundary currently supports:
 - **Pokémon TCG API** — exact card ID or explicit set-ID/card-number candidates;
 - **Scryfall** — exact Magic printing UUID or set-code/collector-number candidates;
 - **The Card API** — exact sports-card UCID or set-USID/printed-card-number candidates when eligible server-side Catalog access is configured;
-- **PSA Public API** — exact certification-number database evidence when a server-side token is configured.
+- **PSA Public API** — exact certification-number database evidence when a server-side token is configured;
+- **Wikimedia Commons / MediaWiki API** — review-only autograph reference-image candidates with source/license metadata, fetched through the authenticated Kingdom proxy.
 
-All of these paths are authenticated, bounded and review-only. Provider IDs remain supporting evidence rather than permanent Kingdom physical identity. Identification-provider price/commerce material, The Card API Market/Sales data and PSA estimate/sales data do not become Kingdom valuation through these paths.
+All provider paths are authenticated or server-governed, bounded and review-only. Provider IDs remain supporting evidence rather than permanent Kingdom physical identity. Identification-provider price/commerce material, The Card API Market/Sales data and PSA estimate/sales data do not become Kingdom valuation through these paths.
 
 ### Sports-card identity evidence
 
@@ -123,23 +129,23 @@ PSA certification lookup remains a separate evidence class. A matching database 
 
 Market value remains absent until a real, legally usable valuation system is implemented. A barcode, image, title match, provider result, AI suggestion, cert number, grading label, autograph similarity result, catalog ID or collector-entered provenance statement is not automatically authoritative.
 
-Likewise, a future AI pre-grade is an **estimated condition analysis** based on captured evidence. It must remain distinct from an official PSA/BGS/CGC/SGC grade, from professional autograph authentication, and from physical-card authentication.
+Likewise, a Kingdom AI pre-grade is an **estimated condition analysis** based on captured evidence. It remains distinct from an official PSA/BGS/CGC/SGC grade, from professional autograph authentication, and from physical-card authentication.
 
 ## Current next target
 
-**IMP-005 — AI Card Pre-Grading Foundation.**
+**IMP-005 — Explainable Grading Report + Dimension Evidence.**
 
-Build the first verified slice in this order:
+Current research shows the best direction is not a more mysterious single score. Professional and technology-assisted grading workflows increasingly expose condition dimensions, annotations and measurable defect evidence. The next verified slice will adapt those ideas into Kingdom-owned transparent reporting:
 
-1. versioned grading-standard and card-size profiles;
-2. deterministic centering/border math with manual-anchor correction and tests;
-3. capture-quality contract for front/back, corners and raking-light surface images;
-4. append-only pre-grade analysis record tied to treasure/media evidence;
-5. image-analysis provider boundary suitable for browser/local CV and governed K.I.N.G.S. AI vision routing;
-6. corner/edge/surface/color defect evidence contracts;
-7. autograph comparison evidence with sourced reference exemplars and a strict non-authentication label;
-8. responsive mobile-first review UI;
-9. full Kingdom Quality Gates;
+1. add separate front/back evidence summaries for centering, corners, edges and surface;
+2. compute dimension-level advisory scores/ranges only when that dimension has sufficient evidence;
+3. add measured defect metadata such as affected normalized area/length where the detector can support it;
+4. distinguish likely manufacturing artifacts from handling/wear evidence when enough evidence exists, without pretending certainty;
+5. expose annotated review candidates and collector accept/reject/uncertain decisions without deleting the original detector evidence;
+6. keep human-review decisions append-only and attributable;
+7. add report completeness and `needs more capture` guidance per dimension;
+8. keep third-party grader standards as versioned references rather than proprietary-score emulation;
+9. pass full Kingdom Quality Gates;
 10. update README and mission-progress ledger before merge.
 
 Later separate milestones remain: lawful evidence-backed market valuation/value history, image-based collectible identification, insurance/reporting expansion, additional official grader integrations, Marketplace ownership transfer/settlement, and destructive bulk archive/delete flows.
