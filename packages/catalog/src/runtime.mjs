@@ -1,5 +1,6 @@
 import { MemoryCatalogCache } from "./cache.mjs";
 import { createOpenLibraryCatalogProvider } from "./open-library-provider.mjs";
+import { createPokemonTcgCatalogProvider } from "./pokemon-tcg-provider.mjs";
 import { createCatalogService } from "./service.mjs";
 import { createUpcItemDbCatalogProvider } from "./upcitemdb-provider.mjs";
 
@@ -47,7 +48,17 @@ export function createCatalogRuntime({
     sleep
   });
 
-  const providers = Object.freeze([openLibraryProvider, upcItemDbProvider]);
+  const pokemonTcgProvider = createPokemonTcgCatalogProvider({
+    fetchImpl,
+    baseUrl: runtime.pokemonTcgBaseUrl,
+    apiKey: runtime.pokemonTcgApiKey,
+    timeoutMs: runtime.pokemonTcgTimeoutMs,
+    minIntervalMs: runtime.pokemonTcgMinIntervalMs,
+    now: providerNow,
+    sleep
+  });
+
+  const providers = Object.freeze([openLibraryProvider, upcItemDbProvider, pokemonTcgProvider]);
   const service = createCatalogService({ providers, cache, now: serviceNow });
 
   return Object.freeze({
@@ -58,6 +69,8 @@ export function createCatalogRuntime({
       upcCandidates: true,
       eanCandidates: true,
       genericBarcodeCandidates: true,
+      pokemonCardIdCandidates: true,
+      pokemonSetNumberCandidates: true,
       automaticVaultMutation: false,
       valuationFromCatalogProviders: false
     })
