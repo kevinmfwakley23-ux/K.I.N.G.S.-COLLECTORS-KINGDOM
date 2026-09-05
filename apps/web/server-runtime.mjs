@@ -9,6 +9,8 @@ import { createKingsAiClient } from "../../packages/kings-ai/src/client.mjs";
 import { createLogger } from "../../packages/observability/src/logger.mjs";
 import { createVaultEvidenceService } from "../../packages/vault/src/evidence.mjs";
 import { createVaultIntelligence } from "../../packages/vault/src/intelligence.mjs";
+import { createVaultMarketplaceReadinessService } from "../../packages/vault/src/marketplace-readiness.mjs";
+import { handleVaultMarketplaceReadinessRequest } from "../../packages/vault/src/marketplace-readiness-http.mjs";
 import { createVaultOwnershipService } from "../../packages/vault/src/ownership.mjs";
 import { createVaultSearchService } from "../../packages/vault/src/search.mjs";
 import { createVaultSetSummaryService } from "../../packages/vault/src/set-summaries.mjs";
@@ -41,6 +43,14 @@ function setRoute(pathname) {
   return pathname === "/api/vault/sets" || pathname.startsWith("/api/vault/sets/");
 }
 
+function marketplaceReadinessRoute(pathname) {
+  return pathname === "/api/vault/marketplace-ready" || /^\/api\/vault\/treasures\/[^/]+\/marketplace-preparation$/.test(pathname);
+}
+
+function extensionRoute(pathname) {
+  return setRoute(pathname) || marketplaceReadinessRoute(pathname);
+}
+
 function requireIdentity(identityService, request) {
   const token = parseCookies(request.headers.cookie ?? "").kingdom_session ?? null;
   const identity = identityService?.authenticate(token);
@@ -48,7 +58,14 @@ function requireIdentity(identityService, request) {
   return identity;
 }
 
-export function installVaultSetRoutes({ server, identityService, setService, summaryService = null, logger = createLogger({ level: "info" }) } = {}) {
+export function installVaultSetRoutes({
+  server,
+  identityService,
+  setService,
+  summaryService = null,
+  marketplaceReadinessService = null,
+  logger = createLogger({ level: "info" })
+} = {}) {
   if (!server || typeof server.listeners !== "function") throw new TypeError("A Kingdom HTTP server is required.");
   if (!setService) throw new TypeError("A Vault collection-set service is required.");
 
@@ -68,19 +85,26 @@ export function installVaultSetRoutes({ server, identityService, setService, sum
       return sendJson(response, 400, { error: "invalid_request_url" }, method);
     }
 
-    if (!setRoute(requestUrl.pathname)) {
+    if (!extensionRoute(requestUrl.pathname)) {
       return baseRequestListener.call(server, request, response);
     }
 
     try {
       const identity = requireIdentity(identityService, request);
-      const result = await handleVaultSetRequest({
-        request,
-        pathname: requestUrl.pathname,
-        identity,
-        setService,
-        summaryService
-      });
+      const result = setRoute(requestUrl.pathname)
+        ? await handleVaultSetRequest({
+          request,
+          pathname: requestUrl.pathname,
+          identity,
+          setService,
+          summaryService
+        })
+        : await handleVaultMarketplaceReadinessRequest({
+          request,
+          pathname: requestUrl.pathname,
+          identity,
+          readinessService: marketplaceReadinessService
+        });
       if (result === null) return sendJson(response, 405, { error: "method_not_allowed" }, method);
       if (result === false) return sendJson(response, 404, { error: "not_found" }, method);
       return sendJson(response, result.status, result.payload, method);
@@ -88,7 +112,7 @@ export function installVaultSetRoutes({ server, identityService, setService, sum
       if (error instanceof IdentityError || error instanceof VaultError) {
         return sendJson(response, error.statusCode, { error: error.code, message: error.message }, method);
       }
-      logger.error("vault.sets_unhandled_error", { error, method, path: requestUrl.pathname });
+      logger.error("vault.extension_unhandled_error", { error, method, path: requestUrl.pathname });
       if (!response.headersSent) return sendJson(response, 500, { error: "internal_server_error" }, method);
       response.destroy();
     }
@@ -106,6 +130,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
   const vaultSearchService = createVaultSearchService({ filename: vaultDatabasePath });
   const vaultSetService = createVaultSetService({ filename: vaultDatabasePath });
   const vaultSetSummaryService = createVaultSetSummaryService({ filename: vaultDatabasePath });
+  const vaultMarketplaceReadinessService = createVaultMarketplaceReadinessService({ filename: vaultDatabasePath });
   const identityService = createIdentityService({
     store: identityStore,
     sessionTtlMs: config.sessionTtlHours * 60 * 60 * 1000
@@ -144,6 +169,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
     identityService,
     setService: vaultSetService,
     summaryService: vaultSetSummaryService,
+    marketplaceReadinessService: vaultMarketplaceReadinessService,
     logger
   });
 
@@ -155,6 +181,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
   function closeServices() {
     identityStore.close();
     vaultEvidenceService.close();
+    vaultMarketplaceReadinessService.close();
     vaultSetSummaryService.close();
     vaultSetService.close();
     vaultSearchService.close();
@@ -174,6 +201,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
       vaultEvidenceService,
       vaultSetService,
       vaultSetSummaryService,
+      vaultMarketplaceReadinessService,
       greatHallService,
       kingsAiClient
     })
@@ -192,7 +220,13 @@ async function run() {
   });
 
   runtime.server.listen(config.port, config.host, () => {
-    logger.info("server.started", { host: config.host, port: config.port, version: config.version, collectionSets: true });
+    logger.info("server.started", {
+      host: config.host,
+      port: config.port,
+      version: config.version,
+      collectionSets: true,
+      marketplaceReadiness: true
+    });
   });
 
   let shuttingDown = false;
