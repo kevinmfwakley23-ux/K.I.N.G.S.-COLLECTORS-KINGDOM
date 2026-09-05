@@ -27,6 +27,26 @@ function applySortedView(sort, label) {
   if (status) status.textContent = `Opening ${label}…`;
 }
 
+function applyFavoritesView() {
+  const form = document.querySelector("#vault-search-form");
+  const search = document.querySelector("#vault-search");
+  const sortControl = document.querySelector("#sort-treasures");
+  const status = document.querySelector("#vault-result-status");
+  if (!form || !search || !sortControl) return;
+  clearCollectionFilters();
+  search.value = "My favorites";
+  sortControl.value = "updated-desc";
+  form.requestSubmit();
+  if (status) status.textContent = "Opening Favorites…";
+}
+
+async function favoriteCount() {
+  const response = await fetch("/api/vault/favorites", { credentials: "same-origin", headers: { Accept: "application/json" } });
+  if (response.status === 401) return null;
+  const body = await response.json().catch(() => ({}));
+  return response.ok && Number.isInteger(body.count) ? body.count : null;
+}
+
 function install() {
   const sidebar = document.querySelector(".vault-sidebar");
   if (!sidebar || sidebar.querySelector("[data-vault-system-views]")) return;
@@ -37,7 +57,7 @@ function install() {
   head.append(element("h3", "", "Royal Vault views"));
   section.append(
     head,
-    element("p", "empty-copy", "Open trustworthy collection views built from your real Vault timestamps and duplicate analysis.")
+    element("p", "empty-copy", "Open trustworthy collection views built from your explicit Favorites, real Vault timestamps, and duplicate analysis.")
   );
 
   const list = element("div", "system-view-list");
@@ -53,11 +73,27 @@ function install() {
     list.append(button);
   }
 
+  const favorites = element("button", "system-view-button", "Favorites");
+  favorites.type = "button";
+  const count = element("span", "system-view-count", "");
+  count.setAttribute("aria-label", "Favorite treasure count");
+  favorites.append(count);
+  favorites.addEventListener("click", applyFavoritesView);
+  list.append(favorites);
+
   const duplicates = element("button", "system-view-button", "Possible duplicates");
   duplicates.type = "button";
   duplicates.addEventListener("click", () => document.querySelector("#show-duplicates")?.click());
   list.append(duplicates);
   section.append(list);
+
+  async function refreshFavoriteCount() {
+    const value = await favoriteCount();
+    count.textContent = value === null ? "" : `(${value.toLocaleString()})`;
+  }
+
+  window.addEventListener("kingdom:vault-favorite-change", () => refreshFavoriteCount());
+  refreshFavoriteCount();
 
   const keeper = sidebar.querySelector(".keeper-sidebar-callout");
   if (keeper) sidebar.insertBefore(section, keeper);
