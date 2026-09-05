@@ -3,6 +3,7 @@ const ENRICHMENT_STYLES = Object.freeze([
   "/vault-details.css",
   "/vault-saved-views.css",
   "/vault-evidence.css",
+  "/vault-favorites.css",
   "/vault-view-modes.css",
   "/vault-system-views.css"
 ]);
