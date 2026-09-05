@@ -9,8 +9,8 @@ async function source(relative) {
   return readFile(resolve(root, relative), "utf8");
 }
 
-test("Vault browser entry points reach category guidance, collectible details, provenance, evidence, import UI, saved views, and collection sets", async () => {
-  const [html, vault, provenance, categories, details, evidence, savedViews, sets, styles] = await Promise.all([
+test("Vault browser entry points reach category guidance, collectible details, provenance, evidence, import UI, saved views, collection sets, and Marketplace preparation", async () => {
+  const [html, vault, provenance, categories, details, evidence, savedViews, sets, marketplace, styles] = await Promise.all([
     source("apps/web/public/vault.html"),
     source("apps/web/public/vault.js"),
     source("apps/web/public/vault-provenance.js"),
@@ -19,6 +19,7 @@ test("Vault browser entry points reach category guidance, collectible details, p
     source("apps/web/public/vault-evidence.js"),
     source("apps/web/public/vault-saved-views.js"),
     source("apps/web/public/vault-sets.js"),
+    source("apps/web/public/vault-marketplace-readiness.js"),
     source("apps/web/public/vault-ui-styles.js")
   ]);
 
@@ -27,6 +28,7 @@ test("Vault browser entry points reach category guidance, collectible details, p
   assert.match(vault, /from "\.\/vault-provenance\.js"/);
   assert.match(provenance, /from "\.\/vault-details\.js"/);
   assert.match(provenance, /from "\.\/vault-evidence\.js"/);
+  assert.match(provenance, /from "\.\/vault-marketplace-readiness\.js"/);
   assert.match(provenance, /import "\.\/vault-categories\.js"/);
   assert.match(categories, /import "\.\/vault-saved-views\.js"/);
   assert.match(categories, /import "\.\/vault-sets\.js"/);
@@ -39,14 +41,18 @@ test("Vault browser entry points reach category guidance, collectible details, p
   assert.match(sets, /\/api\/vault\/sets/);
   assert.match(sets, /\/api\/vault\/treasures\?/);
   assert.match(sets, /You decide which treasure belongs in this set entry/);
+  assert.match(marketplace, /\/api\/vault\/marketplace-ready/);
+  assert.match(marketplace, /\/marketplace-preparation/);
+  assert.match(marketplace, /does not publish, price, ship, or list/);
   assert.match(styles, /\/vault-import\.css/);
   assert.match(styles, /\/vault-details\.css/);
   assert.match(styles, /\/vault-saved-views\.css/);
   assert.match(styles, /\/vault-evidence\.css/);
   assert.match(styles, /\/vault-sets\.css/);
+  assert.match(styles, /\/vault-marketplace-readiness\.css/);
 });
 
-test("Vault production UI does not leave enrichment, evidence, saved-view, or collection-set intelligence as unreachable packaged assets", async () => {
+test("Vault production UI does not leave enrichment, evidence, saved-view, set, or Marketplace readiness intelligence as unreachable packaged assets", async () => {
   const [provenance, categories, styles] = await Promise.all([
     source("apps/web/public/vault-provenance.js"),
     source("apps/web/public/vault-categories.js"),
@@ -55,9 +61,11 @@ test("Vault production UI does not leave enrichment, evidence, saved-view, or co
   assert.ok(provenance.includes("./vault-categories.js"));
   assert.ok(provenance.includes("createCollectibleDetailsSection"));
   assert.ok(provenance.includes("createEvidenceSection"));
+  assert.ok(provenance.includes("createMarketplacePreparationSection"));
   assert.ok(categories.includes("./vault-saved-views.js"));
   assert.ok(categories.includes("./vault-sets.js"));
   assert.ok(categories.includes("./vault-ui-styles.js"));
   assert.ok(styles.includes("/vault-evidence.css"));
   assert.ok(styles.includes("/vault-sets.css"));
+  assert.ok(styles.includes("/vault-marketplace-readiness.css"));
 });
