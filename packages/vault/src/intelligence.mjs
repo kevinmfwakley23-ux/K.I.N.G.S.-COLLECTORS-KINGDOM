@@ -36,6 +36,10 @@ export function createVaultIntelligence({ vaultService, searchService = null, at
     return attributeService.list(identity, treasureId);
   }
 
+  function stats(identity) {
+    return vaultService.stats(identity);
+  }
+
   function keeperContext(identity, query = "") {
     const base = vaultService.keeperContext(identity);
     const recentTreasures = base.recentTreasures.map((summary) => {
@@ -66,5 +70,5 @@ export function createVaultIntelligence({ vaultService, searchService = null, at
     };
   }
 
-  return Object.freeze({ keeperContext });
+  return Object.freeze({ stats, keeperContext });
 }
