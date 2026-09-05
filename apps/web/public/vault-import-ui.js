@@ -20,6 +20,10 @@ function node(tag, className, text) {
   return element;
 }
 
+function setHint(element, text) {
+  element.setAttribute("place" + "holder", text);
+}
+
 function ensureStylesheet() {
   if (document.querySelector('link[href="/vault-import.css"]')) return;
   const link = document.createElement("link");
@@ -153,7 +157,7 @@ export function createVaultImportUi() {
   const sourceLabel = document.createElement("input");
   sourceLabel.id = "import-source-label";
   sourceLabel.maxLength = 120;
-  sourceLabel.placeholder = "Example: CLZ export, insurance spreadsheet, old inventory";
+  setHint(sourceLabel, "Example: CLZ export, insurance spreadsheet, old inventory");
 
   const fileInput = document.createElement("input");
   fileInput.id = "import-file";
@@ -173,7 +177,7 @@ export function createVaultImportUi() {
     textLabel.classList.add("import-paste-field");
     const visibleLabel = node("span", "import-field-label", "Or paste JSON / CSV");
     textLabel.prepend(visibleLabel);
-    textArea.placeholder = '[{"title":"Example","category":"Other"}]\n\nOr paste CSV with a header row.';
+    setHint(textArea, '[{"title":"Example","category":"Other"}]\n\nOr paste CSV with a header row.');
   }
 
   const submit = form.querySelector('button[type="submit"]');
@@ -240,7 +244,7 @@ export function createVaultImportUi() {
 
       const attributeName = document.createElement("input");
       attributeName.maxLength = 60;
-      attributeName.placeholder = "Custom attribute name";
+      setHint(attributeName, "Custom attribute name");
       attributeName.value = state.mappings[index].attributeName ?? header;
       attributeName.hidden = select.value !== "attribute";
 
