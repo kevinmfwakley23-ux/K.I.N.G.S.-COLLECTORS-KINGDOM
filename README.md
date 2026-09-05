@@ -1,20 +1,20 @@
 # K.I.N.G.S. Collector's Kingdom
 
-K.I.N.G.S. Collector's Kingdom is being built as a collector-first environment for cataloging and locating treasures, preserving ownership/provenance records, receiving evidence-backed intelligence, and eventually buying, selling, trading, discovering, valuing, and protecting collectibles through the wider Kingdom.
+K.I.N.G.S. Collector's Kingdom is being built as a collector-first environment for cataloging and locating treasures, preserving ownership/provenance records, receiving evidence-backed intelligence, and eventually buying, selling, trading, discovering, valuing, insuring, and protecting collectibles through the wider Kingdom.
 
 ## Engineering status
 
 Active milestone: **IMP-005 — Royal Vault, Phase 1**.
 
-**Latest verified checkpoint:** the Royal Vault now includes permanent owner-scoped treasure records, hierarchical storage, secure private media, Kingdom voice/talk-to-text, transactional JSON/CSV migration, a cross-device **Royal Intake Queue**, a **secure progressive barcode scanner**, and real **review-only external catalog candidate resolution** for ISBN plus UPC/EAN/GTIN retail identifiers.
+**Latest verified checkpoint:** the Royal Vault now includes permanent owner-scoped treasure records, hierarchical storage, secure private media, voice/talk-to-text, transactional JSON/CSV migration, a cross-device **Royal Intake Queue**, progressive camera barcode scanning, real review-only ISBN and UPC/EAN/GTIN catalog candidates, and an append-only **Provenance & Ownership Ledger** attached to permanent treasure UUIDs.
 
-Latest verified code gate: **Kingdom Quality Gates #396** — run `33961349239` — **PASS** on commit `3175e5f74f55c0dca4d72ed634b572128d032044`.
+Latest verified code gate: **Kingdom Quality Gates #416** — run `33961966066` — **PASS** on commit `cc3e6dd7e25f15e3aece341bc30cd44b238b69b7`.
 
-Pending ISBN captures can request Open Library book evidence. Pending UPC/EAN captures can request UPCitemdb product evidence. Both workflows show provider/source/reason and copy only allowlisted metadata into a new **unsaved** treasure editor. Lookup itself performs no Vault mutation, never changes market value, and never treats a provider result as proof of an exact collectible variant.
+The provenance ledger supports collector-recorded acquisition, ownership notes, supporting documentation, loans/custody, sale/gift/trade, loss/stolen/recovery, and linked correction events. Ordinary PATCH/DELETE history mutation is deliberately unavailable. Every public entry remains labeled `collector-recorded` and `independentlyVerified: false`; storage does not magically authenticate a provenance claim.
 
-UPCitemdb financial/merchant fields are intentionally excluded from the identification layer. Provider prices, offers, merchant links, and provider images are not mapped into Vault value or purchase fields.
+The next engineering target is **Vault Reorganization & Bulk Stewardship**: owner-scoped collection rename/edit, safe nested-location rename/reparenting with cycle prevention, then previewed atomic movement of selected treasures between collection groups and physical locations without replacing permanent treasure IDs.
 
-The next engineering target is a structured **Provenance & Ownership Ledger** tied to permanent treasure UUIDs: append-oriented acquisition, ownership evidence, supporting-document, custody/loan, disposition, loss/recovery, and correction events that remain portable and auditable. Evidence-backed market valuation, image recognition, broad trading-card/comic/game/music catalog coverage, and Marketplace ownership mutations remain separate future milestones and are not represented as live.
+Evidence-backed current valuation, image recognition, broad category-specific catalog coverage, and Marketplace ownership transfers remain separate future milestones and are not represented as live.
 
 ## Durable engineering records
 
@@ -43,17 +43,7 @@ The Keeper can advise through K.I.N.G.S. AI, but Kingdom record mutations remain
 
 ## Great Hall
 
-IMP-004 established the authenticated central Kingdom experience:
-
-- personalized Great Hall;
-- permanent castle-and-grounds geography;
-- Royal Vault inside the castle;
-- Kingdom Street Market outside the castle;
-- real recent account activity;
-- honest service availability states;
-- quick actions;
-- persistent room-aware Keeper;
-- responsive royal-estate UI.
+IMP-004 established the authenticated central Kingdom experience with personalized Great Hall, permanent castle-and-grounds geography, Royal Vault, Kingdom Street Market, real recent account activity, honest service availability states, quick actions, room-aware Keeper roles, and responsive royal-estate UI.
 
 With the authoritative Vault wired, the Great Hall exposes `/vault.html` and reports real Vault record/unit counts instead of sample data.
 
@@ -65,11 +55,11 @@ Current verified capability includes:
 
 - owner-scoped treasure create/read/update/archive;
 - collection groups;
-- arbitrary-depth storage such as room → safe → shelf → binder → page → pocket;
+- arbitrary-depth physical storage such as room → safe → shelf → binder → page → pocket;
 - condition, variant, quantity, acquisition, cost, identifiers, descriptions, notes, and custom attributes;
 - normalized accent-tolerant search/filter/sort;
 - duplicate candidate detection without destructive automatic merging;
-- treasure/media history;
+- treasure/media/audit history;
 - real record/unit/category statistics;
 - purchase totals separated by currency;
 - complete versioned JSON export including archived records;
@@ -78,7 +68,7 @@ Current verified capability includes:
 
 ### Secure treasure media
 
-Private JPEG, PNG, WebP, GIF, AVIF, and PDF files are stored outside the public webroot with generated storage keys, file-signature/MIME/extension checks, owner authorization, storage limits, private retrieval, deletion, and audit events.
+Private JPEG, PNG, WebP, GIF, AVIF, and PDF files are stored outside the public webroot with generated storage keys, file-signature/MIME/extension checks, owner authorization, storage limits, private retrieval, deletion, and audit events. No antivirus/sandbox/CDR capability is claimed.
 
 ### Voice command and talk-to-text
 
@@ -86,64 +76,51 @@ Where browser speech recognition is available, the Kingdom supports spoken navig
 
 ### Transactional migration
 
-The Vault accepts JSON and CSV migration sources through a review-first workflow:
+The Vault accepts JSON and CSV migration sources through a review-first workflow with persistent preview batches, CSV mapping, validation/rejected/duplicate-review rows, explicit decisions, atomic all-or-nothing commit, stale-preview protection, idempotent retry, and no blind import writes.
 
-- CSV parsing and field mapping;
-- persistent preview batches;
-- validation/rejected/duplicate-review rows;
-- explicit import/skip decisions;
-- atomic all-or-nothing commit;
-- stale-preview protection;
-- idempotent retry;
-- no blind import writes.
+### Royal Intake Queue & barcode scanner
 
-### Royal Intake Queue
+Collectors can capture UPC, EAN, ISBN, catalog, serial, SKU, or custom identifiers from phone, Chromebook, or desktop into an account-scoped server-side queue. Repeated pending captures merge into a capture count and dismissed history is preserved.
 
-Collectors can rapidly capture UPC, EAN, ISBN, catalog, serial, SKU, or custom identifiers from phone, Chromebook, or desktop into an account-scoped server-side queue. Repeated pending captures merge into a capture count, dismissed history is preserved, owner isolation is enforced, and matching Vault identifiers are warnings rather than automatic merges.
-
-### Royal barcode scanner
-
-The Vault offers progressive camera barcode capture on secure browsers that expose native `BarcodeDetector` support:
-
-- explicit Start/Stop camera control;
-- environment-facing camera preference;
-- supported-format discovery;
-- repeated-frame debounce;
-- detections saved through the authenticated Intake Queue;
-- no automatic treasure creation or catalog identity claim;
-- camera tracks stop on Stop, page leave, or backgrounding;
-- manual intake stays available when camera/detector APIs are unsupported.
+On secure browsers exposing native `BarcodeDetector`, the Vault adds explicit Start/Stop camera capture, supported-format discovery, rear-camera preference, frame debounce, authenticated Intake Queue writes, and track shutdown on leave/background. Manual intake remains the fallback.
 
 Camera permission is least-privilege: `/vault.html` receives `camera=(self)`, while ordinary Kingdom rooms and JSON APIs continue to receive `camera=()`.
 
 ### Review-only external catalog evidence
 
-The provider-neutral catalog boundary now supports two real evidence providers:
+The provider-neutral catalog boundary supports:
 
-- **Open Library** for low-volume ISBN/book candidate lookup;
-- **UPCitemdb** for low-volume checksum-valid UPC/EAN/GTIN retail product candidate lookup.
+- **Open Library** for low-volume checksum-valid ISBN/book candidate lookup;
+- **UPCitemdb** for low-volume checksum-valid UPC/EAN/GTIN retail product candidates.
 
-The catalog boundary includes:
+Provider access is bounded by validation, HTTPS-only external transport, timeouts, response-size limits, conservative serialized rates, caching, authenticated Kingdom routes, and explicit review semantics. Lookup itself never writes a treasure.
 
-- ISBN and GS1 checksum validation before network use;
-- HTTPS-only external provider transport outside local testing;
-- bounded timeouts and response sizes;
-- provider-specific conservative serialized request rates;
-- bounded shared cache;
-- source URL/provider record/evidence reason;
-- explicit `reviewRequired` candidate semantics;
-- authenticated Kingdom API rather than direct browser/provider authority;
-- no lookup-time Vault mutation;
-- review-only copy into a new unsaved treasure editor.
+UPCitemdb provider prices, offers, merchant links/domains, and images are deliberately excluded from the identification model and cannot become Kingdom market value, trade value, or purchase price.
 
-UPCitemdb's free-plan limits are treated as engineering constraints, including a default 10-second provider request interval. Retail provider price, offer, merchant, and image data are deliberately excluded from the identification candidate model and cannot become Kingdom valuation evidence.
+### Provenance & Ownership Ledger
+
+Saved treasures now expose an append-only provenance timeline backed by `vault_provenance_events`.
+
+Verified behavior includes:
+
+- acquisition, ownership/provenance note, supporting-document, loan/custody, sale/gift/trade, loss/stolen/recovery, and correction events;
+- effective date, counterparty/source, method, transaction amount/currency, reference, evidence URL, and notes;
+- amount stored as integer cents with explicit currency;
+- same-owner/same-treasure correction linkage;
+- owner isolation;
+- normal audit events for each append;
+- no ordinary update/delete API;
+- provenance survives treasure archive;
+- export schema version 2 includes portable provenance events;
+- responsive saved-treasure entry/timeline UI;
+- explicit `collector-recorded` / `independentlyVerified: false` truthfulness policy.
 
 ## Truthfulness boundary
 
-Market values remain absent until a real evidence-backed valuation service is implemented. A barcode, image, title match, external provider result, AI suggestion, ISBN match, catalog ID, receipt note, or collector-entered provenance statement is not automatically authoritative. Provider identifiers may support evidence and discovery, but the permanent Kingdom treasure UUID remains the authoritative item identity.
+Market values remain absent until a real evidence-backed valuation service is implemented. A barcode, image, title match, external provider result, AI suggestion, ISBN match, catalog ID, receipt, certificate number, or collector-entered provenance statement is not automatically authoritative. Provider identifiers and supporting records may contribute evidence, but the permanent Kingdom treasure UUID remains the authoritative item identity.
 
 ## Current next target
 
-**Provenance & Ownership Ledger.**
+**Vault Reorganization & Bulk Stewardship.**
 
-The next Vault slice will add owner-scoped append-oriented lifecycle events tied to permanent treasure UUIDs. It will preserve acquisition source/method, supporting references, optional monetary transaction facts separated by currency, loans/custody, disposition, loss/recovery, and corrections without turning collector-entered claims into independently verified provenance.
+The next Vault slice will let collectors safely rename collection groups, rename/reparent nested physical locations without cycles, preserve descendant paths and permanent treasure references, and then reorganize selected treasures through a previewed atomic bulk movement workflow. The first bulk slice will be non-destructive; mass archive/delete will remain a separately reviewed capability.
