@@ -32,6 +32,8 @@ const required = [
   "dist/apps/web/public/vault-system-views.css",
   "dist/apps/web/public/vault-sets.js",
   "dist/apps/web/public/vault-sets.css",
+  "dist/apps/web/public/vault-marketplace-readiness.js",
+  "dist/apps/web/public/vault-marketplace-readiness.css",
   "dist/apps/web/public/vault-ui-styles.js",
   "dist/apps/web/public/styles.css",
   "dist/apps/web/public/world.css",
@@ -59,6 +61,8 @@ const required = [
   "dist/packages/vault/src/sets.mjs",
   "dist/packages/vault/src/set-summaries.mjs",
   "dist/packages/vault/src/sets-http.mjs",
+  "dist/packages/vault/src/marketplace-readiness.mjs",
+  "dist/packages/vault/src/marketplace-readiness-http.mjs",
   "dist/packages/vault/src/intelligence.mjs",
   "dist/build-manifest.json"
 ];
@@ -67,4 +71,4 @@ for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
 if (manifest.phase !== "IMP-005-VAULT-PHASE-1") throw new Error("Unexpected build phase in manifest.");
 if (manifest.entrypoint !== "apps/web/server-runtime.mjs") throw new Error("Production manifest does not point to the composed Kingdom runtime.");
-console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 output, including portable intake, provenance, category intelligence, extended search, saved Vault views, protected evidence documents, explicit collection-set completion with aggregate progress summaries and checklist UI, Grid/List/Binder/Gallery presentation assets, authoritative recent/favorite/incomplete-set/duplicate system views, live enrichment UI assets, and bounded Royal Curator context.");
+console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 output, including portable intake, provenance, category intelligence, extended search, saved Vault views, protected evidence documents, explicit collection-set completion with aggregate progress summaries and checklist UI, transparent Marketplace handoff readiness and preparation UI, Grid/List/Binder/Gallery presentation assets, authoritative recent/favorite/incomplete-set/Marketplace-ready/duplicate system views, live enrichment UI assets, and bounded Royal Curator context.");
