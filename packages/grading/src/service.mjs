@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { estimateAdvisoryGradeRange } from "./aggregate.mjs";
 import { measureCentering, evaluateCenteringAgainstProfile } from "./centering.mjs";
 import { createPregradeAnalysis } from "./evidence.mjs";
 import { getCardSizeProfile, getGradingStandardProfile } from "./profiles.mjs";
@@ -157,7 +158,7 @@ export function createPregradeAnalysisService({ vaultStore, mediaRepository, ana
     requireTreasure(collector.id, treasureId);
     if (!input || typeof input !== "object" || Array.isArray(input)) throw new VaultError("invalid_pregrade_analysis", "Pre-grade analysis data must be an object.");
     if (input.estimatedGradeRange !== undefined && input.estimatedGradeRange !== null) {
-      throw new VaultError("pregrade_estimated_grade_not_supported", "Client-supplied overall grade estimates are not accepted until the Kingdom grade aggregation engine is separately implemented and verified.");
+      throw new VaultError("pregrade_estimated_grade_not_supported", "Client-supplied overall grade estimates are not accepted. Kingdom advisory ranges are computed server-side from stored evidence.");
     }
 
     const profile = cleanProfile(input.standardProfile);
@@ -250,5 +251,26 @@ export function createPregradeAnalysisService({ vaultStore, mediaRepository, ana
     return analysisRepository.listForTreasure(collector.id, treasureId, { limit: numericLimit }).map(publicRecord);
   }
 
-  return Object.freeze({ append, list });
+  function estimate(identity, treasureIdValue) {
+    const collector = requireCollector(identity);
+    const treasureId = cleanIdentifier(treasureIdValue, "treasure_id", { required: true });
+    requireTreasure(collector.id, treasureId);
+    const records = analysisRepository.listForTreasure(collector.id, treasureId, { limit: 200 });
+    return Object.freeze({
+      treasureId,
+      estimate: estimateAdvisoryGradeRange(records),
+      sourceAnalysisCount: records.length,
+      computationAuthority: "server-aggregated-from-stored-client-computed-advisory-evidence",
+      independentlyVerifiedPixels: false,
+      advisoryOnly: true,
+      officialGrade: false,
+      physicalAuthentication: false,
+      mutatesAuthoritativeCondition: false,
+      mutatesAuthoritativeGrade: false,
+      mutatesAuthenticity: false,
+      mutatesValue: false
+    });
+  }
+
+  return Object.freeze({ append, list, estimate });
 }
