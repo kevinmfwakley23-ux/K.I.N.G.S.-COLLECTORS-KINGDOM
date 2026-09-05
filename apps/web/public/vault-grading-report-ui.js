@@ -72,15 +72,16 @@ export function createVaultGradingReportUi() {
 
   function renderOverall(payload) {
     overall.replaceChildren();
-    const estimate = payload?.overallEstimate;
+    const estimate = payload?.rawEvidenceOverallEstimate ?? payload?.overallEstimate;
     const report = payload?.explainableReport;
     const card = node("article", "grading-report-overall-card");
     const range = estimate?.available && estimate.range ? `${estimate.range.min}–${estimate.range.max}` : "No overall range yet";
     card.append(
-      node("strong", "grading-report-range", `Kingdom advisory range: ${range}`),
+      node("strong", "grading-report-range", `Overall raw-evidence advisory range: ${range}`),
       node("span", "", `Overall evidence level: ${estimate?.evidenceLevel ?? "insufficient"}`),
       node("span", "", `Overall confidence: ${percentage(estimate?.confidence ?? 0)} • completeness: ${percentage(estimate?.completeness ?? 0)}`),
       node("span", "", `${report?.rawFindingCount ?? 0} raw detector finding${report?.rawFindingCount === 1 ? "" : "s"} • ${report?.reviewedFindingCount ?? 0} reviewed`),
+      node("p", "muted-copy", "Collector finding reviews affect the eight dimension interpretations in this report. In this version, they do not rewrite or recalculate the overall raw-evidence range. This keeps immutable detector evidence and collector interpretation visibly separate."),
       node("p", "muted-copy", "Not an official grade. Stored pixels were not independently reprocessed by the server; the report interprets immutable advisory evidence already stored in the Vault.")
     );
     if (estimate?.missingEvidence?.length) {
