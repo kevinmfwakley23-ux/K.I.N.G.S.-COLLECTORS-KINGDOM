@@ -6,12 +6,16 @@ import { resolve } from "node:path";
 const root = resolve(new URL("..", import.meta.url).pathname);
 
 test("live Royal Intake UI exposes PSA certification lookup while blocking automatic treasure/grade handoff", async () => {
-  const source = await readFile(resolve(root, "apps/web/public/vault-intake-ui.js"), "utf8");
-  assert.match(source, /"psa-cert"/);
-  assert.match(source, /Verify PSA cert record/);
-  assert.match(source, /Certification database evidence only/);
-  assert.match(source, /Compare the returned label data with the physical holder/);
-  assert.match(source, /!isCertificationEvidenceType\(item\.identifierType\)/);
-  assert.doesNotMatch(source, /treasure-grade[^\n]*candidate|candidate[^\n]*treasure-grade/i);
-  assert.doesNotMatch(source, /physicalItemAuthenticated\s*=\s*true/i);
+  const [uiSource, policySource] = await Promise.all([
+    readFile(resolve(root, "apps/web/public/vault-intake-ui.js"), "utf8"),
+    readFile(resolve(root, "apps/web/public/vault-catalog-core.js"), "utf8")
+  ]);
+  assert.match(uiSource, /"psa-cert"/);
+  assert.match(policySource, /Verify PSA cert record/);
+  assert.match(policySource, /certificationOnly:\s*true/);
+  assert.match(uiSource, /Certification database evidence only/);
+  assert.match(uiSource, /Compare the returned label data with the physical holder/);
+  assert.match(uiSource, /!isCertificationEvidenceType\(item\.identifierType\)/);
+  assert.doesNotMatch(uiSource, /treasure-grade[^\n]*candidate|candidate[^\n]*treasure-grade/i);
+  assert.doesNotMatch(`${uiSource}\n${policySource}`, /physicalItemAuthenticated\s*=\s*true/i);
 });
