@@ -262,3 +262,10 @@ export function createVoiceController({
     parse: parseKingdomVoiceCommand
   });
 }
+
+if (typeof document !== "undefined" && document.querySelector("#import-preview-form")) {
+  import("./vault-import-ui.js").catch((error) => {
+    const status = document.querySelector("#import-preview-result");
+    if (status) status.textContent = `The Vault import review interface could not load: ${error.message}`;
+  });
+}
