@@ -4,6 +4,7 @@ import { createPokemonTcgCatalogProvider } from "./pokemon-tcg-provider.mjs";
 import { createPsaCertificationProvider } from "./psa-cert-provider.mjs";
 import { createScryfallCatalogProvider } from "./scryfall-provider.mjs";
 import { createCatalogService } from "./service.mjs";
+import { createTheCardApiCatalogProvider } from "./the-card-api-provider.mjs";
 import { createUpcItemDbCatalogProvider } from "./upcitemdb-provider.mjs";
 
 function requireConfig(config) {
@@ -56,12 +57,19 @@ export function createCatalogRuntime({
     now: providerNow, sleep
   });
 
+  const theCardApiProvider = createTheCardApiCatalogProvider({
+    fetchImpl, baseUrl: runtime.cardApiBaseUrl, apiKey: runtime.cardApiKey,
+    timeoutMs: runtime.cardApiTimeoutMs, minIntervalMs: runtime.cardApiMinIntervalMs,
+    now: providerNow, sleep
+  });
+
   const providers = Object.freeze([
     openLibraryProvider,
     upcItemDbProvider,
     pokemonTcgProvider,
     scryfallProvider,
-    psaCertificationProvider
+    psaCertificationProvider,
+    theCardApiProvider
   ]);
   const service = createCatalogService({ providers, cache, now: serviceNow });
 
@@ -80,6 +88,10 @@ export function createCatalogRuntime({
       psaCertificationCandidates: Boolean(runtime.psaAccessToken),
       psaCertificationRequiresServerToken: true,
       certificationEvidenceCanAuthenticatePhysicalItem: false,
+      sportsCardCatalogLookupConfigured: Boolean(runtime.cardApiKey),
+      sportsCardCatalogRequiresEligiblePaidPlan: true,
+      sportsCardCatalogEntitlementVerifiedAtStartup: false,
+      sportsCardCatalogProvider: "the-card-api",
       automaticVaultMutation: false,
       valuationFromCatalogProviders: false
     })

@@ -18,6 +18,7 @@ const contractFiles = [
   "packages/catalog/src/pokemon-tcg-provider.mjs",
   "packages/catalog/src/scryfall-provider.mjs",
   "packages/catalog/src/psa-cert-provider.mjs",
+  "packages/catalog/src/the-card-api-provider.mjs",
   "packages/catalog/src/runtime.mjs",
   "packages/catalog/src/service.mjs",
   "packages/vault/src/sqlite-store.mjs",
@@ -70,4 +71,4 @@ for (const relative of contractFiles) {
 const entries = await readdir(resolve(root, "packages"), { withFileTypes: true });
 if (!entries.some((entry) => entry.isDirectory())) throw new Error("No package boundaries found.");
 
-console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, provider-neutral ISBN/UPC/EAN/Pokémon/MTG catalog evidence, PSA certification-database evidence, append-only provenance API/UI, saved Vault views and deterministic keyset retrieval API/UI, cycle-safe individual and previewed atomic bulk reorganization API/UI, Vault, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice boundaries.");
+console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, provider-neutral ISBN/UPC/EAN/Pokémon/MTG/sports-card catalog evidence, PSA certification-database evidence, append-only provenance API/UI, saved Vault views and deterministic keyset retrieval API/UI, cycle-safe individual and previewed atomic bulk reorganization API/UI, Vault, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice boundaries.");

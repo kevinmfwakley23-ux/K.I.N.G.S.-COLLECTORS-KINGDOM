@@ -115,20 +115,25 @@ export function createCatalogService({ providers = [], cache = null, now = () =>
       const timeoutOnly = failures.every((failure) => failure.code === "catalog_provider_timeout");
       const configurationOnly = failures.every((failure) => failure.code === "catalog_provider_configuration_required");
       const unauthorizedOnly = failures.every((failure) => failure.code === "catalog_provider_unauthorized");
+      const subscriptionOnly = failures.every((failure) => failure.code === "catalog_provider_subscription_required");
       const code = timeoutOnly
         ? "catalog_lookup_timeout"
         : configurationOnly
           ? "catalog_provider_configuration_required"
           : unauthorizedOnly
             ? "catalog_provider_unauthorized"
-            : "catalog_provider_unavailable";
+            : subscriptionOnly
+              ? "catalog_provider_subscription_required"
+              : "catalog_provider_unavailable";
       const message = timeoutOnly
         ? "Evidence lookup timed out before any provider returned evidence."
         : configurationOnly
           ? "This evidence provider requires server-side credentials before lookup can run."
           : unauthorizedOnly
             ? "The configured evidence-provider credentials were rejected."
-            : "No evidence provider could return evidence for this lookup.";
+            : subscriptionOnly
+              ? "This catalog provider requires an eligible paid plan or add-on before lookup can run."
+              : "No evidence provider could return evidence for this lookup.";
       throw new CatalogError(code, message, {
         statusCode: timeoutOnly ? 504 : 503,
         details: { providers: failures }

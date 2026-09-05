@@ -6,6 +6,8 @@ const REVIEW_POLICIES = Object.freeze({
   "pokemon-set-number": Object.freeze({ actionLabel: "Find Pokémon card candidate", loadingMessage: "Requesting review-only Pokémon set/card evidence…", noMatchMessage: "No Pokémon TCG candidate was returned for this exact set/card key. Nothing in the Vault was changed; verify the set ID and printed card number or continue with manual entry.", defaultCategory: "Trading Card" }),
   "mtg-scryfall-id": Object.freeze({ actionLabel: "Find Magic printing candidate", loadingMessage: "Requesting review-only Scryfall printing evidence…", noMatchMessage: "No Scryfall card printing was returned for this exact printing ID. Nothing in the Vault was changed; verify the ID or continue with manual entry.", defaultCategory: "Trading Card" }),
   "mtg-set-number": Object.freeze({ actionLabel: "Find Magic printing candidate", loadingMessage: "Requesting review-only Magic set/collector evidence…", noMatchMessage: "No Scryfall printing was returned for this exact set code and collector number. Nothing in the Vault was changed; verify the key or continue with manual entry.", defaultCategory: "Trading Card" }),
+  "sports-card-ucid": Object.freeze({ actionLabel: "Find sports card candidate", loadingMessage: "Requesting review-only sports-card UCID evidence…", noMatchMessage: "No The Card API sports-card candidate was returned for this exact UCID. Nothing in the Vault was changed; verify the UCID or continue with manual entry.", defaultCategory: "Trading Card" }),
+  "sports-card-set-number": Object.freeze({ actionLabel: "Find sports card candidate", loadingMessage: "Requesting review-only sports-card set/card evidence…", noMatchMessage: "No The Card API sports-card candidate was returned for this exact set USID and printed card number. Nothing in the Vault was changed; verify the key or continue with manual entry.", defaultCategory: "Trading Card" }),
   "psa-cert": Object.freeze({ actionLabel: "Verify PSA cert record", loadingMessage: "Requesting PSA certification-database evidence…", noMatchMessage: "PSA returned no certification database record for this number. Nothing in the Vault was changed.", defaultCategory: null, certificationOnly: true })
 });
 
@@ -69,14 +71,21 @@ export function catalogCandidateSummary(candidate) {
   if (fields.size) parts.push(`Size ${fields.size}`);
   if (fields.color) parts.push(fields.color);
   if (fields.providerCategory) parts.push(fields.providerCategory);
+  if (fields.sport) parts.push(fields.sport);
+  if (fields.year) parts.push(String(fields.year));
   if (fields.series) parts.push(fields.series);
   if (fields.setName) parts.push(fields.setName);
+  if (fields.parentSetName) parts.push(`Parent: ${fields.parentSetName}`);
   if (fields.cardNumber) parts.push(`Card #${fields.cardNumber}`);
   if (fields.collectorNumber) parts.push(`Collector #${fields.collectorNumber}`);
   if (fields.language) parts.push(String(fields.language).toUpperCase());
   if (fields.rarity) parts.push(fields.rarity);
   if (fields.artist) parts.push(`Artist ${fields.artist}`);
   if (fields.layout) parts.push(fields.layout);
+  if (fields.isRookie === true) parts.push("Rookie");
+  if (fields.isAuto === true) parts.push("Autograph");
+  if (fields.isRelic === true) parts.push("Relic");
+  if (Number.isInteger(fields.printRun)) parts.push(`Print run /${fields.printRun}`);
   if (Array.isArray(fields.availableFinishes) && fields.availableFinishes.length) parts.push(`Finishes: ${fields.availableFinishes.join(", ")}`);
   if (Array.isArray(fields.subtypes) && fields.subtypes.length) parts.push(fields.subtypes.join(", "));
   return parts.join(" • ") || "Provider metadata is limited for this candidate.";
@@ -165,6 +174,30 @@ export function catalogCandidateDraft(item, candidate) {
     attributes.finishSelectionRequired = true;
     attributes.oracleIdentityIsNotPhysicalPrintingIdentity = true;
     attributes.providerIdentificationIsNotPhysicalAuthentication = true;
+  } else if (candidate?.providerId === "the-card-api") {
+    category = "Trading Card";
+    manufacturer = safeText(fields.manufacturer, 200);
+    series = safeText(fields.setName, 240);
+    catalogIdentifier = safeText(item?.identifierValue ?? identifiers.lookupCode ?? identifiers.theCardApiUcid ?? candidate.providerRecordId, 180);
+    barcode = null;
+    attributes.cardClass = "Sports Card";
+    if (identifiers.theCardApiUcid) attributes.theCardApiUcid = safeText(identifiers.theCardApiUcid, 40);
+    if (fields.setUsid) attributes.theCardApiSetUsid = safeText(fields.setUsid, 40);
+    if (fields.parentSetUsid) attributes.theCardApiParentSetUsid = safeText(fields.parentSetUsid, 40);
+    if (fields.subject) attributes.subject = safeText(fields.subject, 400);
+    if (fields.setName) attributes.sportsCardSetName = safeText(fields.setName, 300);
+    if (fields.parentSetName) attributes.sportsCardParentSetName = safeText(fields.parentSetName, 300);
+    if (fields.cardNumber) attributes.sportsCardNumber = safeText(fields.cardNumber, 80);
+    if (fields.sport) attributes.sport = safeText(fields.sport, 120);
+    if (fields.subcategory) attributes.sportsCardSubcategory = safeText(fields.subcategory, 120);
+    if (Number.isInteger(fields.year)) attributes.year = fields.year;
+    if (Number.isInteger(fields.printRun)) attributes.printRun = fields.printRun;
+    if (fields.isRookie === true) attributes.rookie = true;
+    if (fields.isAuto === true) attributes.autograph = true;
+    if (fields.isRelic === true) attributes.relic = true;
+    attributes.parallelOrInsertPhysicalMatchRequiresReview = true;
+    attributes.providerCatalogIdentityIsNotPhysicalAuthentication = true;
+    attributes.gradeConditionAndValueRequireSeparateEvidence = true;
   }
 
   return Object.freeze({

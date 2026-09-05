@@ -103,11 +103,11 @@ function prefillCatalogCandidate(item, candidate, status) {
 
   const editorStatus = document.querySelector("#treasure-status");
   if (editorStatus) {
-    editorStatus.textContent = `${candidate.providerName || "Catalog provider"} candidate copied into this unsaved editor. Review title, set/edition, language, exact physical variant or finish, maker/publisher, condition, grade, category, and every identifier before saving. No Vault record has been written and no provider price was applied.`;
+    editorStatus.textContent = `${candidate.providerName || "Catalog provider"} candidate copied into this unsaved editor. Review title, set/edition, exact physical variant or finish, including any sports-card physical variant or parallel, maker/publisher, condition, grade, category, and every identifier before saving. No Vault record has been written and no provider price was applied.`;
   }
   titleField?.focus();
   document.querySelector("#treasure-editor")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  status.textContent = "Catalog candidate copied into a new unsaved treasure editor. The Intake Queue item remains pending and no authoritative record, physical variant/finish, grade, ownership fact, or value was changed.";
+  status.textContent = "Catalog candidate copied into a new unsaved treasure editor. The Intake Queue item remains pending and no authoritative record, physical variant/parallel, grade, authenticity, ownership fact, or value was changed.";
 }
 
 function candidateHeading(candidate) {
@@ -133,7 +133,7 @@ export function createVaultIntakeUi() {
   headingCopy.append(
     node("p", "eyebrow", "Royal Intake Queue"),
     node("h2", "", "Capture now. Identify carefully. Finish anywhere."),
-    node("p", "muted-copy", "Save UPC, EAN, ISBN, Pokémon, Magic: The Gathering, PSA certification, barcode, catalog, serial, SKU, or custom identifiers to your account queue. Repeated pending captures become a count instead of noisy duplicate rows. Provider evidence is not proof of exact physical identity, variant/finish, grade-holder authenticity, ownership, provenance, or value.")
+    node("p", "muted-copy", "Save UPC, EAN, ISBN, Pokémon, Magic: The Gathering, sports-card, PSA certification, barcode, catalog, serial, SKU, or custom identifiers to your account queue. Repeated pending captures become a count instead of noisy duplicate rows. Provider evidence is not proof of exact physical identity, variant/parallel/finish, grade-holder authenticity, ownership, provenance, or value.")
   );
   headingCopy.querySelector("h2").id = "royal-intake-title";
   const cameraNote = node("aside", "intake-camera-note", "Secure camera scanning is progressive and appears only when this browser exposes the required camera and native barcode APIs. Manual capture remains available on every supported device.");
@@ -158,6 +158,7 @@ export function createVaultIntakeUi() {
     "barcode", "upc", "ean", "isbn",
     "pokemon-set-number", "pokemon-card-id",
     "mtg-set-number", "mtg-scryfall-id",
+    "sports-card-set-number", "sports-card-ucid",
     "psa-cert",
     "catalog", "serial", "sku", "custom"
   ]) {
@@ -184,6 +185,8 @@ export function createVaultIntakeUi() {
     if (type.value === "pokemon-card-id") return setHint(value, "Provider card ID, for example base1-4");
     if (type.value === "mtg-set-number") return setHint(value, "Set code/collector number, for example lea/233");
     if (type.value === "mtg-scryfall-id") return setHint(value, "Scryfall printing UUID");
+    if (type.value === "sports-card-set-number") return setHint(value, "Set USID/card number, for example US-J28FC-5H09C-4/27");
+    if (type.value === "sports-card-ucid") return setHint(value, "The Card API UCID, for example UC-1KJZD-TZG7C-6");
     if (type.value === "psa-cert") return setHint(value, "PSA certification number from the holder label");
     setHint(value, "Scan result or type the identifier");
   }

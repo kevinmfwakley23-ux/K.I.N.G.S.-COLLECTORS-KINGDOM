@@ -92,6 +92,10 @@ export function loadRuntimeConfig(env = process.env) {
     psaBaseUrl: parseExternalHttpsUrl(env.KINGDOM_PSA_BASE_URL ?? "https://api.psacard.com/publicapi", "KINGDOM_PSA_BASE_URL"),
     psaAccessToken: parseOptionalSecret(env.KINGDOM_PSA_ACCESS_TOKEN, "KINGDOM_PSA_ACCESS_TOKEN", 4096),
     psaTimeoutMs: parsePositiveInteger(env.KINGDOM_PSA_TIMEOUT_MS ?? "5000", "KINGDOM_PSA_TIMEOUT_MS"),
-    psaMinIntervalMs: parsePositiveInteger(env.KINGDOM_PSA_MIN_INTERVAL_MS ?? "1000", "KINGDOM_PSA_MIN_INTERVAL_MS")
+    psaMinIntervalMs: parsePositiveInteger(env.KINGDOM_PSA_MIN_INTERVAL_MS ?? "1000", "KINGDOM_PSA_MIN_INTERVAL_MS"),
+    cardApiBaseUrl: parseExternalHttpsUrl(env.KINGDOM_CARD_API_BASE_URL ?? "https://www.thecardapi.com/api/v1", "KINGDOM_CARD_API_BASE_URL"),
+    cardApiKey: parseOptionalSecret(env.KINGDOM_CARD_API_KEY, "KINGDOM_CARD_API_KEY", 4096),
+    cardApiTimeoutMs: parsePositiveInteger(env.KINGDOM_CARD_API_TIMEOUT_MS ?? "5000", "KINGDOM_CARD_API_TIMEOUT_MS"),
+    cardApiMinIntervalMs: parsePositiveInteger(env.KINGDOM_CARD_API_MIN_INTERVAL_MS ?? "250", "KINGDOM_CARD_API_MIN_INTERVAL_MS")
   });
 }
