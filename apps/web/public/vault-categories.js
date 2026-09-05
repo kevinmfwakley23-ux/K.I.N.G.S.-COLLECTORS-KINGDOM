@@ -1,3 +1,5 @@
+import "./vault-saved-views.js";
+
 let categoryProfiles = [];
 
 function normalize(value) {
