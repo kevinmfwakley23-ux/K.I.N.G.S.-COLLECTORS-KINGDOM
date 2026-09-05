@@ -5,6 +5,18 @@ function requireDatabase(vaultStore) {
   return vaultStore.database;
 }
 
+function ensureDigestColumn(database) {
+  const columns = database.prepare("PRAGMA table_info(vault_treasure_media)").all();
+  if (!columns.some((column) => column.name === "sha256")) {
+    database.exec("ALTER TABLE vault_treasure_media ADD COLUMN sha256 TEXT;");
+  }
+  database.exec(`
+    CREATE INDEX IF NOT EXISTS vault_media_owner_treasure_sha256_idx
+    ON vault_treasure_media(owner_account_id, treasure_id, sha256)
+    WHERE sha256 IS NOT NULL;
+  `);
+}
+
 function mapMedia(row) {
   if (!row) return null;
   return Object.freeze({
@@ -16,18 +28,20 @@ function mapMedia(row) {
     originalName: row.original_name,
     contentType: row.content_type,
     sizeBytes: row.size_bytes === null ? null : Number(row.size_bytes),
+    sha256: row.sha256 ?? null,
     createdAt: row.created_at
   });
 }
 
 export function createVaultMediaRepository({ vaultStore } = {}) {
   const database = requireDatabase(vaultStore);
+  ensureDigestColumn(database);
 
   function create(media) {
     database.prepare(`
       INSERT INTO vault_treasure_media (
-        id,owner_account_id,treasure_id,media_kind,storage_key,original_name,content_type,size_bytes,created_at
-      ) VALUES (?,?,?,?,?,?,?,?,?)
+        id,owner_account_id,treasure_id,media_kind,storage_key,original_name,content_type,size_bytes,sha256,created_at
+      ) VALUES (?,?,?,?,?,?,?,?,?,?)
     `).run(
       media.id,
       media.ownerAccountId,
@@ -37,6 +51,7 @@ export function createVaultMediaRepository({ vaultStore } = {}) {
       media.originalName ?? null,
       media.contentType,
       media.sizeBytes,
+      media.sha256 ?? null,
       media.createdAt
     );
     return findById(media.ownerAccountId, media.id);
@@ -47,6 +62,15 @@ export function createVaultMediaRepository({ vaultStore } = {}) {
       SELECT * FROM vault_treasure_media
       WHERE owner_account_id = ? AND id = ?
     `).get(ownerAccountId, id));
+  }
+
+  function findBySha256(ownerAccountId, treasureId, sha256) {
+    return mapMedia(database.prepare(`
+      SELECT * FROM vault_treasure_media
+      WHERE owner_account_id = ? AND treasure_id = ? AND sha256 = ?
+      ORDER BY created_at ASC, id ASC
+      LIMIT 1
+    `).get(ownerAccountId, treasureId, sha256));
   }
 
   function listForTreasure(ownerAccountId, treasureId) {
@@ -76,5 +100,5 @@ export function createVaultMediaRepository({ vaultStore } = {}) {
     `).run(ownerAccountId, id).changes) === 1;
   }
 
-  return Object.freeze({ create, findById, listForTreasure, usage, remove });
+  return Object.freeze({ create, findById, findBySha256, listForTreasure, usage, remove });
 }
