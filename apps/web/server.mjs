@@ -19,12 +19,15 @@ import { createVaultIntakeService } from "../../packages/vault/src/intake-servic
 import { createVaultMediaRepository } from "../../packages/vault/src/media-repository.mjs";
 import { createVaultMediaService } from "../../packages/vault/src/media-service.mjs";
 import { LocalVaultMediaStorage } from "../../packages/vault/src/media-storage.mjs";
+import { createVaultProvenanceRepository } from "../../packages/vault/src/provenance-repository.mjs";
+import { createVaultProvenanceService } from "../../packages/vault/src/provenance-service.mjs";
 import { createVaultService, VaultError } from "../../packages/vault/src/service.mjs";
 import { SqliteVaultStore } from "../../packages/vault/src/sqlite-store.mjs";
 import { handleCatalogRoute } from "./catalog-http.mjs";
 import { handleVaultImportRoute } from "./vault-import-http.mjs";
 import { handleVaultIntakeRoute } from "./vault-intake-http.mjs";
 import { handleVaultMediaRoute } from "./vault-media-http.mjs";
+import { handleVaultProvenanceRoute } from "./vault-provenance-http.mjs";
 
 const CONTENT_TYPES = Object.freeze({
   ".css": "text/css; charset=utf-8",
@@ -274,7 +277,8 @@ async function handleVaultRoute({
   vaultService,
   vaultMediaService,
   vaultImportService,
-  vaultIntakeService
+  vaultIntakeService,
+  vaultProvenanceService
 }) {
   if (!vaultService) throw new HttpError(503, "vault_unavailable", "The Royal Vault service is unavailable.");
   const method = request.method ?? "GET";
@@ -311,6 +315,16 @@ async function handleVaultRoute({
         message: vaultIntakeService
           ? "The Royal Intake Queue stores rapid identifier captures server-side for cross-device review. Progressive camera barcode capture is offered on secure browsers that expose native BarcodeDetector support; manual intake remains available everywhere. Captures do not assert exact collectible identity."
           : "The Royal Intake Queue is unavailable until its service is wired."
+      },
+      provenance: {
+        available: Boolean(vaultProvenanceService),
+        appendOnly: Boolean(vaultProvenanceService),
+        ordinaryUpdateAvailable: false,
+        ordinaryDeleteAvailable: false,
+        evidenceClass: vaultProvenanceService ? "collector-recorded" : null,
+        message: vaultProvenanceService
+          ? "Treasure provenance is recorded as append-only collector evidence. Corrections append linked events; stored claims are not automatically independently verified."
+          : "The provenance ledger is unavailable until its service is wired."
       }
     }, method);
   }
@@ -345,7 +359,15 @@ async function handleVaultRoute({
   }
 
   if (pathname === "/api/vault/export" && method === "GET") {
-    return sendJson(response, 200, vaultService.exportData(identity), method, {
+    const baseExport = vaultService.exportData(identity);
+    const payload = vaultProvenanceService
+      ? {
+          ...baseExport,
+          schemaVersion: 2,
+          provenanceEvents: vaultProvenanceService.exportAll(identity)
+        }
+      : baseExport;
+    return sendJson(response, 200, payload, method, {
       "Content-Disposition": `attachment; filename="kings-vault-export-${new Date().toISOString().slice(0, 10)}.json"`
     });
   }
@@ -390,7 +412,8 @@ export function createKingdomServer({
   vaultService = null,
   vaultMediaService = null,
   vaultImportService = null,
-  vaultIntakeService = null
+  vaultIntakeService = null,
+  vaultProvenanceService = null
 } = {}) {
   return createServer(async (request, response) => {
     const requestStartedAt = performance.now();
@@ -465,6 +488,19 @@ export function createKingdomServer({
       }
 
       if (requestUrl.pathname === "/api/vault" || requestUrl.pathname.startsWith("/api/vault/")) {
+        const provenanceHandled = await handleVaultProvenanceRoute({
+          request,
+          response,
+          requestUrl,
+          identityService,
+          vaultProvenanceService,
+          securityHeaders: SECURITY_HEADERS
+        });
+        if (provenanceHandled !== null) {
+          if (provenanceHandled !== false) return;
+          return sendJson(response, 405, { error: "method_not_allowed" }, method);
+        }
+
         const mediaHandled = await handleVaultMediaRoute({
           request,
           response,
@@ -512,7 +548,8 @@ export function createKingdomServer({
           vaultService,
           vaultMediaService,
           vaultImportService,
-          vaultIntakeService
+          vaultIntakeService,
+          vaultProvenanceService
         });
         if (handled !== false) return;
         return sendJson(response, 405, { error: "method_not_allowed" }, method);
@@ -571,6 +608,11 @@ async function run() {
     mediaRepository: vaultMediaRepository,
     storage: vaultMediaStorage
   });
+  const vaultProvenanceRepository = createVaultProvenanceRepository({ vaultStore });
+  const vaultProvenanceService = createVaultProvenanceService({
+    vaultStore,
+    provenanceRepository: vaultProvenanceRepository
+  });
   const catalogRuntime = createCatalogRuntime({ config });
   const catalogService = catalogRuntime.service;
   const greatHallService = createGreatHallService({ identityService, vaultService });
@@ -589,7 +631,8 @@ async function run() {
     vaultService,
     vaultMediaService,
     vaultImportService,
-    vaultIntakeService
+    vaultIntakeService,
+    vaultProvenanceService
   });
 
   server.on("error", (error) => {
