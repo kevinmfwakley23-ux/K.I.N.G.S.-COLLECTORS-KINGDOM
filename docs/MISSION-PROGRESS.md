@@ -5,11 +5,11 @@ This file is the durable engineering recovery ledger. Read it before substantial
 ## Permanent execution rules
 
 - The locked K.I.N.G.S. Collectibles construction documents are the primary product/construction guide.
-- Research current competitors, official provider APIs, and data-use terms before each meaningful build pass.
-- Adopt improvements only when they strengthen rather than silently replace the construction-document intent.
-- Do not call functionality complete until it is real, wired, persistent/integrated where required, and supported by the strongest available quality gates.
-- Preserve permanent Kingdom treasure identity across organization, provenance, Marketplace, grading, insurance, valuation, and legacy expansion.
-- Never manufacture market values, identification certainty, provenance verification, grading certainty, physical authenticity, activity, or successful mutations.
+- Research current competitors, official provider APIs and data-use terms before meaningful build work.
+- Adopt improvements only when they strengthen rather than silently replace product intent.
+- Do not call functionality complete until it is real, wired and verified through the strongest relevant gates.
+- Preserve permanent Kingdom treasure identity across organization, provenance, grading, Marketplace, insurance, valuation and legacy expansion.
+- Never manufacture market values, identification certainty, grading certainty, physical authenticity, provenance verification or successful mutations.
 
 ---
 
@@ -17,68 +17,38 @@ This file is the durable engineering recovery ledger. Read it before substantial
 
 **Date:** 2026-09-05  
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Latest verified checkpoint:** **PSA Certification-Database Evidence Boundary**  
-**Latest verified implementation gate:** **Kingdom Quality Gates #490** — run `33973285905` — **PASS**  
-**Verified implementation commit:** `85cbb9a78211dd2b09259ef088f88f8a1d59748b`  
-**Working branch:** `imp-005-sports-card-cert-evidence`  
-**Pull request:** `#13` — `IMP-005: PSA certification evidence boundary`
+**Latest verified checkpoint:** **Exact Sports-Card Catalog Evidence via The Card API**  
+**Latest verified implementation gate:** **Kingdom Quality Gates #495** — run `33974730681` — **PASS**  
+**Verified implementation commit:** `e51c0751675746e3d9b3fa22f97815dd1450df2b`  
+**Working branch:** `imp-005-the-card-api-sports-catalog`  
+**Pull request:** `#14` — `IMP-005: exact sports-card catalog evidence`
 
 ### Exact recovery point
 
-Do **not** rebuild saved views, large-result pagination, bulk movement, provenance, Pokémon catalog intelligence, Scryfall/MTG intelligence, or the PSA certification provider/evidence UI.
-
-The Royal Vault currently has verified:
+Do **not** rebuild the following verified IMP-005 slices:
 
 - permanent owner-scoped treasure UUIDs and SQLite persistence;
 - treasure create/read/update/archive;
-- collection groups and arbitrary-depth physical locations;
-- secure private treasure media;
+- collections and arbitrary-depth physical storage;
+- secure private media;
 - voice command/talk-to-text;
 - transactional JSON/CSV migration;
 - Royal Intake Queue and progressive native barcode scanning;
 - review-only Open Library ISBN evidence;
-- review-only UPCitemdb UPC/EAN/GTIN evidence with commerce/price/image data excluded;
+- review-only UPCitemdb UPC/EAN/GTIN evidence;
 - append-only Provenance & Ownership Ledger;
 - cycle-safe individual and previewed atomic bulk reorganization;
-- private Saved Vault Views with deterministic keyset pagination and verified SQLite paging indexes;
-- review-only Pokémon TCG exact-card evidence;
-- review-only Magic: The Gathering exact-printing evidence via Scryfall;
-- **review-only PSA certification-number database evidence when a server-side PSA token is configured**;
-- **PSA cert numbers as their own Intake evidence type, intentionally not ordinary catalog/serial identity**;
-- **responsive PSA database verification that cannot automatically hand off to treasure identity, grade, condition, authenticity, provenance, ownership, or value**;
-- explicit separation among provider catalog identity, certification database records, physical authentication, provenance, ownership, and valuation.
+- private Saved Vault Views and deterministic keyset pagination with verified SQLite paging indexes;
+- review-only Pokémon exact-card evidence;
+- review-only Magic exact-printing evidence via Scryfall;
+- review-only PSA certification-number database evidence;
+- review-only exact sports-card catalog evidence via The Card API.
 
-### Construction-document guidance used for this pass
+### Latest sports-card slice
 
-`K.I.N.G.S. Collectibles construction documents .pdf` remains authoritative.
+Primary implementation files include:
 
-The PSA/sports-card pass follows its requirements for evidence-backed intelligence, collector authority, server-side provider credentials, portable provider-independent treasure identity, mobile/Chromebook/desktop continuity, truthful uncertainty, and no silent authoritative mutation from an external lookup.
-
-### Research completed for this pass
-
-Pass-specific research record:
-
-- `docs/research/2026-09-05-IMP-005-SPORTS-CARD-CERT-EVIDENCE.md`
-
-Official sources reviewed included PSA Public API documentation, PSA's public Cert Verification security notice, SportsCardsPro API/CSV documentation, SportsCardsPro Terms of Service, and SportsCardsPro price-guide terms.
-
-Key decisions:
-
-- PSA exposes an official HTTPS Public API for single cert-number lookup and requires a bearer access token.
-- PSA provider credentials stay server-side only.
-- PSA's own public security notice warns that cert-number verification does not eliminate counterfeit risk and does not guarantee that a particular physical item/holder shown to a collector is genuine.
-- Therefore a successful PSA result is `certification-database-record` evidence with `certificationNumberVerifiedInDatabase=true` while `physicalItemAuthenticated=false`.
-- PSA cert numbers are not aliased to ordinary product catalog/serial identity.
-- PSA estimate, sales, and pricing data are excluded from normalized Kingdom evidence.
-- SportsCardsPro currently requires paid API access and documents a one-request-per-second API limit.
-- SportsCardsPro's current terms restrict proprietary price-data use/redistribution in third-party-accessible software without express written permission.
-- Therefore SportsCardsPro pricing is **not** wired as a default Kingdom valuation source. Any future adapter must be permission-aware and separate identification metadata from price/valuation authority.
-
-### Latest implemented slice — PR #13
-
-Primary files added/changed:
-
-- `packages/catalog/src/psa-cert-provider.mjs`
+- `packages/catalog/src/the-card-api-provider.mjs`
 - `packages/catalog/src/runtime.mjs`
 - `packages/catalog/src/service.mjs`
 - `config/runtime.mjs`
@@ -87,87 +57,132 @@ Primary files added/changed:
 - `apps/web/public/vault-intake-core.js`
 - `apps/web/public/vault-intake-ui.js`
 - `.env.example`
-- `tests/psa-cert-provider.test.mjs`
-- `tests/psa-intake.test.mjs`
-- `tests/psa-evidence-ui.test.mjs`
-- `tests/psa-intake-ui-artifact.test.mjs`
-- `tests/catalog-runtime.test.mjs`
-- `tests/catalog-runtime-wiring.test.mjs`
-- `tests/config.test.mjs`
-- `tests/vault-intake.test.mjs`
-- `tools/typecheck.mjs`
-- `tools/verify-build.mjs`
-- `docs/research/2026-09-05-IMP-005-SPORTS-CARD-CERT-EVIDENCE.md`
+- provider/runtime/Intake/UI/build-contract tests
+- `docs/research/2026-09-05-IMP-005-THE-CARD-API-SPORTS-CATALOG.md`
 
 Verified behavior:
 
-- `psa-cert` validates and normalizes 1–12 digit certification numbers;
-- aliases `psa` and `psa-certification` normalize to the same controlled Intake type;
-- PSA cert numbers do not alias to ordinary catalog/serial identity for duplicate matching;
-- official PSA API transport requires HTTPS outside local tests;
-- bearer token is supplied only through server runtime configuration and never exposed in browser code/public source URLs/normalized evidence;
-- the collector-facing source link points to PSA's normal public cert page, not the authenticated API endpoint;
-- provider requests have bounded timeout and maximum response size;
-- requests are serialized with a conservative default 1000 ms interval;
-- PSA provider uses a 15-minute provider-specific cache instead of the generic six-hour catalog TTL;
-- 204/404 no-data, invalid PSA request, rejected token, 429, upstream failure, malformed JSON/payload, oversized payload, and returned-cert mismatch remain explicit;
-- bounded PSA/PSA-DNA metadata can include cert number, year/brand/category/card number/subject/variety, grade description/card grade, signer data, population values, item status, and PSA/DNA result metadata where returned;
-- price/estimate/sales material is excluded from normalized evidence;
-- database success explicitly records verification scope without claiming physical-holder authentication;
-- runtime reports PSA capability as unavailable when no server-side token is configured rather than pretending access works;
-- Royal Intake exposes `Verify PSA cert record` for PSA cert items;
-- certification evidence cannot use ordinary `Use in treasure editor` or provider `Review in treasure editor` handoff;
-- no automatic treasure identity, grade, condition, authenticity, provenance, ownership, purchase price, market value, or Vault mutation occurs.
+- permanent `UC-` sports-card UCIDs normalize and validate before network use;
+- exact set/card lookup uses provider set USID + printed card number;
+- the card's referenced set is independently fetched and must have provider category `sports`;
+- external HTTP is forbidden outside localhost tests; production transport is HTTPS;
+- the API key is server-only and sent through `x-api-key` rather than URLs/browser code;
+- `/api/v1` is preserved by explicit provider path joining;
+- timeout, response size and request pacing are bounded;
+- exact-result ambiguity fails instead of silently selecting a card;
+- configuration-required, paid-plan/subscription-required, rate-limit, auth, upstream, malformed, category mismatch and identifier mismatch failures stay distinct;
+- provider catalog entitlement is **not** claimed at startup merely because a key exists;
+- normalized evidence may include subject/player, set/parent set, printed number, sport/year, manufacturer, rookie/autograph/relic flags, print run and provider IDs;
+- Market/Sales endpoints, sale prices, market prices, listing data, valuation and provider images are excluded from this identification path;
+- Royal Intake supports `sports-card-ucid` and `sports-card-set-number` as duplicate-review evidence;
+- candidate handoff creates only a **new unsaved** Trading Card editor;
+- no automatic physical parallel/variant/finish, condition, grade, authenticity, provenance, ownership, purchase price, market value or Marketplace mutation occurs.
 
-Verification sequence:
+### Verification sequence
 
-- **Quality Gates #489** — run `33973247184` — **FAILED 1/153** because a newly added artifact test expected the policy-owned text `Verify PSA cert record` to be duplicated inside `vault-intake-ui.js`. Provider, Intake, runtime, domain, and truthfulness behavior passed.
-- The artifact test was corrected to inspect the actual module boundary: the policy label in `vault-catalog-core.js` and certification-only behavior in `vault-intake-ui.js`. No production behavior was weakened or duplicated merely to satisfy the test.
-- **Quality Gates #490** — run `33973285905` — **PASS** on `85cbb9a78211dd2b09259ef088f88f8a1d59748b`.
-- #490 passed lint, type contracts, all **153 tests**, production build/artifact verification, and production dependency audit.
+- **Quality Gates #494** — run `33974619115` — failed **1/167** because an older Magic UI artifact test required the literal phrase `physical variant or finish`; the new shared warning had changed that phrase to sports-card `variant or parallel` language.
+- Production/provider logic was not weakened. The shared warning was corrected to preserve **both** Magic `variant or finish` and sports-card `variant or parallel` review concepts.
+- **Quality Gates #495** — run `33974730681` — **PASS** on `e51c0751675746e3d9b3fa22f97815dd1450df2b`.
+- #495 passed lint, type contracts, all tests, production build/artifact verification and production dependency audit.
+
+### Provider/legal research outcome
+
+- The Card API currently offers permanent typed identifiers and a commercial Catalog API under eligible paid plans/add-ons with plan-specific storage/use restrictions.
+- The Kingdom treats it as an optional server-side integration and does not redistribute the provider catalog as a standalone competing dataset.
+- Beckett, SGC and CGC provide collector-facing certification verification, but no supported public automation API was identified in the official material reviewed for this pass; do not scrape/bypass those interfaces.
+- SportsCardsPro/PriceCharting proprietary price data remains excluded as a default Kingdom valuation source without appropriate permission for third-party-accessible use.
+
+---
+
+## Newly locked requirement — AI card pre-grading
+
+The collector has explicitly required AI grading capability including:
+
+- border-size and centering tools for TCG/sports cards;
+- corner checks;
+- edge checks;
+- scratch/surface checks;
+- color/fading checks;
+- autograph knowledge and scan-to-reference comparison using lawful web access/reference evidence.
+
+Pass-specific research record:
+
+- `docs/research/2026-09-05-IMP-005-AI-CARD-PREGRADING.md`
+
+### Standards research completed
+
+Official sources reviewed:
+
+- PSA grading standards;
+- Beckett/BGS grading scale and four-subgrade model;
+- CGC Cards grading scale;
+- PSA autograph authentication process;
+- Beckett Authentication autograph process;
+- trading-card physical-size references for standard western and Japanese-size cards.
+
+Key decisions:
+
+- the Kingdom feature is named **AI pre-grade**, **condition analysis**, or **estimated grade range**, not an official grade;
+- versioned grader profiles may expose PSA/BGS/CGC-style thresholds, but the Kingdom must not claim affiliation or certainty beyond the published criteria and captured evidence;
+- centering must measure horizontal and vertical ratios independently and preserve front/back results;
+- western standard cards use a common approximately 63×88 mm / 2.5×3.5 in calibration profile; Japanese-size cards use approximately 59×86 mm; actual image geometry still controls measurement;
+- borderless/asymmetric designs require a known reference template or collector-correctable manual anchors rather than naive outer-border math;
+- corners, edges and surface retain independent evidence/sub-scores;
+- fine scratches, gloss changes, dents, restoration and alteration can require macro/raking/spectral views, so low-quality phone images must produce limitations rather than false confidence;
+- professional autograph authentication uses more than visual similarity. PSA and Beckett describe ink/structure analysis, object evaluation, side-by-side exemplars and specialized tools;
+- the Kingdom may perform sourced **signature similarity comparison** against known exemplars but may not call a signature genuine/fake solely from AI image comparison.
+
+### Target capture protocol
+
+The grading workflow should request, where appropriate:
+
+1. straight-on front;
+2. straight-on back;
+3. high-resolution corner/macro evidence;
+4. raking-light surface views from multiple directions;
+5. optional alternate-light/UV evidence when available;
+6. autograph close-up when present;
+7. optional scale/calibration reference for exact-size/trimming review.
+
+Capture quality must be checked for blur, glare, crop completeness, perspective and resolution before analysis.
 
 ---
 
 ## Exact next engineering target
 
-**IMP-005 — Sports-Card Identity Evidence + Additional Grading-Provider Verification Research**
+**IMP-005 — AI Card Pre-Grading Foundation**
 
-Do not start with a price feed. First identify lawful, current evidence sources and preserve the existing authority boundaries.
+Build next in this order:
 
-Build/research next in this order:
-
-1. research current official verification/API options and terms for other major grading providers such as BGS, SGC, CGC and other relevant graders;
-2. add another grader only if current official access can support a production verification flow without scraping or invented capability;
-3. preserve the same certification-database-record versus physical-authentication boundary used for PSA;
-4. research sports-card catalog **identity** providers separately from valuation providers, including card number, set, player/subject, parallel/variant and provider identifiers;
-5. if SportsCardsPro remains a candidate, require explicit licensing/permission appropriate to the Kingdom's intended distribution before surfacing proprietary price data;
-6. keep all provider credentials server-side and capability status honest when credentials/subscriptions are absent;
-7. do not map price fields into catalog identity or authoritative value;
-8. do not let a cert lookup silently set grade or authenticity on a treasure;
-9. extend provider-neutral evidence service rather than creating a second subsystem;
-10. add provider/runtime/HTTP/Intake/UI/artifact regression tests;
-11. pass full Kingdom Quality Gates;
-12. update README and this recovery ledger before merge.
+1. add `packages/grading/` with versioned card-size and grader-standard profiles;
+2. implement deterministic centering math for left/right and top/bottom borders with front/back ratios and tests;
+3. add manual-anchor correction support for borderless/asymmetric/poorly detected cards;
+4. define capture-quality and defect evidence contracts for corners, edges, surface, color and alteration warnings;
+5. create an append-only pre-grade analysis repository tied to permanent treasure UUIDs and source media IDs/hashes;
+6. add an image-analysis provider boundary that can use browser/local computer vision and governed K.I.N.G.S. AI vision routing without exposing provider credentials;
+7. add autograph-comparison evidence with sourced reference exemplar URLs/dates and strict non-authentication semantics;
+8. build responsive mobile-first grading capture/review UI;
+9. do not directly mutate authoritative treasure grade, condition, authenticity, provenance or value from AI analysis;
+10. pass full Kingdom Quality Gates;
+11. update README and this recovery ledger before merge.
 
 ---
 
 ## Verified IMP-005 milestone checkpoints
 
-- **Transactional migration:** Quality Gates #328 — PASS.
-- **Royal Intake Queue:** Quality Gates #347 — PASS.
-- **Progressive barcode scanner:** Quality Gates #361 — PASS.
-- **ISBN catalog candidates:** Quality Gates #379 — PASS.
-- **UPC/EAN/GTIN candidates:** Quality Gates #396 — PASS.
-- **Provenance & Ownership Ledger:** Quality Gates #416 — PASS.
-- **Cycle-safe reorganization domain:** Quality Gates #422 — PASS.
-- **Live enhancement bootstrap:** Quality Gates #425 — PASS.
-- **Authenticated reorganization PATCH API:** Quality Gates #433 — PASS.
-- **Responsive reorganization controls:** Quality Gates #444 — PASS.
-- **Previewed Atomic Bulk Treasure Reorganization:** final Quality Gates #460 — PASS.
-- **Saved Vault Views + Large-Collection Retrieval:** final planner/index gate #475 — PASS.
-- **Pokémon TCG Category Catalog Intelligence:** Quality Gates #480 — PASS.
-- **Magic: The Gathering / Scryfall Catalog Intelligence:** Quality Gates #485 and later regression gates — PASS.
-- **PSA Certification-Database Evidence Boundary:** Quality Gates #490 — run `33973285905` — PASS on `85cbb9a78211dd2b09259ef088f88f8a1d59748b`.
+- Transactional migration — Quality Gates #328 — PASS.
+- Royal Intake Queue — #347 — PASS.
+- Progressive barcode scanner — #361 — PASS.
+- ISBN catalog candidates — #379 — PASS.
+- UPC/EAN/GTIN candidates — #396 — PASS.
+- Provenance & Ownership Ledger — #416 — PASS.
+- Reorganization domain/API/UI — #422 through #444 — PASS.
+- Previewed Atomic Bulk Treasure Reorganization — final #460 — PASS.
+- Saved Vault Views + Large-Collection Retrieval — final planner/index gate #475 — PASS.
+- Pokémon TCG Category Catalog Intelligence — #480 — PASS.
+- Magic / Scryfall Catalog Intelligence — #485 and later regression gates — PASS.
+- PSA Certification-Database Evidence — #490 — PASS.
+- Exact Sports-Card Catalog Evidence / The Card API — #495 — run `33974730681` — PASS on `e51c0751675746e3d9b3fa22f97815dd1450df2b`.
 
 ---
 
@@ -175,23 +190,22 @@ Build/research next in this order:
 
 Do not represent these as live until separately implemented and verified:
 
-- destructive bulk archive/delete flows;
-- sports-card catalog provider candidates beyond existing generic retail/card paths;
-- grading-company verification beyond PSA;
-- automatic physical slab authentication;
-- multi-provider Pokémon reconciliation/fallback;
-- fuzzy card-name/set/parallel disambiguation;
-- Scryfall bulk-data local indexing;
-- comic-specific provider candidates;
-- video-game-specific provider candidates;
-- vinyl/music provider candidates;
+- AI card pre-grading/condition analysis UI and persistence;
+- automatic border/corner/edge/surface/color computer vision;
+- autograph similarity comparison and sourced exemplar retrieval;
+- official grading-provider integrations beyond PSA certification database evidence;
+- physical slab/card authentication;
 - evidence-backed market valuation and value history;
-- image recognition / visual collectible identification;
-- insurance/reporting outputs beyond portable JSON export;
-- universal camera scanning where native `BarcodeDetector` does not exist;
-- universal speech recognition where Web Speech recognition is unavailable;
-- Marketplace ownership transfer and settlement workflows beyond the existing architectural shell.
+- image-based collectible identification;
+- multi-provider Pokémon reconciliation/fallback;
+- fuzzy card/set/parallel discovery;
+- comic/video-game/vinyl provider candidates;
+- insurance/reporting expansion beyond portable JSON export;
+- universal camera scanning where browser native APIs are absent;
+- universal speech recognition where browser speech APIs are absent;
+- destructive bulk archive/delete;
+- Marketplace ownership transfer/settlement.
 
 ### Permanent truthfulness boundary
 
-Market value stays absent/null until backed by real, legally usable valuation evidence. A barcode, image, AI answer, external catalog candidate, title match, ISBN, catalog ID, receipt, certificate number, grading label, Oracle ID, provider finish list, or collector-entered provenance statement is never silently upgraded into an authoritative independently verified claim. Certification-number lookup may verify database metadata for that number but must never silently authenticate the physical collectible. Permanent Kingdom treasure UUIDs remain provider-independent physical-item identities.
+A catalog result, AI pre-grade, photograph, autograph similarity result, barcode, title match, grading label, cert number or collector statement is not silently promoted into an authoritative independent claim. AI grading is estimated condition evidence; professional grading and autograph authentication remain separate authorities. Permanent Kingdom treasure UUIDs remain provider-independent physical-item identities.
