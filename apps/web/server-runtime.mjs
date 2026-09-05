@@ -13,6 +13,8 @@ import { createVaultMarketplaceReadinessService } from "../../packages/vault/src
 import { handleVaultMarketplaceReadinessRequest } from "../../packages/vault/src/marketplace-readiness-http.mjs";
 import { createVaultOwnershipService } from "../../packages/vault/src/ownership.mjs";
 import { ensureVaultPerformanceIndexes } from "../../packages/vault/src/performance-indexes.mjs";
+import { createVaultRecommendationService } from "../../packages/vault/src/recommendations.mjs";
+import { handleVaultRecommendationRequest } from "../../packages/vault/src/recommendations-http.mjs";
 import { createVaultSearchService } from "../../packages/vault/src/search.mjs";
 import { createVaultSetSummaryService } from "../../packages/vault/src/set-summaries.mjs";
 import { createVaultSetService } from "../../packages/vault/src/sets.mjs";
@@ -48,8 +50,12 @@ function marketplaceReadinessRoute(pathname) {
   return pathname === "/api/vault/marketplace-ready" || /^\/api\/vault\/treasures\/[^/]+\/marketplace-preparation$/.test(pathname);
 }
 
+function recommendationRoute(pathname) {
+  return /^\/api\/vault\/treasures\/[^/]+\/tag-recommendations$/.test(pathname);
+}
+
 function extensionRoute(pathname) {
-  return setRoute(pathname) || marketplaceReadinessRoute(pathname);
+  return setRoute(pathname) || marketplaceReadinessRoute(pathname) || recommendationRoute(pathname);
 }
 
 function requireIdentity(identityService, request) {
@@ -65,6 +71,7 @@ export function installVaultSetRoutes({
   setService,
   summaryService = null,
   marketplaceReadinessService = null,
+  recommendationService = null,
   logger = createLogger({ level: "info" })
 } = {}) {
   if (!server || typeof server.listeners !== "function") throw new TypeError("A Kingdom HTTP server is required.");
@@ -92,20 +99,31 @@ export function installVaultSetRoutes({
 
     try {
       const identity = requireIdentity(identityService, request);
-      const result = setRoute(requestUrl.pathname)
-        ? await handleVaultSetRequest({
+      let result;
+      if (setRoute(requestUrl.pathname)) {
+        result = await handleVaultSetRequest({
           request,
           pathname: requestUrl.pathname,
           identity,
           setService,
           summaryService
-        })
-        : await handleVaultMarketplaceReadinessRequest({
+        });
+      } else if (marketplaceReadinessRoute(requestUrl.pathname)) {
+        result = await handleVaultMarketplaceReadinessRequest({
           request,
           pathname: requestUrl.pathname,
           identity,
           readinessService: marketplaceReadinessService
         });
+      } else {
+        result = handleVaultRecommendationRequest({
+          request,
+          pathname: requestUrl.pathname,
+          searchParams: requestUrl.searchParams,
+          identity,
+          recommendationService
+        });
+      }
       if (result === null) return sendJson(response, 405, { error: "method_not_allowed" }, method);
       if (result === false) return sendJson(response, 404, { error: "not_found" }, method);
       return sendJson(response, result.status, result.payload, method);
@@ -131,6 +149,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
   if (!vaultPerformanceIndexes.complete) throw new Error("Royal Vault performance indexes could not be installed completely.");
   const vaultOwnershipService = createVaultOwnershipService({ filename: vaultDatabasePath });
   const vaultSearchService = createVaultSearchService({ filename: vaultDatabasePath });
+  const vaultRecommendationService = createVaultRecommendationService({ filename: vaultDatabasePath });
   const vaultSetService = createVaultSetService({ filename: vaultDatabasePath });
   const vaultSetSummaryService = createVaultSetSummaryService({ filename: vaultDatabasePath });
   const vaultMarketplaceReadinessService = createVaultMarketplaceReadinessService({ filename: vaultDatabasePath });
@@ -148,7 +167,8 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
     vaultService,
     searchService: vaultSearchService,
     attributeService: vaultOwnershipService.attributeService,
-    setSummaryService: vaultSetSummaryService
+    setSummaryService: vaultSetSummaryService,
+    recommendationService: vaultRecommendationService
   });
   const greatHallService = createGreatHallService({ identityService, vaultService: vaultIntelligence });
   const kingsAiClient = createKingsAiClient({
@@ -173,6 +193,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
     setService: vaultSetService,
     summaryService: vaultSetSummaryService,
     marketplaceReadinessService: vaultMarketplaceReadinessService,
+    recommendationService: vaultRecommendationService,
     logger
   });
 
@@ -187,6 +208,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
     vaultMarketplaceReadinessService.close();
     vaultSetSummaryService.close();
     vaultSetService.close();
+    vaultRecommendationService.close();
     vaultSearchService.close();
     vaultOwnershipService.close();
     vaultStore.close();
@@ -201,6 +223,7 @@ export function createProductionKingdomRuntime({ config = loadRuntimeConfig(), l
       vaultService,
       vaultOwnershipService,
       vaultSearchService,
+      vaultRecommendationService,
       vaultEvidenceService,
       vaultSetService,
       vaultSetSummaryService,
@@ -230,6 +253,7 @@ async function run() {
       version: config.version,
       collectionSets: true,
       marketplaceReadiness: true,
+      tagRecommendations: true,
       vaultPerformanceIndexes: runtime.services.vaultPerformanceIndexes.installed.length
     });
   });
