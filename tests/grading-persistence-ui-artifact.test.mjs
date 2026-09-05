@@ -17,26 +17,36 @@ test("pre-grade persistence UI searches the paged Vault and appends SHA-linked a
   assert.match(source, /\/media-match\?sha256=/);
   assert.match(source, /sourceMediaIds: uniqueSourceMediaIds/);
   assert.match(source, /captureQuality/);
+  assert.match(source, /detectorCoverage/);
+  assert.match(source, /contourCoverage/);
+  assert.match(source, /surfaceCoverage/);
+  assert.match(source, /reviewCandidateCount/);
   assert.match(source, /corner-contour-anomaly/);
   assert.match(source, /edge-contour-anomaly/);
   assert.match(source, /surface-reflectance-anomaly/);
   assert.match(source, /comparisonMediaId/);
   assert.match(source, /exact SHA-256 byte match/i);
-  assert.match(source, /does not contain an overall grade estimate/i);
+  assert.match(source, /No overall grade estimate is client-supplied/i);
   assert.match(source, /never overwrite the treasure's condition, grade, authenticity or value/i);
   assert.match(source, /Saving will append evidence only; no treasure field will be overwritten/i);
   assert.doesNotMatch(source, /estimatedGradeRange\s*:/);
   assert.doesNotMatch(source, /officialGrade\s*:\s*true|physicalAuthentication\s*:\s*true|mayMutateValue\s*:\s*true/);
 });
 
-test("saved pre-grade history exposes immutable hashes, linked evidence counts and advisory status", async () => {
+test("saved pre-grade UI exposes immutable history plus read-only Kingdom advisory range without third-party grading claims", async () => {
   const source = await readFile(uiUrl, "utf8");
   assert.match(source, /analysisSha256/);
   assert.match(source, /linked media/);
   assert.match(source, /capture record/);
+  assert.match(source, /detector coverage record/);
   assert.match(source, /detector signal/);
   assert.match(source, /Append-only advisory evidence/);
-  assert.match(source, /not an official grade/);
+  assert.match(source, /\/pregrade-estimate/);
+  assert.match(source, /Kingdom advisory evidence range/);
+  assert.match(source, /Evidence completeness/);
+  assert.match(source, /Range confidence/);
+  assert.match(source, /Still missing/);
+  assert.match(source, /Not an official PSA\/BGS\/CGC grade/);
   assert.match(source, /does not authenticate the physical card/);
   assert.match(source, /Refresh saved history/);
 });
