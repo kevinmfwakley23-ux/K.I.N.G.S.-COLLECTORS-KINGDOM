@@ -48,6 +48,14 @@ function parseOptionalEmail(rawValue, name) {
   return value;
 }
 
+function parseOptionalSecret(rawValue, name) {
+  if (rawValue === undefined || rawValue === null || rawValue === "") return null;
+  if (typeof rawValue !== "string") throw new Error(`${name} must be text when provided.`);
+  const value = rawValue.trim();
+  if (!value || value.length > 512 || /[\r\n]/.test(value)) throw new Error(`${name} is invalid.`);
+  return value;
+}
+
 function resolveKingsAiBaseUrl(env) {
   const explicitBaseUrl = env.KINGDOM_KINGS_AI_BASE_URL?.trim();
   if (explicitBaseUrl) return parseHttpUrl(explicitBaseUrl, "KINGDOM_KINGS_AI_BASE_URL");
@@ -77,6 +85,10 @@ export function loadRuntimeConfig(env = process.env) {
     catalogTimeoutMs: parsePositiveInteger(env.KINGDOM_CATALOG_TIMEOUT_MS ?? "5000", "KINGDOM_CATALOG_TIMEOUT_MS"),
     catalogCacheTtlMs: parsePositiveInteger(env.KINGDOM_CATALOG_CACHE_TTL_MS ?? "21600000", "KINGDOM_CATALOG_CACHE_TTL_MS"),
     catalogCacheEntries: parsePositiveInteger(env.KINGDOM_CATALOG_CACHE_ENTRIES ?? "500", "KINGDOM_CATALOG_CACHE_ENTRIES"),
-    catalogMinIntervalMs: parsePositiveInteger(env.KINGDOM_CATALOG_MIN_INTERVAL_MS ?? "1100", "KINGDOM_CATALOG_MIN_INTERVAL_MS")
+    catalogMinIntervalMs: parsePositiveInteger(env.KINGDOM_CATALOG_MIN_INTERVAL_MS ?? "1100", "KINGDOM_CATALOG_MIN_INTERVAL_MS"),
+    upcItemDbBaseUrl: parseExternalHttpsUrl(env.KINGDOM_UPCITEMDB_BASE_URL ?? "https://api.upcitemdb.com", "KINGDOM_UPCITEMDB_BASE_URL"),
+    upcItemDbUserKey: parseOptionalSecret(env.KINGDOM_UPCITEMDB_USER_KEY, "KINGDOM_UPCITEMDB_USER_KEY"),
+    upcItemDbTimeoutMs: parsePositiveInteger(env.KINGDOM_UPCITEMDB_TIMEOUT_MS ?? "5000", "KINGDOM_UPCITEMDB_TIMEOUT_MS"),
+    upcItemDbMinIntervalMs: parsePositiveInteger(env.KINGDOM_UPCITEMDB_MIN_INTERVAL_MS ?? "10000", "KINGDOM_UPCITEMDB_MIN_INTERVAL_MS")
   });
 }
