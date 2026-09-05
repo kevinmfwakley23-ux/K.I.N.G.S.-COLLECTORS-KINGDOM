@@ -6,6 +6,7 @@ const DEFECT_TYPES = new Set([
   "suspected-trimming", "suspected-recoloration", "suspected-restoration", "suspected-cleaning", "suspected-altered-stock",
   "corner-contour-anomaly", "edge-contour-anomaly", "surface-reflectance-anomaly"
 ]);
+const DETECTOR_TYPES = new Set(["contour", "paired-raking-light"]);
 
 function bounded(value, name) {
   if (!Number.isFinite(value) || value < 0 || value > 1) throw new RangeError(`${name} must be between 0 and 1.`);
@@ -74,6 +75,30 @@ export function createCaptureQualityEvidence(input = {}) {
   });
 }
 
+export function normalizeDetectorCoverage(input = {}) {
+  const detector = safeText(input.detector, "Detector", 80);
+  if (!DETECTOR_TYPES.has(detector)) throw new RangeError(`Unsupported detector coverage type: ${detector}`);
+  const side = safeText(input.side, "Detector side", 20);
+  if (!new Set(["front", "back"]).has(side)) throw new RangeError("Detector coverage side must be front or back.");
+  if (!Array.isArray(input.sourceMediaIds) || input.sourceMediaIds.length < 1 || input.sourceMediaIds.length > 4) {
+    throw new RangeError("Detector coverage requires 1 to 4 source media identifiers.");
+  }
+  const sourceMediaIds = [...new Set(input.sourceMediaIds.map((value) => safeText(value, "Detector source media ID", 160)))];
+  const count = Number(input.reviewCandidateCount);
+  if (!Number.isInteger(count) || count < 0 || count > 1000) throw new RangeError("Detector review candidate count must be an integer between 0 and 1000.");
+  return freeze({
+    detector,
+    side,
+    sourceMediaIds,
+    completed: input.completed === true,
+    usableForConditionInference: input.usableForConditionInference === true,
+    reviewCandidateCount: count,
+    method: safeText(input.method, "Detector method", 120),
+    note: input.note == null ? null : safeText(input.note, "Detector coverage note", 500),
+    advisoryOnly: true
+  });
+}
+
 export function createAutographComparisonEvidence(input = {}) {
   const references = Array.isArray(input.references) ? input.references : [];
   if (references.length < 1) throw new RangeError("Autograph comparison requires at least one sourced reference exemplar.");
@@ -104,6 +129,7 @@ export function createAutographComparisonEvidence(input = {}) {
 export function createPregradeAnalysis(input = {}) {
   const defects = Array.isArray(input.defects) ? input.defects.map(normalizeDefectEvidence) : [];
   const captures = Array.isArray(input.captureQuality) ? input.captureQuality.map(createCaptureQualityEvidence) : [];
+  const detectorCoverage = Array.isArray(input.detectorCoverage) ? input.detectorCoverage.map(normalizeDetectorCoverage) : [];
   const estimatedGradeRange = input.estimatedGradeRange == null ? null : {
     min: Number(input.estimatedGradeRange.min),
     max: Number(input.estimatedGradeRange.max)
@@ -120,6 +146,7 @@ export function createPregradeAnalysis(input = {}) {
     cardSizeProfile: safeText(input.cardSizeProfile ?? "custom", "Card-size profile", 80),
     centering: input.centering ?? null,
     captureQuality: captures,
+    detectorCoverage,
     defects,
     autographComparison: input.autographComparison == null ? null : createAutographComparisonEvidence(input.autographComparison),
     estimatedGradeRange,
@@ -137,3 +164,4 @@ export function createPregradeAnalysis(input = {}) {
 }
 
 export const GRADING_DEFECT_TYPES = Object.freeze([...DEFECT_TYPES].sort());
+export const GRADING_DETECTOR_TYPES = Object.freeze([...DETECTOR_TYPES].sort());
