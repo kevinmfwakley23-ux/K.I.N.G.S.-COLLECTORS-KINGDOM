@@ -259,14 +259,17 @@ export function createVaultPortableService({ vaultService } = {}) {
     const organization = organizationIndexes(vaultService, identity);
     const rows = [];
     const valid = [];
+    const validByRowNumber = new Map();
 
     for (let index = 1; index < parsedCsv.length; index += 1) {
+      const rowNumber = index + 1;
       try {
         const result = parseRow(parsedCsv[index], map, organization);
         valid.push(result.parsed);
-        rows.push({ rowNumber: index + 1, status: "valid", title: result.parsed.title, category: result.parsed.category, warnings: result.warnings });
+        validByRowNumber.set(rowNumber, result.parsed);
+        rows.push({ rowNumber, status: "valid", title: result.parsed.title, category: result.parsed.category, warnings: result.warnings });
       } catch (error) {
-        rows.push({ rowNumber: index + 1, status: "invalid", title: valueAt(parsedCsv[index], map, "title") || null, category: valueAt(parsedCsv[index], map, "category") || null, errors: [error.message] });
+        rows.push({ rowNumber, status: "invalid", title: valueAt(parsedCsv[index], map, "title") || null, category: valueAt(parsedCsv[index], map, "category") || null, errors: [error.message] });
       }
     }
 
@@ -276,7 +279,7 @@ export function createVaultPortableService({ vaultService } = {}) {
     let duplicateWarnings = 0;
     for (const row of rows) {
       if (row.status !== "valid") continue;
-      const item = valid.find((candidate) => candidate.title === row.title && candidate.category === row.category && duplicateKey(candidate));
+      const item = validByRowNumber.get(row.rowNumber);
       if (!item) continue;
       const warnings = row.warnings ?? [];
       if ((importCounts.get(item.duplicateKey) ?? 0) > 1) {
