@@ -20,6 +20,17 @@ function parseBoolean(rawValue, name) {
   throw new Error(`${name} must be true or false.`);
 }
 
+function parseHttpUrl(rawValue, name) {
+  let parsed;
+  try {
+    parsed = new URL(rawValue);
+  } catch {
+    throw new Error(`${name} must be a valid URL.`);
+  }
+  if (!["http:", "https:"].includes(parsed.protocol)) throw new Error(`${name} must use http or https.`);
+  return parsed.toString().replace(/\/$/, "");
+}
+
 export function loadRuntimeConfig(env = process.env) {
   const logLevel = env.KINGDOM_LOG_LEVEL ?? "info";
   if (!LOG_LEVELS.has(logLevel)) throw new Error("KINGDOM_LOG_LEVEL must be one of debug, info, warn, error.");
@@ -30,6 +41,9 @@ export function loadRuntimeConfig(env = process.env) {
     version: env.KINGDOM_VERSION ?? "0.2.0",
     dataDir: resolve(env.KINGDOM_DATA_DIR ?? "./data"),
     sessionTtlHours: parsePositiveInteger(env.KINGDOM_SESSION_TTL_HOURS ?? "168", "KINGDOM_SESSION_TTL_HOURS"),
-    cookieSecure: parseBoolean(env.KINGDOM_COOKIE_SECURE ?? "false", "KINGDOM_COOKIE_SECURE")
+    cookieSecure: parseBoolean(env.KINGDOM_COOKIE_SECURE ?? "false", "KINGDOM_COOKIE_SECURE"),
+    kingsAiBaseUrl: parseHttpUrl(env.KINGDOM_KINGS_AI_BASE_URL ?? "http://127.0.0.1:8790", "KINGDOM_KINGS_AI_BASE_URL"),
+    kingsAiToken: env.KINGDOM_KINGS_AI_TOKEN?.trim() || null,
+    kingsAiTimeoutMs: parsePositiveInteger(env.KINGDOM_KINGS_AI_TIMEOUT_MS ?? "70000", "KINGDOM_KINGS_AI_TIMEOUT_MS")
   });
 }
