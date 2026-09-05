@@ -4,9 +4,7 @@ import { createServer } from "node:http";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { loadRuntimeConfig } from "../../config/runtime.mjs";
-import { MemoryCatalogCache } from "../../packages/catalog/src/cache.mjs";
-import { createOpenLibraryCatalogProvider } from "../../packages/catalog/src/open-library-provider.mjs";
-import { createCatalogService } from "../../packages/catalog/src/service.mjs";
+import { createCatalogRuntime } from "../../packages/catalog/src/runtime.mjs";
 import { createHealthSnapshot, createReadinessSnapshot } from "../../packages/core/src/health.mjs";
 import { createGreatHallService } from "../../packages/great-hall/src/service.mjs";
 import { createIdentityService, IdentityError } from "../../packages/identity/src/service.mjs";
@@ -573,21 +571,8 @@ async function run() {
     mediaRepository: vaultMediaRepository,
     storage: vaultMediaStorage
   });
-  const catalogCache = new MemoryCatalogCache({
-    ttlMs: config.catalogCacheTtlMs,
-    maxEntries: config.catalogCacheEntries
-  });
-  const openLibraryProvider = createOpenLibraryCatalogProvider({
-    baseUrl: config.openLibraryBaseUrl,
-    timeoutMs: config.catalogTimeoutMs,
-    minIntervalMs: config.catalogMinIntervalMs,
-    version: config.version,
-    contactEmail: config.catalogContactEmail
-  });
-  const catalogService = createCatalogService({
-    providers: [openLibraryProvider],
-    cache: catalogCache
-  });
+  const catalogRuntime = createCatalogRuntime({ config });
+  const catalogService = catalogRuntime.service;
   const greatHallService = createGreatHallService({ identityService, vaultService });
   const kingsAiClient = createKingsAiClient({
     baseUrl: config.kingsAiBaseUrl,
