@@ -71,5 +71,5 @@ test("PWA cache never intercepts API calls or document navigations", async () =>
   const runtime = await readPublic("brand-runtime.js");
   assert.match(runtime, /\/manifest\.json/);
   assert.match(runtime, /\/assets\/kingdom-official-logo\.svg/);
-  assert.match(runtime, /data\.installKingdom/);
+  assert.match(runtime, /dataset\.installKingdom/);
 });
