@@ -30,7 +30,7 @@
 .grading-contour-signal p { margin: 0; }
 .grading-contour-signal > span { font-size: .8rem; font-variant-numeric: tabular-nums; }
 .grading-reference-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .7rem; align-items: end; }
-.grading-reference-form label, .grading-autograph-target { display: grid; gap: .35rem; font-size: .82rem; font-weight: 750; }
+.grading-reference-form label, .grading-autograph-target, .grading-persistence-panel > label { display: grid; gap: .35rem; font-size: .82rem; font-weight: 750; }
 .grading-reference-candidates { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .7rem; }
 .grading-reference-candidate { display: grid; gap: .5rem; padding: .7rem; border-radius: .8rem; border: 1px solid rgba(35, 28, 20, .14); background: rgba(255,255,255,.38); min-width: 0; }
 .grading-reference-candidate-heading { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .5rem; align-items: start; }
@@ -40,6 +40,13 @@
 .grading-reference-meta span:last-child { font-weight: 800; }
 .grading-autograph-results { display: grid; gap: .45rem; }
 .grading-autograph-panel > .gold-button { width: fit-content; }
+.grading-persistence-panel select { width: 100%; }
+.grading-persistence-actions { display: flex; flex-wrap: wrap; gap: .55rem; align-items: center; }
+.grading-pregrade-history { display: grid; gap: .55rem; }
+.grading-pregrade-history-card { display: grid; gap: .3rem; padding: .7rem; border-radius: .8rem; border: 1px solid rgba(35, 28, 20, .14); background: rgba(255,255,255,.36); min-width: 0; }
+.grading-pregrade-history-card > span { font-size: .8rem; }
+.grading-pregrade-history-card code { display: block; max-width: 100%; overflow-wrap: anywhere; font-size: .72rem; padding: .35rem .45rem; border-radius: .45rem; background: rgba(20,17,14,.08); }
+.grading-pregrade-history-card p { margin: 0; }
 .grading-capture-plan { padding: .9rem 1rem; border-radius: .9rem; border: 1px solid rgba(35, 28, 20, .12); background: rgba(255,255,255,.3); }
 .grading-capture-plan h3, .grading-controls h3, .grading-quality-panel h3 { margin: 0; }
 .grading-capture-plan ul { margin: .55rem 0; padding-left: 1.2rem; display: grid; gap: .35rem; }
@@ -54,5 +61,5 @@
   .grading-advisory-badge { white-space: normal; width: fit-content; }
   .grading-image-stage { min-height: 18rem; }
   .grading-threshold, .grading-result-row, .grading-quality-row { align-items: flex-start; flex-direction: column; gap: .2rem; }
-  .grading-autograph-panel > .gold-button { width: 100%; }
+  .grading-autograph-panel > .gold-button, .grading-persistence-actions > button { width: 100%; }
 }
