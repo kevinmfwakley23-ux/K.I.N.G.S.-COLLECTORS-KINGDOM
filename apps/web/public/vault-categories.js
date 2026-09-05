@@ -1,3 +1,4 @@
+import "./vault-view-modes.js";
 import "./vault-saved-views.js";
 import "./vault-ui-styles.js";
 
