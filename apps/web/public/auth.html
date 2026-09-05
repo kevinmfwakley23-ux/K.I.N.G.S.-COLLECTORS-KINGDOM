@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Secure access to K.I.N.G.S. Collector's Kingdom" />
+    <title>Royal Gate • K.I.N.G.S.</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/auth.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="foundation auth-card" aria-labelledby="gate-title">
+        <p class="eyebrow">The Royal Gate</p>
+        <h1 id="gate-title">Enter your Kingdom.</h1>
+        <p id="auth-status" class="lede" role="status" aria-live="polite">Create a collector account or sign in securely.</p>
+        <div class="forms">
+          <form id="register-form">
+            <h2>Create account</h2>
+            <label>Display name<input name="displayName" autocomplete="name" required minlength="2" maxlength="80" /></label>
+            <label>Email<input name="email" type="email" autocomplete="email" required /></label>
+            <label>Password<input name="password" type="password" autocomplete="new-password" required minlength="12" /></label>
+            <button type="submit">Create my Kingdom identity</button>
+          </form>
+          <form id="signin-form">
+            <h2>Sign in</h2>
+            <label>Email<input name="email" type="email" autocomplete="username" required /></label>
+            <label>Password<input name="password" type="password" autocomplete="current-password" required /></label>
+            <button type="submit">Enter the Kingdom</button>
+          </form>
+        </div>
+        <section id="account-panel" hidden>
+          <h2>Authenticated collector</h2>
+          <p id="account-summary"></p>
+          <button id="signout-button" type="button">Secure sign out</button>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

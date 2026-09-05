@@ -1,11 +1,9 @@
 {
   "name": "kings-collectors-kingdom",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": ">=22"
-  },
+  "engines": { "node": ">=22.13" },
   "scripts": {
     "dev": "node apps/web/server.mjs",
     "start": "node apps/web/server.mjs",
