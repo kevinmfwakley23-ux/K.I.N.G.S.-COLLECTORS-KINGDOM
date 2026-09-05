@@ -31,6 +31,23 @@ function parseHttpUrl(rawValue, name) {
   return parsed.toString().replace(/\/$/, "");
 }
 
+function parseExternalHttpsUrl(rawValue, name) {
+  const value = parseHttpUrl(rawValue, name);
+  const parsed = new URL(value);
+  const local = ["localhost", "127.0.0.1"].includes(parsed.hostname);
+  if (parsed.protocol !== "https:" && !local) throw new Error(`${name} must use https outside local testing.`);
+  return value;
+}
+
+function parseOptionalEmail(rawValue, name) {
+  if (rawValue === undefined || rawValue === null || rawValue === "") return null;
+  const value = String(rawValue).trim();
+  if (!value || value.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    throw new Error(`${name} must be a valid email address when provided.`);
+  }
+  return value;
+}
+
 function resolveKingsAiBaseUrl(env) {
   const explicitBaseUrl = env.KINGDOM_KINGS_AI_BASE_URL?.trim();
   if (explicitBaseUrl) return parseHttpUrl(explicitBaseUrl, "KINGDOM_KINGS_AI_BASE_URL");
@@ -54,6 +71,12 @@ export function loadRuntimeConfig(env = process.env) {
     cookieSecure: parseBoolean(env.KINGDOM_COOKIE_SECURE ?? "false", "KINGDOM_COOKIE_SECURE"),
     kingsAiBaseUrl: resolveKingsAiBaseUrl(env),
     kingsAiToken: env.KINGDOM_KINGS_AI_TOKEN?.trim() || null,
-    kingsAiTimeoutMs: parsePositiveInteger(env.KINGDOM_KINGS_AI_TIMEOUT_MS ?? "70000", "KINGDOM_KINGS_AI_TIMEOUT_MS")
+    kingsAiTimeoutMs: parsePositiveInteger(env.KINGDOM_KINGS_AI_TIMEOUT_MS ?? "70000", "KINGDOM_KINGS_AI_TIMEOUT_MS"),
+    openLibraryBaseUrl: parseExternalHttpsUrl(env.KINGDOM_OPEN_LIBRARY_BASE_URL ?? "https://openlibrary.org", "KINGDOM_OPEN_LIBRARY_BASE_URL"),
+    catalogContactEmail: parseOptionalEmail(env.KINGDOM_CATALOG_CONTACT_EMAIL, "KINGDOM_CATALOG_CONTACT_EMAIL"),
+    catalogTimeoutMs: parsePositiveInteger(env.KINGDOM_CATALOG_TIMEOUT_MS ?? "5000", "KINGDOM_CATALOG_TIMEOUT_MS"),
+    catalogCacheTtlMs: parsePositiveInteger(env.KINGDOM_CATALOG_CACHE_TTL_MS ?? "21600000", "KINGDOM_CATALOG_CACHE_TTL_MS"),
+    catalogCacheEntries: parsePositiveInteger(env.KINGDOM_CATALOG_CACHE_ENTRIES ?? "500", "KINGDOM_CATALOG_CACHE_ENTRIES"),
+    catalogMinIntervalMs: parsePositiveInteger(env.KINGDOM_CATALOG_MIN_INTERVAL_MS ?? "1100", "KINGDOM_CATALOG_MIN_INTERVAL_MS")
   });
 }
