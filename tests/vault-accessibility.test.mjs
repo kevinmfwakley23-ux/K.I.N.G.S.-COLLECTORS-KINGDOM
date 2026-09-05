@@ -33,7 +33,7 @@ test("Vault document exposes language, responsive viewport, skip navigation, liv
   assert.match(html, /id="treasure-image-input"[^>]*accept="image\/jpeg,image\/png,image\/webp,image\/heic,image\/heif"/);
 });
 
-test("Vault accessibility enrichment gives every native dialog an explicit accessible name and exposes loading state", async () => {
+test("Vault accessibility enrichment names every native dialog, exposes loading state, and preserves modal point of regard", async () => {
   const [html, accessibility, categories] = await Promise.all([
     source("apps/web/public/vault.html"),
     source("apps/web/public/vault-accessibility.js"),
@@ -45,6 +45,13 @@ test("Vault accessibility enrichment gives every native dialog an explicit acces
     assert.match(accessibility, new RegExp(`\\["${dialogId}"`));
   }
   assert.match(accessibility, /setAttribute\("aria-labelledby", heading\.id\)/);
+  assert.match(accessibility, /DIALOG_FOCUS_TARGETS/);
+  assert.match(accessibility, /beforetoggle/);
+  assert.match(accessibility, /event\.newState !== "open"/);
+  assert.match(accessibility, /dialogInvokers\.set\(dialog, active\)/);
+  assert.match(accessibility, /dialog\.addEventListener\("close", \(\) => restoreDialogInvoker\(dialog\)\)/);
+  assert.match(accessibility, /invoker\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(accessibility, /focusTarget\(dialog\)\?\.focus\(\{ preventScroll: true \}\)/);
   assert.match(accessibility, /setAttribute\("aria-busy", loading\.hidden \? "false" : "true"\)/);
   assert.match(accessibility, /MutationObserver/);
   assert.match(accessibility, /#treasure-image-input/);
@@ -59,6 +66,7 @@ test("treasure cards remain keyboard operable and item photographs expose meanin
   assert.match(vault, /card\.setAttribute\("aria-label", `Open \$\{treasure\.title\}`\)/);
   assert.match(vault, /event\.key === "Enter" \|\| event\.key === " "/);
   assert.match(vault, /image\.alt = `Photo of \$\{treasure\.title\}`/);
+  assert.match(vault, /showModal\(\)/);
 });
 
 test("Vault styles preserve visible keyboard focus, reduced motion, forced colors, and responsive layouts", async () => {
