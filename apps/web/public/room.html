@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="A location in K.I.N.G.S. Collector's Kingdom" />
+    <title>Kingdom Location • K.I.N.G.S.</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/world.css" />
+    <script type="module" src="/room.js"></script>
+  </head>
+  <body class="kingdom-page room-page">
+    <a class="skip-link" href="#room-main">Skip to location information</a>
+    <header class="kingdom-topbar">
+      <a class="royal-brand" href="/great-hall.html">
+        <span class="crown-mark" aria-hidden="true">♛</span>
+        <span><strong>K.I.N.G.S.</strong><small>Collector's Kingdom</small></span>
+      </a>
+      <div class="topbar-actions">
+        <button class="quiet-button" type="button" data-keeper-open>Call The Keeper</button>
+        <a class="text-link" href="/great-hall.html">← Return to Great Hall</a>
+      </div>
+    </header>
+
+    <main id="room-main" class="room-layout">
+      <section id="room-hero" class="room-hero marble-panel" aria-labelledby="room-title">
+        <div class="room-hero-copy">
+          <p id="room-role" class="eyebrow">Kingdom Location</p>
+          <h1 id="room-title">Preparing the entrance…</h1>
+          <p id="room-description" class="hall-intro"></p>
+          <div id="room-status-panel" class="construction-notice" role="status" aria-live="polite"></div>
+          <div class="room-actions">
+            <button class="gold-button" type="button" data-keeper-open>Ask The Keeper here</button>
+            <a class="dark-button" href="/great-hall.html">Return to Great Hall</a>
+          </div>
+        </div>
+        <div id="location-visual" class="location-visual" aria-hidden="true"></div>
+      </section>
+
+      <section class="hall-section marble-panel" aria-labelledby="navigation-title">
+        <div class="section-heading compact">
+          <div>
+            <p id="navigation-eyebrow" class="eyebrow">Kingdom Navigation</p>
+            <h2 id="navigation-title">Move to another location</h2>
+          </div>
+        </div>
+        <nav id="room-grid" class="room-grid compact-grid" aria-label="Kingdom navigation"></nav>
+      </section>
+    </main>
+
+    <aside id="keeper-panel" class="keeper-panel" aria-labelledby="keeper-title" hidden>
+      <div class="keeper-panel-head">
+        <div class="keeper-heading">
+          <img class="keeper-panel-portrait" src="/assets/keeper.svg" alt="" aria-hidden="true" />
+          <div><p id="keeper-role" class="eyebrow">Royal Assistant</p><h2 id="keeper-title">The Keeper</h2></div>
+        </div>
+        <button id="keeper-close" class="icon-button" type="button" aria-label="Close The Keeper panel">×</button>
+      </div>
+      <div id="keeper-messages" class="keeper-messages" role="log" aria-live="polite" aria-relevant="additions">
+        <p id="keeper-welcome-message" class="keeper-message assistant">I am at your service. Ask me about this location or where to go next.</p>
+      </div>
+      <form id="keeper-form" class="keeper-form">
+        <label class="sr-only" for="keeper-input">Message The Keeper</label>
+        <textarea id="keeper-input" maxlength="4000" rows="3" placeholder="Ask The Keeper…" required></textarea>
+        <div class="keeper-form-row">
+          <span id="keeper-status" class="form-status" role="status" aria-live="polite"></span>
+          <button class="gold-button" type="submit">Send</button>
+        </div>
+      </form>
+    </aside>
+    <div id="keeper-backdrop" class="keeper-backdrop" hidden></div>
+  </body>
+</html>

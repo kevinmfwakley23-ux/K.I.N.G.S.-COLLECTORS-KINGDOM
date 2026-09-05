@@ -1,0 +1,247 @@
+.keeper-stage {
+  grid-template-columns: minmax(150px, 210px) 1fr;
+  align-items: end;
+  overflow: hidden;
+  min-height: 330px;
+  padding: 1.25rem 1.5rem 0;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.82), rgba(243,239,228,.9)),
+    linear-gradient(120deg, transparent 0 42%, rgba(177,138,48,.12) 42.5%, transparent 43%);
+}
+
+.keeper-character-frame {
+  align-self: end;
+  margin: 0;
+  height: 310px;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+}
+
+.keeper-character {
+  display: block;
+  width: min(100%, 190px);
+  max-height: 305px;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 14px 18px rgba(0,0,0,.18));
+}
+
+.keeper-welcome-copy {
+  align-self: center;
+  padding-bottom: 1.5rem;
+}
+
+.keeper-panel-portrait {
+  width: 56px;
+  height: 74px;
+  object-fit: contain;
+  object-position: center top;
+  filter: drop-shadow(0 5px 6px rgba(0,0,0,.12));
+}
+
+.grounds-panel {
+  margin: 1.25rem 0;
+  padding: clamp(1.4rem, 3vw, 2.5rem);
+  border: 1px solid rgba(118,88,22,.4);
+  background:
+    linear-gradient(180deg, rgba(229,239,242,.92) 0 26%, rgba(247,241,220,.94) 27% 60%, rgba(217,204,173,.9) 61% 100%);
+  box-shadow: 0 18px 48px rgba(0,0,0,.085);
+  position: relative;
+  overflow: hidden;
+}
+
+.grounds-panel::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 46%;
+  pointer-events: none;
+  opacity: .55;
+  background: repeating-linear-gradient(90deg, rgba(112,82,34,.08) 0 70px, rgba(255,255,255,.18) 71px 74px, rgba(112,82,34,.08) 75px 140px);
+}
+
+.grounds-panel > * { position: relative; }
+.grounds-grid { grid-template-columns: minmax(260px, 420px); }
+.zone-grounds.room-card {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.9), rgba(247,238,208,.82));
+  border-color: rgba(118,88,22,.45);
+}
+
+.vault-summary-card {
+  background:
+    radial-gradient(circle at 88% 18%, rgba(177,138,48,.14), transparent 30%),
+    linear-gradient(145deg, rgba(255,255,255,.97), rgba(230,229,224,.94));
+}
+
+.marketplace-summary-card {
+  background:
+    linear-gradient(180deg, rgba(230,240,244,.84), rgba(255,248,224,.94) 45%, rgba(242,233,205,.96));
+}
+
+.location-visual {
+  min-height: 330px;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.room-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, .72fr);
+  gap: clamp(1.5rem, 5vw, 5rem);
+  align-items: center;
+}
+
+.room-hero-copy { min-width: 0; }
+
+.marketplace-entrance-art {
+  width: min(100%, 520px);
+  max-height: 390px;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 24px rgba(0,0,0,.16));
+}
+
+.location-marketplace .room-hero {
+  background:
+    linear-gradient(180deg, rgba(226,239,246,.96) 0 34%, rgba(250,244,223,.92) 35% 65%, rgba(214,199,164,.92) 66% 100%);
+  border-color: rgba(118,88,22,.45);
+}
+
+.location-marketplace .room-hero::before {
+  content: "Beyond the Castle Gates";
+  position: absolute;
+  right: clamp(1rem, 3vw, 2rem);
+  top: 1rem;
+  font: 700 .66rem/1.2 system-ui, sans-serif;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(74,54,18,.7);
+}
+
+.location-vault .room-hero {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.97), rgba(224,225,224,.96)),
+    repeating-linear-gradient(118deg, transparent 0 78px, rgba(20,20,20,.08) 80px 82px, transparent 84px 160px);
+}
+
+.vault-door {
+  width: min(320px, 88vw);
+  aspect-ratio: 1 / 1.05;
+  border: 14px solid #242424;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  background:
+    radial-gradient(circle at center, #676767 0 9%, transparent 9.5%),
+    linear-gradient(145deg, #737373, #d5d5d2 38%, #8b8b89 70%, #555 100%);
+  box-shadow:
+    inset 0 0 0 5px #b18a30,
+    inset 0 0 0 12px #333,
+    0 22px 35px rgba(0,0,0,.2);
+}
+
+.vault-door::before,
+.vault-door::after {
+  content: "";
+  position: absolute;
+  background: #2b2b2b;
+  border: 2px solid #b18a30;
+}
+
+.vault-door::before { width: 22px; height: 68%; left: 18px; top: 16%; }
+.vault-door::after { width: 22px; height: 68%; right: 18px; top: 16%; }
+
+.vault-wheel {
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  border: 8px solid #262626;
+  background: radial-gradient(circle, #d1b25c 0 17%, #454545 18% 45%, #b18a30 46% 51%, #2b2b2b 52% 100%);
+  position: relative;
+  box-shadow: 0 5px 14px rgba(0,0,0,.28);
+}
+
+.vault-hub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: #d6b95d;
+  border: 3px solid #222;
+  z-index: 2;
+}
+
+.vault-spoke {
+  --angle: calc(var(--spoke) * 60deg);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 66px;
+  transform-origin: 50% 0;
+  transform: rotate(var(--angle)) translateX(-50%);
+  background: linear-gradient(#d1b25c, #2b2b2b);
+  border-radius: 4px;
+}
+
+.vault-lock-label {
+  position: absolute;
+  bottom: 22px;
+  padding: .35rem .65rem;
+  border: 1px solid #282828;
+  background: #d3b65b;
+  color: #191919;
+  font: 800 .66rem/1.2 system-ui, sans-serif;
+  letter-spacing: .13em;
+}
+
+.castle-arch {
+  width: min(300px, 85vw);
+  min-height: 320px;
+  display: grid;
+  place-items: end center;
+  padding: 2rem 1rem;
+  border: 12px solid rgba(225,222,211,.95);
+  border-bottom-width: 22px;
+  border-radius: 150px 150px 18px 18px;
+  background:
+    linear-gradient(115deg, transparent 0 38%, rgba(28,28,28,.12) 39%, transparent 40% 62%, rgba(177,138,48,.15) 63%, transparent 64%),
+    linear-gradient(180deg, #fff, #ece8dc);
+  box-shadow: inset 0 0 0 3px rgba(177,138,48,.35), 0 18px 28px rgba(0,0,0,.12);
+}
+
+.castle-arch-title {
+  padding: .45rem .8rem;
+  background: rgba(22,22,22,.93);
+  color: white;
+  font: 700 .7rem/1.2 system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+}
+
+@media (max-width: 900px) {
+  .room-hero { grid-template-columns: 1fr; }
+  .location-visual { min-height: 240px; }
+  .keeper-stage { grid-template-columns: 130px 1fr; }
+  .keeper-character-frame { height: 250px; }
+  .keeper-character { max-height: 245px; }
+}
+
+@media (max-width: 640px) {
+  .keeper-stage { grid-template-columns: 1fr; padding-top: 1rem; text-align: center; }
+  .keeper-character-frame { height: 210px; order: 2; }
+  .keeper-character { max-height: 205px; }
+  .keeper-welcome-copy { padding-bottom: .5rem; }
+  .location-visual { min-height: 210px; }
+  .vault-door { width: min(250px, 78vw); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .keeper-character,
+  .marketplace-entrance-art { filter: none; }
+}

@@ -1,6 +1,7 @@
 const statusElement = document.querySelector("#auth-status");
 const accountPanel = document.querySelector("#account-panel");
 const accountSummary = document.querySelector("#account-summary");
+const greatHallLink = document.querySelector("#great-hall-link");
 
 function formObject(form) {
   return Object.fromEntries(new FormData(form).entries());
@@ -13,6 +14,7 @@ function setStatus(message) {
 function showAccount(account) {
   accountSummary.textContent = `${account.displayName} • ${account.email}`;
   accountPanel.hidden = false;
+  greatHallLink.hidden = false;
 }
 
 async function api(path, options = {}) {
@@ -48,8 +50,9 @@ document.querySelector("#signin-form").addEventListener("submit", async (event) 
       body: JSON.stringify(formObject(event.currentTarget))
     });
     showAccount(account);
-    setStatus("Secure sign-in complete.");
+    setStatus("Secure sign-in complete. Opening the Great Hall…");
     event.currentTarget.reset();
+    window.location.assign("/great-hall.html");
   } catch (error) {
     setStatus(error.message);
   }
@@ -59,6 +62,7 @@ document.querySelector("#signout-button").addEventListener("click", async () => 
   try {
     await api("/api/auth/sign-out", { method: "POST", body: "{}" });
     accountPanel.hidden = true;
+    greatHallLink.hidden = true;
     setStatus("You have been securely signed out.");
   } catch (error) {
     setStatus(error.message);
@@ -68,5 +72,5 @@ document.querySelector("#signout-button").addEventListener("click", async () => 
 try {
   const { account } = await api("/api/auth/me", { method: "GET", headers: {} });
   showAccount(account);
-  setStatus("Your active Kingdom session was restored.");
+  setStatus("Your active Kingdom session was restored. Continue into the Great Hall.");
 } catch {}

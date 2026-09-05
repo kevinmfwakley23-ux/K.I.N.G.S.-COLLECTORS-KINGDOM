@@ -5,9 +5,11 @@ import { extname, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { loadRuntimeConfig } from "../../config/runtime.mjs";
 import { createHealthSnapshot, createReadinessSnapshot } from "../../packages/core/src/health.mjs";
+import { createGreatHallService } from "../../packages/great-hall/src/service.mjs";
 import { createIdentityService, IdentityError } from "../../packages/identity/src/service.mjs";
 import { SqliteIdentityStore } from "../../packages/identity/src/sqlite-store.mjs";
 import { clearSessionCookie, parseCookies, sessionCookie } from "../../packages/identity/src/tokens.mjs";
+import { createKingsAiClient, KingsAiClientError } from "../../packages/kings-ai/src/client.mjs";
 import { createLogger } from "../../packages/observability/src/logger.mjs";
 
 const CONTENT_TYPES = Object.freeze({
@@ -170,12 +172,60 @@ async function handleAuthRoute({ request, response, pathname, identityService, c
   return false;
 }
 
+async function handleGreatHallRoute({ request, response, pathname, identityService, greatHallService, kingsAiClient }) {
+  if (!greatHallService) throw new HttpError(503, "great_hall_unavailable", "The Great Hall service is unavailable.");
+  const method = request.method ?? "GET";
+  const identity = requireIdentity(identityService, request);
+
+  if (pathname === "/api/great-hall" && method === "GET") {
+    return sendJson(response, 200, greatHallService.snapshot(identity), method);
+  }
+
+  if (pathname === "/api/navigation" && method === "GET") {
+    return sendJson(response, 200, { rooms: greatHallService.navigation(identity) }, method);
+  }
+
+  if (pathname === "/api/keeper/chat" && method === "POST") {
+    if (!kingsAiClient) throw new HttpError(503, "keeper_intelligence_unavailable", "The Keeper's intelligence service is unavailable.");
+    const body = await readJson(request);
+    let routeRequest;
+    try {
+      routeRequest = greatHallService.keeperRouteRequest(identity, body);
+    } catch (error) {
+      if (error instanceof TypeError) throw new HttpError(400, "invalid_keeper_request", error.message);
+      throw error;
+    }
+
+    const result = await kingsAiClient.route(routeRequest);
+    if (!result.success) {
+      const statusCode = result.code === "NO_ROUTABLE_MODEL" ? 503 : 502;
+      return sendJson(response, statusCode, {
+        error: "keeper_route_failed",
+        message: "The Keeper cannot reach K.I.N.G.S. AI right now. Your Kingdom data was not changed.",
+        routeCode: result.code ?? "route_failed",
+        retryable: Array.isArray(result.attempts) && result.attempts.some((attempt) => attempt.retryable === true)
+      }, method);
+    }
+
+    return sendJson(response, 200, {
+      reply: result.content,
+      requestId: result.requestId,
+      providerId: result.providerId,
+      modelId: result.modelId
+    }, method);
+  }
+
+  return false;
+}
+
 export function createKingdomServer({
   config = loadRuntimeConfig(),
   logger = createLogger({ level: config.logLevel }),
   startedAt = new Date(),
   publicRoot = fileURLToPath(new URL("./public/", import.meta.url)),
-  identityService = null
+  identityService = null,
+  greatHallService = null,
+  kingsAiClient = null
 } = {}) {
   return createServer(async (request, response) => {
     const requestStartedAt = performance.now();
@@ -209,14 +259,27 @@ export function createKingdomServer({
       if (requestUrl.pathname === "/api/meta" && ["GET", "HEAD"].includes(method)) {
         return sendJson(response, 200, {
           product: "K.I.N.G.S. Collector's Kingdom",
-          phase: "IMP-003 Authentication & User System",
+          phase: "IMP-004 Great Hall & Navigation",
           version: config.version,
-          featureStatus: "identity-core-in-progress"
+          featureStatus: "great-hall-in-progress"
         }, method);
       }
 
       if (requestUrl.pathname.startsWith("/api/auth/") || requestUrl.pathname === "/api/profile") {
         const handled = await handleAuthRoute({ request, response, pathname: requestUrl.pathname, identityService, config });
+        if (handled !== false) return;
+        return sendJson(response, 405, { error: "method_not_allowed" }, method);
+      }
+
+      if (["/api/great-hall", "/api/navigation", "/api/keeper/chat"].includes(requestUrl.pathname)) {
+        const handled = await handleGreatHallRoute({
+          request,
+          response,
+          pathname: requestUrl.pathname,
+          identityService,
+          greatHallService,
+          kingsAiClient
+        });
         if (handled !== false) return;
         return sendJson(response, 405, { error: "method_not_allowed" }, method);
       }
@@ -228,6 +291,14 @@ export function createKingdomServer({
     } catch (error) {
       if (error instanceof IdentityError || error instanceof HttpError) {
         return sendJson(response, error.statusCode, { error: error.code, message: error.message }, method);
+      }
+      if (error instanceof KingsAiClientError) {
+        logger.warn("keeper.kings_ai_unavailable", { code: error.code, retryable: error.retryable });
+        return sendJson(response, error.retryable ? 503 : 502, {
+          error: "keeper_intelligence_unavailable",
+          message: "The Keeper cannot reach K.I.N.G.S. AI right now. Please try again when the intelligence service is available.",
+          retryable: error.retryable
+        }, method);
       }
       logger.error("http.unhandled_error", { error, method, path: requestUrl.pathname });
       if (!response.headersSent) return sendJson(response, 500, { error: "internal_server_error" }, method);
@@ -244,7 +315,13 @@ async function run() {
     store,
     sessionTtlMs: config.sessionTtlHours * 60 * 60 * 1000
   });
-  const server = createKingdomServer({ config, logger, identityService });
+  const greatHallService = createGreatHallService({ identityService });
+  const kingsAiClient = createKingsAiClient({
+    baseUrl: config.kingsAiBaseUrl,
+    accessToken: config.kingsAiToken,
+    timeoutMs: config.kingsAiTimeoutMs
+  });
+  const server = createKingdomServer({ config, logger, identityService, greatHallService, kingsAiClient });
 
   server.on("error", (error) => {
     logger.error("server.error", { error });
