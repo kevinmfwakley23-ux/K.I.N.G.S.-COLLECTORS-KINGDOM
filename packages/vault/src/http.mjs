@@ -69,6 +69,7 @@ export async function handleVaultRequest({
   if (!vaultService) throw new VaultError("vault_unavailable", "The Royal Vault service is unavailable.", 503);
   const method = request.method ?? "GET";
   const portable = createVaultPortableService({ vaultService });
+  const collectibleDetails = attributeService ?? ownershipService?.attributeService ?? null;
 
   if (pathname === "/api/vault/categories") {
     if (method === "GET") return json(200, { categories: listVaultCategoryProfiles(), customCategoriesAllowed: true });
@@ -114,17 +115,17 @@ export async function handleVaultRequest({
 
   const attributesMatch = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/attributes$/);
   if (attributesMatch) {
-    if (!attributeService) throw new VaultError("collectible_details_unavailable", "Vault collectible details service is unavailable.", 503);
+    if (!collectibleDetails) throw new VaultError("collectible_details_unavailable", "Vault collectible details service is unavailable.", 503);
     const treasureId = decodeURIComponent(attributesMatch[1]);
-    if (method === "GET") return json(200, { attributes: attributeService.list(identity, treasureId) });
-    if (method === "POST") return json(201, { attribute: attributeService.upsert(identity, treasureId, await readJson(request)) });
+    if (method === "GET") return json(200, { attributes: collectibleDetails.list(identity, treasureId) });
+    if (method === "POST") return json(201, { attribute: collectibleDetails.upsert(identity, treasureId, await readJson(request)) });
     return null;
   }
 
   const attributeMatch = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/attributes\/([^/]+)$/);
   if (attributeMatch && method === "DELETE") {
-    if (!attributeService) throw new VaultError("collectible_details_unavailable", "Vault collectible details service is unavailable.", 503);
-    return json(200, attributeService.remove(identity, decodeURIComponent(attributeMatch[1]), decodeURIComponent(attributeMatch[2])));
+    if (!collectibleDetails) throw new VaultError("collectible_details_unavailable", "Vault collectible details service is unavailable.", 503);
+    return json(200, collectibleDetails.remove(identity, decodeURIComponent(attributeMatch[1]), decodeURIComponent(attributeMatch[2])));
   }
 
   const imageMatch = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/images$/);
