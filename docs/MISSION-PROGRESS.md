@@ -12,38 +12,46 @@ A progress entry must record what was actually implemented, the important archit
 
 **Date:** 2026-09-05  
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Latest verified checkpoint:** **Review-only ISBN catalog candidate resolution through the Royal Intake Queue**  
-**Latest verified code gate:** **Kingdom Quality Gates #379** — run `33960516422` — **PASS**  
-**Verified code commit:** `62aa769353fc6fee1dc87850bb3390491c7d5b19`  
+**Latest verified checkpoint:** **Review-only ISBN + UPC/EAN/GTIN external catalog candidate resolution through the Royal Intake Queue**  
+**Latest verified code gate:** **Kingdom Quality Gates #396** — run `33961349239` — **PASS**  
+**Verified code commit:** `3175e5f74f55c0dca4d72ed634b572128d032044`  
 **Default branch:** `main`
 
 ### Exact recovery point
 
 Do **not** restart IMP-005.
 
-The Royal Vault now has a real owner-scoped collection domain, secure media, migration/import, voice/talk-to-text, a cross-device Intake Queue, progressive camera barcode scanning, and the first real external catalog-evidence provider. Pending ISBN captures can request Open Library candidates, inspect source evidence, and copy selected metadata into a **new unsaved treasure editor**. Lookup itself never creates, updates, merges, archives, values, or otherwise mutates authoritative Vault records.
+The Royal Vault now has a real owner-scoped collection domain, secure media, transactional migration/import, voice/talk-to-text, a cross-device Intake Queue, progressive camera barcode scanning, and two real external catalog-evidence paths:
 
-Permanent Kingdom treasure UUIDs remain independent of Open Library or any future provider IDs.
+- Open Library for checksum-valid ISBN candidates;
+- UPCitemdb for checksum-valid UPC/EAN/GTIN retail candidates.
+
+Both are provider-neutral **review-only evidence**. The authenticated catalog route performs no Vault mutation. Candidate metadata is copied only into a new unsaved treasure editor, permanent Kingdom treasure UUIDs remain independent of provider IDs, and UPCitemdb price/offer/merchant/image fields are deliberately excluded from the identification model.
 
 ### Exact next engineering target
 
-**IMP-005 — Broader identifier candidate coverage, first safe UPC/EAN slice**
+**IMP-005 — Provenance & Ownership Ledger**
 
-Research confirms UPCitemdb currently exposes a no-signup free lookup tier for UPC/EAN/GTIN/ISBN data, but that free tier is tightly bounded and provider terms disclaim accuracy. Before representing UPC/EAN candidate lookup as live, the next slice must:
+Research record:
 
-1. preserve the provider-neutral catalog contract already verified;
-2. record current UPCitemdb terms/rate limitations in `docs/research/`;
-3. use lookup-only, review-only semantics;
-4. enforce a conservative free-tier request interval and provider rate headers;
-5. cache public evidence to reduce traffic;
-6. never redistribute restricted merchant/offer data as Kingdom valuation evidence;
-7. normalize only safe product metadata and source references;
-8. return provider-unavailable/rate-limited states honestly;
-9. expose candidates only for supported UPC/EAN/general barcode intake rows;
-10. require explicit collector review in the treasure editor before any Vault save;
-11. pass full quality gates before the provider is described as live.
+- `docs/research/2026-09-05-IMP-005-PROVENANCE-OWNERSHIP-LEDGER-RECON.md`
 
-PriceCharting is also relevant for later game/collectible pricing, but its current API is paid/subscription-token based and has strict call limits. It must remain a separately configured future evidence/valuation adapter rather than being implied as available now.
+Build an owner-scoped, append-oriented lifecycle ledger tied to permanent treasure UUIDs. The first verified slice should:
+
+1. add durable provenance/lifecycle event storage with immutable event IDs;
+2. keep collector-entered evidence explicitly distinct from independent verification;
+3. validate event types, dates, optional counterparties/sources/references, notes, and monetary transaction facts;
+4. keep monetary amounts in integer cents + currency and never combine currencies without exchange-rate evidence;
+5. support acquisition, supporting-document/provenance notes, custody/loan, disposition/sale/gift/trade, loss/recovery, and explicit correction events through a controlled stable vocabulary;
+6. make corrections append a new event referencing the prior event instead of silently rewriting history;
+7. enforce owner/treasure isolation and reject cross-owner references;
+8. expose authenticated treasure-scoped append/list APIs with no ordinary destructive delete route;
+9. include provenance events in portable Vault export;
+10. add a responsive treasure provenance timeline/editor after the domain/API is proven;
+11. write audit events for provenance additions;
+12. pass full quality gates before representing the ledger as live.
+
+This layer is groundwork for later insurance, inheritance/legacy, Marketplace transfer, profit/loss, fraud review and valuation evidence. It is not a government title registry and must not claim that collector-entered provenance is independently authenticated.
 
 ---
 
@@ -227,53 +235,60 @@ Research record:
 
 - `docs/research/2026-09-05-IMP-005-CATALOG-CANDIDATE-RECON.md`
 
+Implemented:
+
+- bounded in-process evidence cache;
+- real Open Library ISBN adapter;
+- provider-neutral candidate aggregation/service;
+- authenticated review-only candidate endpoint;
+- runtime provider URL/timeout/cache/rate/contact configuration;
+- ISBN checksum validation before network use;
+- bounded provider responses and malformed-payload rejection;
+- candidate source/provider/match reason;
+- no lookup-time Vault mutation;
+- review-only copy into an unsaved Book editor;
+- explicit provider-unavailable states;
+- full lint/test/build/artifact/dependency verification.
+
+### Review-only UPC/EAN/GTIN catalog candidates — verified
+
+**Quality Gates #396** — run `33961349239` — **PASS**  
+**Verified head:** `3175e5f74f55c0dca4d72ed634b572128d032044`
+
+Research record:
+
+- `docs/research/2026-09-05-IMP-005-UPC-EAN-CATALOG-PROVIDER.md`
+
 Implemented architecture:
 
-- `packages/catalog/src/cache.mjs` — bounded in-process evidence cache;
-- `packages/catalog/src/open-library-provider.mjs` — real Open Library ISBN adapter;
-- `packages/catalog/src/service.mjs` — provider-neutral candidate aggregation/normalization;
-- `apps/web/catalog-http.mjs` — authenticated review-only candidate endpoint;
-- runtime settings for provider URL, timeout, cache TTL/size, conservative request interval, and optional contact identity;
-- production startup wiring with provider credentials/config retained server-side;
-- ISBN lookup action on pending Royal Intake Queue cards;
-- candidate source/provider/match-reason UI;
-- review-only copy into a new unsaved Book treasure editor;
-- author, first-publication year, provider record, and source evidence copied only into the unsaved editor for collector review;
+- `packages/catalog/src/upcitemdb-provider.mjs` — real UPCitemdb retail-code adapter;
+- `packages/catalog/src/runtime.mjs` — production composition of Open Library + UPCitemdb behind one catalog service;
+- `apps/web/public/vault-catalog-core.js` — browser review policy and safe candidate→unsaved-draft mapping;
+- UPCitemdb runtime settings for base URL, optional server-only paid key, timeout and minimum request interval;
+- UPC/EAN candidate review actions on pending Royal Intake Queue rows;
+- build/type contracts requiring the provider/runtime/browser-core artifacts;
+- HTTP regression covering review-only UPC responses and unchanged Vault count.
+
+UPC/EAN safeguards:
+
+- local GS1 check-digit validation for 8-, 12-, 13- and 14-digit identifiers before outbound use;
+- arbitrary QR/Code128/serial/custom scanner data is not sent merely because it is a barcode;
+- HTTPS-only external transport outside localhost testing;
+- free-plan default 10-second serialized request interval;
+- default 5-second timeout;
+- protected 256 KiB response ceiling;
+- provider rate-limit headers parsed and HTTP 429 surfaced explicitly;
+- free `/prod/trial/lookup` and optional paid `/prod/v1/lookup` support;
+- paid key remains server-side;
+- allowlisted product metadata only;
+- provider prices, offers, merchant links/domains and provider images excluded from normalized candidates;
+- category is left for collector confirmation rather than asserted from a provider category string;
+- no current-value/purchase-price/trade-value mutation;
+- no automatic treasure creation;
 - no lookup-time Vault mutation;
-- provider/service-unavailable states fail closed.
+- collector must explicitly save the unsaved editor.
 
-Open Library safeguards:
-
-- ISBN-10/ISBN-13 checksum validation before network use;
-- HTTPS-only external provider transport outside local testing;
-- default 5-second timeout with AbortController;
-- conservative serialized request interval;
-- optional configured contact email in the application User-Agent, never hard-coded/invented;
-- bounded 256 KiB provider response;
-- malformed JSON/payload rejection;
-- maximum five provider results per Open Library lookup;
-- provider results cached for six hours by default with a 500-entry bound;
-- exact ISBN query still produces **candidates**, because provider/source ambiguity can exist;
-- no bulk/high-traffic Open Library use is designed or claimed.
-
-Verification covers:
-
-- ISBN checksum validation;
-- normalized provider candidate evidence;
-- no-match honesty;
-- oversized/malformed provider response rejection;
-- caching and expiry;
-- unsupported identifier/provider outage errors;
-- authenticated HTTP route;
-- explicit proof that treasure count remains unchanged after lookup;
-- runtime HTTPS/contact/resource-limit validation;
-- catalog modules in type-contract verification;
-- catalog server/package files in production artifact verification;
-- complete lint/tests/build/dependency audit.
-
-Important defect caught by CI during this slice:
-
-- the established runtime-default deep-equality test initially failed because new catalog runtime settings were not added to its expected contract. The test was updated rather than weakened; the subsequent full gate passed.
+Quality Gates #396 verified the complete integrated path: provider/runtime composition, UI draft safety, authenticated HTTP review semantics, unchanged Vault record count, lint, module contracts, tests, production build, required production artifacts, and production dependency audit.
 
 ---
 
@@ -286,7 +301,9 @@ Important IMP-005 records include:
 - `2026-09-05-IMP-005-VAULT-COMPETITIVE-RECON.md` — collector competitors and open-source inventory patterns;
 - `2026-09-05-IMP-005-VAULT-MEDIA-SECURITY.md` — upload/media security design;
 - `2026-09-05-IMP-005-INTAKE-IMPORT-SCANNER-RECON.md` — CSV mapping, bulk intake, scan queues, and browser scanner direction;
-- `2026-09-05-IMP-005-CATALOG-CANDIDATE-RECON.md` — Open Library usage/rate guidance and candidate-resolution architecture.
+- `2026-09-05-IMP-005-CATALOG-CANDIDATE-RECON.md` — Open Library usage/rate guidance and candidate-resolution architecture;
+- `2026-09-05-IMP-005-UPC-EAN-CATALOG-PROVIDER.md` — UPCitemdb limits, data boundaries and retail-code adapter decisions;
+- `2026-09-05-IMP-005-PROVENANCE-OWNERSHIP-LEDGER-RECON.md` — acquisition/provenance/lifecycle research and next ledger design.
 
 Research-before-build remains a permanent repository rule.
 
@@ -296,7 +313,7 @@ Research-before-build remains a permanent repository rule.
 
 Do not represent these as live until separately implemented and verified:
 
-- UPC/EAN/general retail barcode external candidates beyond existing Vault-record matching;
+- structured provenance/acquisition/ownership/disposition timeline;
 - dedicated trading-card provider candidates;
 - comic provider candidates;
 - video-game provider candidates;
@@ -312,4 +329,4 @@ Do not represent these as live until separately implemented and verified:
 
 ### Permanent truthfulness boundary
 
-Market value stays absent/null until backed by real evidence. A barcode, image, AI answer, external provider candidate, title match, ISBN match, or catalog ID is never silently upgraded into an authoritative exact-item claim. Permanent Kingdom treasure IDs remain provider-independent.
+Market value stays absent/null until backed by real evidence. A barcode, image, AI answer, external provider candidate, title match, ISBN match, catalog ID, receipt, certificate number, or collector-entered provenance statement is never silently upgraded into an authoritative independently verified claim. Permanent Kingdom treasure IDs remain provider-independent.
