@@ -54,6 +54,15 @@ function formatTime(value) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
+function setEditorValue(selector, value) {
+  if (value === undefined || value === null || value === "") return null;
+  const field = document.querySelector(selector);
+  if (!field) return null;
+  field.value = String(value);
+  field.dispatchEvent(new Event("input", { bubbles: true }));
+  return field;
+}
+
 function prefillTreasureEditor(item, status) {
   const newTreasure = document.querySelector("#new-treasure-button");
   if (!newTreasure) throw new Error("The treasure editor is unavailable on this page.");
@@ -73,6 +82,47 @@ function prefillTreasureEditor(item, status) {
   }
   field.focus();
   status.textContent = "Identifier copied into a new treasure editor. The queue item remains pending until you explicitly dismiss it.";
+}
+
+function candidateDetails(candidate) {
+  const fields = candidate?.fields ?? {};
+  const parts = [];
+  if (Array.isArray(fields.creators) && fields.creators.length) parts.push(fields.creators.join(", "));
+  if (fields.publisher) parts.push(fields.publisher);
+  if (fields.firstPublishYear) parts.push(String(fields.firstPublishYear));
+  if (Number.isInteger(fields.editionCount)) parts.push(`${fields.editionCount} provider edition record${fields.editionCount === 1 ? "" : "s"}`);
+  return parts.join(" • ") || "Provider metadata is limited for this candidate.";
+}
+
+function prefillCatalogCandidate(item, candidate, status) {
+  const title = candidate?.fields?.title;
+  if (!title) throw new Error("This provider candidate does not contain a usable title.");
+  const newTreasure = document.querySelector("#new-treasure-button");
+  if (!newTreasure) throw new Error("The treasure editor is unavailable on this page.");
+  newTreasure.click();
+
+  const titleField = setEditorValue("#treasure-title", title);
+  setEditorValue("#treasure-category", "Book");
+  setEditorValue("#treasure-manufacturer", candidate.fields.publisher);
+  setEditorValue("#treasure-barcode", candidate.externalIdentifiers?.isbn ?? item.identifierValue);
+
+  const attributes = {};
+  if (Array.isArray(candidate.fields.creators) && candidate.fields.creators.length) {
+    attributes.author = candidate.fields.creators.join("; ");
+  }
+  if (Number.isInteger(candidate.fields.firstPublishYear)) attributes.firstPublishYear = candidate.fields.firstPublishYear;
+  if (candidate.providerName) attributes.catalogEvidenceProvider = candidate.providerName;
+  if (candidate.providerRecordId) attributes.catalogEvidenceRecord = candidate.providerRecordId;
+  if (candidate.sourceUrl) attributes.catalogEvidenceUrl = candidate.sourceUrl;
+  if (Object.keys(attributes).length) setEditorValue("#treasure-attributes", JSON.stringify(attributes, null, 2));
+
+  const editorStatus = document.querySelector("#treasure-status");
+  if (editorStatus) {
+    editorStatus.textContent = `${candidate.providerName || "Catalog provider"} candidate copied into this unsaved editor. Review title, edition, publisher, authorship, condition, and every identifier before saving. No Vault record has been written yet.`;
+  }
+  titleField?.focus();
+  document.querySelector("#treasure-editor")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  status.textContent = "Catalog candidate copied into a new unsaved treasure editor. The Intake Queue item remains pending and no authoritative record was changed.";
 }
 
 export function createVaultIntakeUi() {
@@ -95,7 +145,7 @@ export function createVaultIntakeUi() {
     node("p", "muted-copy", "Save UPC, EAN, ISBN, barcode, catalog, serial, SKU, or custom identifiers to your account queue. Repeated pending captures become a count instead of noisy duplicate rows. A captured identifier is evidence, not proof of exact collectible identity.")
   );
   headingCopy.querySelector("h2").id = "royal-intake-title";
-  const cameraNote = node("aside", "intake-camera-note", "Camera scanning remains locked until its secure progressive scanner is implemented and verified. Manual capture works on every supported device now.");
+  const cameraNote = node("aside", "intake-camera-note", "Secure camera scanning is progressive and appears only when this browser exposes the required camera and native barcode APIs. Manual capture remains available on every supported device.");
   heading.append(headingCopy, cameraNote);
   panel.append(heading);
 
@@ -114,10 +164,10 @@ export function createVaultIntakeUi() {
   typeLabel.append(node("span", "", "Identifier type"));
   const type = document.createElement("select");
   type.id = "intake-identifier-type";
-  for (const value of ["barcode", "upc", "ean", "isbn", "catalog", "serial", "sku", "custom"]) {
+  for (const identifierType of ["barcode", "upc", "ean", "isbn", "catalog", "serial", "sku", "custom"]) {
     const option = document.createElement("option");
-    option.value = value;
-    option.textContent = intakeTypeLabel(value);
+    option.value = identifierType;
+    option.textContent = intakeTypeLabel(identifierType);
     type.append(option);
   }
   typeLabel.append(type);
@@ -180,6 +230,68 @@ export function createVaultIntakeUi() {
 
   const state = { view: "pending", items: [] };
 
+  async function resolveCatalogCandidates(item, output, button) {
+    button.disabled = true;
+    button.textContent = "Finding candidates…";
+    output.replaceChildren(node("p", "muted-copy", "Requesting review-only book metadata evidence…"));
+    try {
+      const params = new URLSearchParams({
+        identifierType: item.identifierType,
+        identifierValue: item.identifierValue
+      });
+      const { result } = await api(`/api/catalog/candidates?${params.toString()}`);
+      output.replaceChildren();
+      if (!result.candidates.length) {
+        output.append(node("p", "catalog-no-match", "No external book candidate was returned for this ISBN. Nothing in the Vault was changed; manual entry remains available."));
+        return;
+      }
+
+      const evidenceHeader = node("div", "catalog-evidence-header");
+      evidenceHeader.append(
+        node("strong", "", `${result.candidates.length} review candidate${result.candidates.length === 1 ? "" : "s"}`),
+        node("small", "", `Retrieved ${formatTime(result.retrievedAt)} • no Vault write performed`)
+      );
+      output.append(evidenceHeader);
+
+      for (const candidate of result.candidates) {
+        const candidateCard = node("article", "catalog-candidate-card");
+        const copy = node("div", "catalog-candidate-copy");
+        copy.append(
+          node("span", "catalog-provider", candidate.providerName || candidate.providerId),
+          node("h4", "", candidate.fields?.title || "Untitled provider candidate"),
+          node("p", "muted-copy", candidateDetails(candidate)),
+          node("p", "catalog-match-reason", candidate.matchReason || "Provider identifier evidence requires collector review.")
+        );
+
+        const candidateActions = node("div", "catalog-candidate-actions");
+        if (candidate.sourceUrl) {
+          const source = node("a", "text-link", "View source evidence");
+          source.href = candidate.sourceUrl;
+          source.target = "_blank";
+          source.rel = "noopener noreferrer";
+          candidateActions.append(source);
+        }
+        const review = node("button", "dark-button", "Review in treasure editor");
+        review.type = "button";
+        review.addEventListener("click", () => {
+          try {
+            prefillCatalogCandidate(item, candidate, status);
+          } catch (error) {
+            status.textContent = error.message;
+          }
+        });
+        candidateActions.append(review);
+        candidateCard.append(copy, candidateActions);
+        output.append(candidateCard);
+      }
+    } catch (error) {
+      output.replaceChildren(node("p", "catalog-error", `${error.message} Nothing in the Vault was changed.`));
+    } finally {
+      button.disabled = false;
+      button.textContent = "Find book candidates";
+    }
+  }
+
   function renderItem(item) {
     const card = node("article", `intake-card status-${item.status}`);
     const top = node("div", "intake-card-top");
@@ -191,8 +303,16 @@ export function createVaultIntakeUi() {
     );
     top.append(copy);
 
+    let catalogOutput = null;
     if (item.status === "pending") {
       const actions = node("div", "intake-card-actions");
+      if (item.identifierType === "isbn") {
+        const candidateButton = node("button", "quiet-button", "Find book candidates");
+        candidateButton.type = "button";
+        catalogOutput = node("div", "catalog-candidate-results");
+        candidateButton.addEventListener("click", () => resolveCatalogCandidates(item, catalogOutput, candidateButton));
+        actions.append(candidateButton);
+      }
       const useButton = node("button", "quiet-button", "Use in treasure editor");
       const dismissButton = node("button", "quiet-button", "Dismiss");
       useButton.type = "button";
@@ -223,8 +343,8 @@ export function createVaultIntakeUi() {
     card.append(top);
 
     if (item.notes) card.append(node("p", "intake-notes", item.notes));
-    const candidateMessage = node("p", item.existingVaultCandidates?.length ? "intake-candidate-warning" : "muted-copy", intakeCandidateMessage(item));
-    card.append(candidateMessage);
+    const existingMessage = node("p", item.existingVaultCandidates?.length ? "intake-candidate-warning" : "muted-copy", intakeCandidateMessage(item));
+    card.append(existingMessage);
 
     if (Array.isArray(item.existingVaultCandidates) && item.existingVaultCandidates.length) {
       const candidates = node("ul", "intake-candidates");
@@ -233,6 +353,7 @@ export function createVaultIntakeUi() {
       }
       card.append(candidates);
     }
+    if (catalogOutput) card.append(catalogOutput);
 
     return card;
   }
@@ -295,6 +416,7 @@ export function createVaultIntakeUi() {
     await load().catch((error) => { status.textContent = error.message; });
   });
   refreshButton.addEventListener("click", () => load().catch((error) => { status.textContent = error.message; }));
+  globalThis.addEventListener("kings:vault-intake-change", () => load().catch((error) => { status.textContent = error.message; }));
 
   load().catch((error) => {
     status.textContent = error.message;
