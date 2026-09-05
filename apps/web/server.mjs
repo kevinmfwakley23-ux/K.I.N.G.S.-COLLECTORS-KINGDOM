@@ -11,6 +11,8 @@ import { SqliteIdentityStore } from "../../packages/identity/src/sqlite-store.mj
 import { clearSessionCookie, parseCookies, sessionCookie } from "../../packages/identity/src/tokens.mjs";
 import { createKingsAiClient, KingsAiClientError } from "../../packages/kings-ai/src/client.mjs";
 import { createLogger } from "../../packages/observability/src/logger.mjs";
+import { createVaultService, VaultError } from "../../packages/vault/src/service.mjs";
+import { SqliteVaultStore } from "../../packages/vault/src/sqlite-store.mjs";
 
 const CONTENT_TYPES = Object.freeze({
   ".css": "text/css; charset=utf-8",
@@ -218,6 +220,109 @@ async function handleGreatHallRoute({ request, response, pathname, identityServi
   return false;
 }
 
+function vaultFilters(searchParams) {
+  const limit = searchParams.get("limit");
+  return {
+    query: searchParams.get("q") ?? undefined,
+    collectionId: searchParams.get("collectionId") ?? undefined,
+    locationId: searchParams.get("locationId") ?? undefined,
+    category: searchParams.get("category") ?? undefined,
+    condition: searchParams.get("condition") ?? undefined,
+    sort: searchParams.get("sort") ?? undefined,
+    order: searchParams.get("order") ?? undefined,
+    limit: limit === null ? undefined : Number(limit),
+    includeArchived: searchParams.get("includeArchived") === "true"
+  };
+}
+
+function vaultTreasureRoute(pathname) {
+  const match = pathname.match(/^\/api\/vault\/treasures\/([^/]+)(?:\/(duplicates|history))?$/);
+  if (!match) return null;
+  try {
+    return { treasureId: decodeURIComponent(match[1]), action: match[2] ?? null };
+  } catch {
+    throw new HttpError(400, "invalid_treasure_id", "The treasure identifier is invalid.");
+  }
+}
+
+async function handleVaultRoute({ request, response, requestUrl, identityService, vaultService }) {
+  if (!vaultService) throw new HttpError(503, "vault_unavailable", "The Royal Vault service is unavailable.");
+  const method = request.method ?? "GET";
+  const identity = requireIdentity(identityService, request);
+  const pathname = requestUrl.pathname;
+
+  if (pathname === "/api/vault" && method === "GET") {
+    return sendJson(response, 200, vaultService.snapshot(identity), method);
+  }
+
+  if (pathname === "/api/vault/collections") {
+    if (method === "GET") return sendJson(response, 200, { collections: vaultService.listCollections(identity) }, method);
+    if (method === "POST") {
+      const body = await readJson(request);
+      return sendJson(response, 201, { collection: vaultService.createCollection(identity, body) }, method);
+    }
+    return false;
+  }
+
+  if (pathname === "/api/vault/locations") {
+    if (method === "GET") return sendJson(response, 200, { locations: vaultService.listLocations(identity) }, method);
+    if (method === "POST") {
+      const body = await readJson(request);
+      return sendJson(response, 201, { location: vaultService.createLocation(identity, body) }, method);
+    }
+    return false;
+  }
+
+  if (pathname === "/api/vault/treasures") {
+    if (method === "GET") {
+      return sendJson(response, 200, { treasures: vaultService.listTreasures(identity, vaultFilters(requestUrl.searchParams)) }, method);
+    }
+    if (method === "POST") {
+      const body = await readJson(request);
+      return sendJson(response, 201, { treasure: vaultService.createTreasure(identity, body) }, method);
+    }
+    return false;
+  }
+
+  if (pathname === "/api/vault/export" && method === "GET") {
+    return sendJson(response, 200, vaultService.exportData(identity), method, {
+      "Content-Disposition": `attachment; filename="kings-vault-export-${new Date().toISOString().slice(0, 10)}.json"`
+    });
+  }
+
+  if (pathname === "/api/vault/import/preview" && method === "POST") {
+    const body = await readJson(request);
+    return sendJson(response, 200, vaultService.previewImport(identity, body), method);
+  }
+
+  const treasureRoute = vaultTreasureRoute(pathname);
+  if (treasureRoute) {
+    if (treasureRoute.action === "duplicates" && method === "GET") {
+      return sendJson(response, 200, { candidates: vaultService.duplicateCandidates(identity, treasureRoute.treasureId) }, method);
+    }
+    if (treasureRoute.action === "history" && method === "GET") {
+      const limit = requestUrl.searchParams.get("limit");
+      return sendJson(response, 200, {
+        history: vaultService.history(identity, treasureRoute.treasureId, { limit: limit === null ? 50 : Number(limit) })
+      }, method);
+    }
+    if (treasureRoute.action) return false;
+    if (method === "GET") {
+      return sendJson(response, 200, { treasure: vaultService.getTreasure(identity, treasureRoute.treasureId) }, method);
+    }
+    if (method === "PATCH") {
+      const body = await readJson(request);
+      return sendJson(response, 200, { treasure: vaultService.updateTreasure(identity, treasureRoute.treasureId, body) }, method);
+    }
+    if (method === "DELETE") {
+      return sendJson(response, 200, { treasure: vaultService.archiveTreasure(identity, treasureRoute.treasureId) }, method);
+    }
+    return false;
+  }
+
+  return false;
+}
+
 export function createKingdomServer({
   config = loadRuntimeConfig(),
   logger = createLogger({ level: config.logLevel }),
@@ -225,7 +330,8 @@ export function createKingdomServer({
   publicRoot = fileURLToPath(new URL("./public/", import.meta.url)),
   identityService = null,
   greatHallService = null,
-  kingsAiClient = null
+  kingsAiClient = null,
+  vaultService = null
 } = {}) {
   return createServer(async (request, response) => {
     const requestStartedAt = performance.now();
@@ -259,9 +365,9 @@ export function createKingdomServer({
       if (requestUrl.pathname === "/api/meta" && ["GET", "HEAD"].includes(method)) {
         return sendJson(response, 200, {
           product: "K.I.N.G.S. Collector's Kingdom",
-          phase: "IMP-004 Great Hall & Navigation",
+          phase: "IMP-005 Royal Vault Phase 1",
           version: config.version,
-          featureStatus: "great-hall-in-progress"
+          featureStatus: "vault-phase-1-in-progress"
         }, method);
       }
 
@@ -284,13 +390,27 @@ export function createKingdomServer({
         return sendJson(response, 405, { error: "method_not_allowed" }, method);
       }
 
+      if (requestUrl.pathname === "/api/vault" || requestUrl.pathname.startsWith("/api/vault/")) {
+        const handled = await handleVaultRoute({
+          request,
+          response,
+          requestUrl,
+          identityService,
+          vaultService
+        });
+        if (handled !== false) return;
+        return sendJson(response, 405, { error: "method_not_allowed" }, method);
+      }
+
       if (requestUrl.pathname.startsWith("/api/")) return sendJson(response, 404, { error: "not_found" }, method);
       if (!["GET", "HEAD"].includes(method)) return sendJson(response, 405, { error: "method_not_allowed" }, method);
       if (await sendStatic(response, method, requestUrl.pathname, publicRoot)) return;
       return sendJson(response, 404, { error: "not_found" }, method);
     } catch (error) {
-      if (error instanceof IdentityError || error instanceof HttpError) {
-        return sendJson(response, error.statusCode, { error: error.code, message: error.message }, method);
+      if (error instanceof IdentityError || error instanceof HttpError || error instanceof VaultError) {
+        const payload = { error: error.code, message: error.message };
+        if (error instanceof VaultError && error.details) payload.details = error.details;
+        return sendJson(response, error.statusCode, payload, method);
       }
       if (error instanceof KingsAiClientError) {
         logger.warn("keeper.kings_ai_unavailable", { code: error.code, retryable: error.retryable });
@@ -310,18 +430,20 @@ export function createKingdomServer({
 async function run() {
   const config = loadRuntimeConfig();
   const logger = createLogger({ level: config.logLevel });
-  const store = new SqliteIdentityStore(resolve(config.dataDir, "identity.sqlite"));
+  const identityStore = new SqliteIdentityStore(resolve(config.dataDir, "identity.sqlite"));
+  const vaultStore = new SqliteVaultStore(resolve(config.dataDir, "vault.sqlite"));
   const identityService = createIdentityService({
-    store,
+    store: identityStore,
     sessionTtlMs: config.sessionTtlHours * 60 * 60 * 1000
   });
   const greatHallService = createGreatHallService({ identityService });
+  const vaultService = createVaultService({ store: vaultStore });
   const kingsAiClient = createKingsAiClient({
     baseUrl: config.kingsAiBaseUrl,
     accessToken: config.kingsAiToken,
     timeoutMs: config.kingsAiTimeoutMs
   });
-  const server = createKingdomServer({ config, logger, identityService, greatHallService, kingsAiClient });
+  const server = createKingdomServer({ config, logger, identityService, greatHallService, kingsAiClient, vaultService });
 
   server.on("error", (error) => {
     logger.error("server.error", { error });
@@ -339,7 +461,8 @@ async function run() {
         logger.error("server.shutdown_failed", { error });
         process.exitCode = 1;
       }
-      store.close();
+      identityStore.close();
+      vaultStore.close();
     });
   };
 
