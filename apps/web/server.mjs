@@ -31,7 +31,8 @@ const SECURITY_HEADERS = Object.freeze({
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
 });
 
-const MAX_JSON_BYTES = 64 * 1024;
+const DEFAULT_MAX_JSON_BYTES = 64 * 1024;
+const IMPORT_PREVIEW_MAX_JSON_BYTES = 1024 * 1024;
 
 class HttpError extends Error {
   constructor(statusCode, code, message) {
@@ -89,14 +90,14 @@ async function sendStatic(response, method, pathname, publicRoot) {
   }
 }
 
-async function readJson(request) {
+async function readJson(request, { maxBytes = DEFAULT_MAX_JSON_BYTES } = {}) {
   const contentType = String(request.headers["content-type"] ?? "").toLowerCase();
   if (!contentType.startsWith("application/json")) throw new HttpError(415, "unsupported_media_type", "Content-Type must be application/json.");
   const chunks = [];
   let size = 0;
   for await (const chunk of request) {
     size += chunk.length;
-    if (size > MAX_JSON_BYTES) throw new HttpError(413, "payload_too_large", "Request body is too large.");
+    if (size > maxBytes) throw new HttpError(413, "payload_too_large", "Request body is too large.");
     chunks.push(chunk);
   }
   try {
@@ -291,7 +292,7 @@ async function handleVaultRoute({ request, response, requestUrl, identityService
   }
 
   if (pathname === "/api/vault/import/preview" && method === "POST") {
-    const body = await readJson(request);
+    const body = await readJson(request, { maxBytes: IMPORT_PREVIEW_MAX_JSON_BYTES });
     return sendJson(response, 200, vaultService.previewImport(identity, body), method);
   }
 
@@ -436,8 +437,8 @@ async function run() {
     store: identityStore,
     sessionTtlMs: config.sessionTtlHours * 60 * 60 * 1000
   });
-  const greatHallService = createGreatHallService({ identityService });
   const vaultService = createVaultService({ store: vaultStore });
+  const greatHallService = createGreatHallService({ identityService, vaultService });
   const kingsAiClient = createKingsAiClient({
     baseUrl: config.kingsAiBaseUrl,
     accessToken: config.kingsAiToken,
