@@ -29,6 +29,17 @@
 .grading-contour-signal { display: grid; gap: .25rem; padding: .65rem; border-radius: .75rem; border: 1px solid rgba(160, 58, 45, .18); background: rgba(160, 58, 45, .06); }
 .grading-contour-signal p { margin: 0; }
 .grading-contour-signal > span { font-size: .8rem; font-variant-numeric: tabular-nums; }
+.grading-reference-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .7rem; align-items: end; }
+.grading-reference-form label, .grading-autograph-target { display: grid; gap: .35rem; font-size: .82rem; font-weight: 750; }
+.grading-reference-candidates { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .7rem; }
+.grading-reference-candidate { display: grid; gap: .5rem; padding: .7rem; border-radius: .8rem; border: 1px solid rgba(35, 28, 20, .14); background: rgba(255,255,255,.38); min-width: 0; }
+.grading-reference-candidate-heading { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .5rem; align-items: start; }
+.grading-reference-candidate-heading strong { overflow-wrap: anywhere; }
+.grading-reference-candidate img { width: 100%; aspect-ratio: 3 / 2; object-fit: contain; border-radius: .6rem; background: rgba(255,255,255,.72); border: 1px solid rgba(35, 28, 20, .1); }
+.grading-reference-meta { display: grid; gap: .2rem; font-size: .74rem; line-height: 1.35; }
+.grading-reference-meta span:last-child { font-weight: 800; }
+.grading-autograph-results { display: grid; gap: .45rem; }
+.grading-autograph-panel > .gold-button { width: fit-content; }
 .grading-capture-plan { padding: .9rem 1rem; border-radius: .9rem; border: 1px solid rgba(35, 28, 20, .12); background: rgba(255,255,255,.3); }
 .grading-capture-plan h3, .grading-controls h3, .grading-quality-panel h3 { margin: 0; }
 .grading-capture-plan ul { margin: .55rem 0; padding-left: 1.2rem; display: grid; gap: .35rem; }
@@ -38,9 +49,10 @@
   .grading-workspace { grid-template-columns: 1fr; }
 }
 @media (max-width: 620px) {
-  .grading-toolbar, .grading-border-grid { grid-template-columns: 1fr; }
+  .grading-toolbar, .grading-border-grid, .grading-reference-form, .grading-reference-candidates { grid-template-columns: 1fr; }
   .grading-heading { display: grid; }
   .grading-advisory-badge { white-space: normal; width: fit-content; }
   .grading-image-stage { min-height: 18rem; }
   .grading-threshold, .grading-result-row, .grading-quality-row { align-items: flex-start; flex-direction: column; gap: .2rem; }
+  .grading-autograph-panel > .gold-button { width: 100%; }
 }
