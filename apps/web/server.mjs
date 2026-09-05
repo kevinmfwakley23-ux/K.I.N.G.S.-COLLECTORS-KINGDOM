@@ -12,6 +12,7 @@ import { clearSessionCookie, parseCookies, sessionCookie } from "../../packages/
 import { createKingsAiClient, KingsAiClientError } from "../../packages/kings-ai/src/client.mjs";
 import { createLogger } from "../../packages/observability/src/logger.mjs";
 import { handleVaultRequest } from "../../packages/vault/src/http.mjs";
+import { createVaultOwnershipService } from "../../packages/vault/src/ownership.mjs";
 import { createVaultService, VaultError } from "../../packages/vault/src/service.mjs";
 import { SqliteVaultStore } from "../../packages/vault/src/sqlite-store.mjs";
 
@@ -242,7 +243,8 @@ export function createKingdomServer({
   identityService = null,
   greatHallService = null,
   kingsAiClient = null,
-  vaultService = null
+  vaultService = null,
+  vaultOwnershipService = null
 } = {}) {
   return createServer(async (request, response) => {
     const requestStartedAt = performance.now();
@@ -269,7 +271,11 @@ export function createKingdomServer({
       }
 
       if (requestUrl.pathname === "/ready" && ["GET", "HEAD"].includes(method)) {
-        const readiness = createReadinessSnapshot({ configLoaded: true, identityReady: Boolean(identityService), vaultReady: Boolean(vaultService) });
+        const readiness = createReadinessSnapshot({
+          configLoaded: true,
+          identityReady: Boolean(identityService),
+          vaultReady: Boolean(vaultService && vaultOwnershipService)
+        });
         return sendJson(response, readiness.status === "ready" ? 200 : 503, readiness, method);
       }
 
@@ -308,7 +314,8 @@ export function createKingdomServer({
           pathname: requestUrl.pathname,
           searchParams: requestUrl.searchParams,
           identity,
-          vaultService
+          vaultService,
+          ownershipService: vaultOwnershipService
         });
         if (result === null) return sendJson(response, 405, { error: "method_not_allowed" }, method);
         if (result === false) return sendJson(response, 404, { error: "not_found" }, method);
@@ -342,7 +349,9 @@ async function run() {
   const config = loadRuntimeConfig();
   const logger = createLogger({ level: config.logLevel });
   const identityStore = new SqliteIdentityStore(resolve(config.dataDir, "identity.sqlite"));
-  const vaultStore = new SqliteVaultStore(resolve(config.dataDir, "vault.sqlite"));
+  const vaultDatabasePath = resolve(config.dataDir, "vault.sqlite");
+  const vaultStore = new SqliteVaultStore(vaultDatabasePath);
+  const vaultOwnershipService = createVaultOwnershipService({ filename: vaultDatabasePath });
   const identityService = createIdentityService({
     store: identityStore,
     sessionTtlMs: config.sessionTtlHours * 60 * 60 * 1000
@@ -354,7 +363,15 @@ async function run() {
     accessToken: config.kingsAiToken,
     timeoutMs: config.kingsAiTimeoutMs
   });
-  const server = createKingdomServer({ config, logger, identityService, greatHallService, kingsAiClient, vaultService });
+  const server = createKingdomServer({
+    config,
+    logger,
+    identityService,
+    greatHallService,
+    kingsAiClient,
+    vaultService,
+    vaultOwnershipService
+  });
 
   server.on("error", (error) => {
     logger.error("server.error", { error });
@@ -373,6 +390,7 @@ async function run() {
         process.exitCode = 1;
       }
       identityStore.close();
+      vaultOwnershipService.close();
       vaultStore.close();
     });
   };
