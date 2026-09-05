@@ -4,7 +4,7 @@ import { DatabaseSync } from "node:sqlite";
 import { createVaultSavedViewService } from "./saved-searches.mjs";
 import { VaultError } from "./service.mjs";
 
-const SEARCH_SCHEMA_VERSION = 1;
+const SEARCH_SCHEMA_VERSION = 2;
 const MAX_QUERY_TOKENS = 16;
 const SORTS = new Set(["updated-desc", "updated-asc", "created-desc", "title-asc", "title-desc", "value-desc", "year-desc"]);
 const STOPWORDS = new Set([
@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS vault_extended_search_meta (
   core_updated_at TEXT NOT NULL,
   attribute_updated_at TEXT NOT NULL,
   ownership_updated_at TEXT NOT NULL,
+  evidence_updated_at TEXT NOT NULL DEFAULT '',
   folder_updated_at TEXT NOT NULL,
   location_updated_at TEXT NOT NULL,
   schema_version INTEGER NOT NULL,
@@ -66,7 +67,22 @@ function ftsQuery(query) {
   return queryTokens(query).map((token) => `"${token.replaceAll('"', '""')}"*`).join(" AND ");
 }
 
+function tableExists(database, tableName) {
+  return Boolean(database.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name = ?").get(tableName));
+}
+
+function ensureSearchMetaColumns(database) {
+  const columns = new Set(database.prepare("PRAGMA table_info(vault_extended_search_meta)").all().map((row) => row.name));
+  if (!columns.has("evidence_updated_at")) {
+    database.exec("ALTER TABLE vault_extended_search_meta ADD COLUMN evidence_updated_at TEXT NOT NULL DEFAULT '';");
+  }
+}
+
 function versionRows(database, accountId) {
+  const evidenceUpdated = tableExists(database, "vault_evidence_documents")
+    ? `COALESCE((SELECT MAX(e.updated_at) FROM vault_evidence_documents e
+        WHERE e.account_id = t.account_id AND e.treasure_id = t.id), '')`
+    : "''";
   return database.prepare(`SELECT
       t.id AS treasure_id,
       t.updated_at AS core_updated_at,
@@ -74,6 +90,7 @@ function versionRows(database, accountId) {
         WHERE a.account_id = t.account_id AND a.treasure_id = t.id), '') AS attribute_updated_at,
       COALESCE((SELECT MAX(o.created_at) FROM vault_ownership_history o
         WHERE o.account_id = t.account_id AND o.treasure_id = t.id), '') AS ownership_updated_at,
+      ${evidenceUpdated} AS evidence_updated_at,
       COALESCE(f.updated_at, '') AS folder_updated_at,
       COALESCE(l.updated_at, '') AS location_updated_at
     FROM vault_treasures t
@@ -82,7 +99,13 @@ function versionRows(database, accountId) {
     WHERE t.account_id = ?`).all(accountId);
 }
 
-function contentExpression() {
+function contentExpression(database) {
+  const evidenceContent = tableExists(database, "vault_evidence_documents")
+    ? `COALESCE((SELECT GROUP_CONCAT(
+      e.kind || ' ' || e.title || ' ' || COALESCE(e.source_label, '') || ' ' || COALESCE(e.document_date, '') || ' ' ||
+      COALESCE(e.notes, '') || ' ' || COALESCE(e.original_name, '') || ' ' || e.source_type || ' ' || e.verification_status, ' ')
+      FROM vault_evidence_documents e WHERE e.account_id = t.account_id AND e.treasure_id = t.id), '')`
+    : "''";
   return `LOWER(
     COALESCE(t.title, '') || ' ' || COALESCE(t.category, '') || ' ' || COALESCE(t.series, '') || ' ' ||
     COALESCE(t.manufacturer, '') || ' ' || COALESCE(CAST(t.year AS TEXT), '') || ' ' || COALESCE(t.condition, '') || ' ' ||
@@ -95,7 +118,8 @@ function contentExpression() {
       FROM vault_treasure_attributes a WHERE a.account_id = t.account_id AND a.treasure_id = t.id), '') || ' ' ||
     COALESCE((SELECT GROUP_CONCAT(
       o.event_type || ' ' || COALESCE(o.occurred_on, '') || ' ' || COALESCE(o.counterparty, '') || ' ' || COALESCE(o.notes, ''), ' ')
-      FROM vault_ownership_history o WHERE o.account_id = t.account_id AND o.treasure_id = t.id), '')
+      FROM vault_ownership_history o WHERE o.account_id = t.account_id AND o.treasure_id = t.id), '') || ' ' ||
+    ${evidenceContent}
   )`;
 }
 
@@ -106,6 +130,7 @@ export function createVaultSearchService({ filename } = {}) {
   database.exec("PRAGMA journal_mode = WAL;");
   database.exec("PRAGMA busy_timeout = 5000;");
   database.exec(SCHEMA);
+  ensureSearchMetaColumns(database);
   const savedViews = createVaultSavedViewService({ filename });
 
   function removeOrphans(accountId) {
@@ -126,15 +151,15 @@ export function createVaultSearchService({ filename } = {}) {
       database.prepare("DELETE FROM vault_extended_search WHERE account_id = ?").run(accountId);
       database.prepare("DELETE FROM vault_extended_search_meta WHERE account_id = ?").run(accountId);
       database.prepare(`INSERT INTO vault_extended_search (treasure_id, account_id, content)
-        SELECT t.id, t.account_id, ${contentExpression()}
+        SELECT t.id, t.account_id, ${contentExpression(database)}
         FROM vault_treasures t
         LEFT JOIN vault_folders f ON f.account_id = t.account_id AND f.id = t.folder_id
         LEFT JOIN vault_locations l ON l.account_id = t.account_id AND l.id = t.location_id
         WHERE t.account_id = ?`).run(accountId);
       const insertMeta = database.prepare(`INSERT INTO vault_extended_search_meta (
-        account_id, treasure_id, core_updated_at, attribute_updated_at, ownership_updated_at,
+        account_id, treasure_id, core_updated_at, attribute_updated_at, ownership_updated_at, evidence_updated_at,
         folder_updated_at, location_updated_at, schema_version
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
       for (const row of rows) {
         insertMeta.run(
           accountId,
@@ -142,6 +167,7 @@ export function createVaultSearchService({ filename } = {}) {
           row.core_updated_at,
           row.attribute_updated_at,
           row.ownership_updated_at,
+          row.evidence_updated_at,
           row.folder_updated_at,
           row.location_updated_at,
           SEARCH_SCHEMA_VERSION
@@ -155,7 +181,7 @@ export function createVaultSearchService({ filename } = {}) {
   }
 
   function refreshTreasure(accountId, row) {
-    const content = database.prepare(`SELECT ${contentExpression()} AS content
+    const content = database.prepare(`SELECT ${contentExpression(database)} AS content
       FROM vault_treasures t
       LEFT JOIN vault_folders f ON f.account_id = t.account_id AND f.id = t.folder_id
       LEFT JOIN vault_locations l ON l.account_id = t.account_id AND l.id = t.location_id
@@ -164,13 +190,14 @@ export function createVaultSearchService({ filename } = {}) {
     database.prepare("DELETE FROM vault_extended_search WHERE account_id = ? AND treasure_id = ?").run(accountId, row.treasure_id);
     database.prepare("INSERT INTO vault_extended_search (treasure_id, account_id, content) VALUES (?, ?, ?)").run(row.treasure_id, accountId, content);
     database.prepare(`INSERT INTO vault_extended_search_meta (
-      account_id, treasure_id, core_updated_at, attribute_updated_at, ownership_updated_at,
+      account_id, treasure_id, core_updated_at, attribute_updated_at, ownership_updated_at, evidence_updated_at,
       folder_updated_at, location_updated_at, schema_version
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(account_id, treasure_id) DO UPDATE SET
       core_updated_at=excluded.core_updated_at,
       attribute_updated_at=excluded.attribute_updated_at,
       ownership_updated_at=excluded.ownership_updated_at,
+      evidence_updated_at=excluded.evidence_updated_at,
       folder_updated_at=excluded.folder_updated_at,
       location_updated_at=excluded.location_updated_at,
       schema_version=excluded.schema_version`).run(
@@ -179,6 +206,7 @@ export function createVaultSearchService({ filename } = {}) {
       row.core_updated_at,
       row.attribute_updated_at,
       row.ownership_updated_at,
+      row.evidence_updated_at,
       row.folder_updated_at,
       row.location_updated_at,
       SEARCH_SCHEMA_VERSION
@@ -198,6 +226,7 @@ export function createVaultSearchService({ filename } = {}) {
         current.core_updated_at !== row.core_updated_at ||
         current.attribute_updated_at !== row.attribute_updated_at ||
         current.ownership_updated_at !== row.ownership_updated_at ||
+        current.evidence_updated_at !== row.evidence_updated_at ||
         current.folder_updated_at !== row.folder_updated_at ||
         current.location_updated_at !== row.location_updated_at;
     });
