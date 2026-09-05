@@ -15,6 +15,8 @@ const contractFiles = [
   "packages/catalog/src/cache.mjs",
   "packages/catalog/src/open-library-provider.mjs",
   "packages/catalog/src/upcitemdb-provider.mjs",
+  "packages/catalog/src/pokemon-tcg-provider.mjs",
+  "packages/catalog/src/scryfall-provider.mjs",
   "packages/catalog/src/runtime.mjs",
   "packages/catalog/src/service.mjs",
   "packages/vault/src/sqlite-store.mjs",
@@ -61,12 +63,10 @@ const contractFiles = [
 
 for (const relative of contractFiles) {
   const source = await readFile(resolve(root, relative), "utf8");
-  if (!source.includes("export ") && !relative.endsWith("server.mjs")) {
-    throw new Error(`${relative} exposes no explicit module contract.`);
-  }
+  if (!source.includes("export ") && !relative.endsWith("server.mjs")) throw new Error(`${relative} exposes no explicit module contract.`);
 }
 
 const entries = await readdir(resolve(root, "packages"), { withFileTypes: true });
 if (!entries.some((entry) => entry.isDirectory())) throw new Error("No package boundaries found.");
 
-console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, provider-neutral ISBN/UPC/EAN catalog candidates, append-only provenance API/UI, saved Vault views and deterministic keyset retrieval API/UI, cycle-safe individual and previewed atomic bulk reorganization API/UI, Vault, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice boundaries.");
+console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, provider-neutral ISBN/UPC/EAN/Pokémon/MTG catalog candidates, append-only provenance API/UI, saved Vault views and deterministic keyset retrieval API/UI, cycle-safe individual and previewed atomic bulk reorganization API/UI, Vault, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice boundaries.");

@@ -185,7 +185,7 @@ test("Royal Intake Queue validates identifier types and structured barcode/card 
     assert.throws(() => intakeService.capture(collectorA, {
       identifierType: "mystery-provider",
       identifierValue: "123"
-    }), /Identifier type must be barcode, UPC, EAN, ISBN, Pokémon card ID, Pokémon set\/card number, catalog, serial, SKU, or custom/i);
+    }), /Identifier type must be barcode, UPC, EAN, ISBN, Pokémon card ID, Pokémon set\/card number, Magic Scryfall ID, Magic set\/collector number, catalog, serial, SKU, or custom/i);
 
     assert.throws(() => intakeService.capture(collectorA, {
       identifierType: "isbn",

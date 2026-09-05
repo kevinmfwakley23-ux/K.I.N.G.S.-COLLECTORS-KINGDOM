@@ -3,7 +3,9 @@ const REVIEW_POLICIES = Object.freeze({
   upc: Object.freeze({ actionLabel: "Find product candidates", loadingMessage: "Requesting review-only retail product metadata evidence…", noMatchMessage: "No external product candidate was returned for this UPC. Nothing in the Vault was changed; manual entry remains available.", defaultCategory: null }),
   ean: Object.freeze({ actionLabel: "Find product candidates", loadingMessage: "Requesting review-only retail product metadata evidence…", noMatchMessage: "No external product candidate was returned for this EAN. Nothing in the Vault was changed; manual entry remains available.", defaultCategory: null }),
   "pokemon-card-id": Object.freeze({ actionLabel: "Find Pokémon card candidate", loadingMessage: "Requesting review-only Pokémon card evidence…", noMatchMessage: "No Pokémon TCG candidate was returned for this exact provider card ID. Nothing in the Vault was changed; verify the ID or continue with manual entry.", defaultCategory: "Trading Card" }),
-  "pokemon-set-number": Object.freeze({ actionLabel: "Find Pokémon card candidate", loadingMessage: "Requesting review-only Pokémon set/card evidence…", noMatchMessage: "No Pokémon TCG candidate was returned for this exact set/card key. Nothing in the Vault was changed; verify the set ID and printed card number or continue with manual entry.", defaultCategory: "Trading Card" })
+  "pokemon-set-number": Object.freeze({ actionLabel: "Find Pokémon card candidate", loadingMessage: "Requesting review-only Pokémon set/card evidence…", noMatchMessage: "No Pokémon TCG candidate was returned for this exact set/card key. Nothing in the Vault was changed; verify the set ID and printed card number or continue with manual entry.", defaultCategory: "Trading Card" }),
+  "mtg-scryfall-id": Object.freeze({ actionLabel: "Find Magic printing candidate", loadingMessage: "Requesting review-only Scryfall printing evidence…", noMatchMessage: "No Scryfall card printing was returned for this exact printing ID. Nothing in the Vault was changed; verify the ID or continue with manual entry.", defaultCategory: "Trading Card" }),
+  "mtg-set-number": Object.freeze({ actionLabel: "Find Magic printing candidate", loadingMessage: "Requesting review-only Magic set/collector evidence…", noMatchMessage: "No Scryfall printing was returned for this exact set code and collector number. Nothing in the Vault was changed; verify the key or continue with manual entry.", defaultCategory: "Trading Card" })
 });
 
 function normalizedType(value) {
@@ -45,8 +47,12 @@ export function catalogCandidateSummary(candidate) {
   if (fields.series) parts.push(fields.series);
   if (fields.setName) parts.push(fields.setName);
   if (fields.cardNumber) parts.push(`Card #${fields.cardNumber}`);
+  if (fields.collectorNumber) parts.push(`Collector #${fields.collectorNumber}`);
+  if (fields.language) parts.push(String(fields.language).toUpperCase());
   if (fields.rarity) parts.push(fields.rarity);
   if (fields.artist) parts.push(`Artist ${fields.artist}`);
+  if (fields.layout) parts.push(fields.layout);
+  if (Array.isArray(fields.availableFinishes) && fields.availableFinishes.length) parts.push(`Finishes: ${fields.availableFinishes.join(", ")}`);
   if (Array.isArray(fields.subtypes) && fields.subtypes.length) parts.push(fields.subtypes.join(", "));
   return parts.join(" • ") || "Provider metadata is limited for this candidate.";
 }
@@ -102,18 +108,39 @@ export function catalogCandidateDraft(item, candidate) {
     if (identifiers.lookupCode) attributes.catalogLookupCode = safeText(identifiers.lookupCode, 180);
     attributes.variantSelectionRequired = true;
     attributes.providerIdentificationIsNotPhysicalAuthentication = true;
+  } else if (candidate?.providerId === "scryfall") {
+    category = "Trading Card";
+    manufacturer = "Wizards of the Coast";
+    series = safeText(fields.setName, 240);
+    catalogIdentifier = safeText(item?.identifierValue ?? identifiers.lookupCode ?? identifiers.scryfallCardId ?? candidate.providerRecordId, 180);
+    barcode = null;
+    attributes.cardGame = "Magic: The Gathering";
+    if (identifiers.scryfallCardId) attributes.scryfallCardId = safeText(identifiers.scryfallCardId, 64);
+    if (identifiers.scryfallOracleId) attributes.scryfallOracleId = safeText(identifiers.scryfallOracleId, 64);
+    if (fields.setCode) attributes.mtgSetCode = safeText(fields.setCode, 16);
+    if (fields.setName) attributes.mtgSetName = safeText(fields.setName, 240);
+    if (fields.collectorNumber) attributes.mtgCollectorNumber = safeText(fields.collectorNumber, 80);
+    if (fields.language) attributes.language = safeText(fields.language, 20);
+    if (fields.rarity) attributes.rarity = safeText(fields.rarity, 80);
+    if (fields.releasedAt) attributes.releaseDate = safeText(fields.releasedAt, 40);
+    if (fields.artist) attributes.artist = safeText(fields.artist, 300);
+    if (fields.layout) attributes.layout = safeText(fields.layout, 120);
+    if (fields.typeLine) attributes.typeLine = safeText(fields.typeLine, 500);
+    if (fields.frame) attributes.frame = safeText(fields.frame, 40);
+    if (fields.borderColor) attributes.borderColor = safeText(fields.borderColor, 40);
+    if (Array.isArray(fields.availableFinishes) && fields.availableFinishes.length) attributes.availableFinishes = fields.availableFinishes.slice(0, 10).map(String);
+    if (Array.isArray(fields.cardFaces) && fields.cardFaces.length) attributes.cardFaces = fields.cardFaces.slice(0, 4).map((face) => ({ name: safeText(face?.name, 300), typeLine: safeText(face?.typeLine, 400) }));
+    attributes.promo = fields.promo === true;
+    attributes.digital = fields.digital === true;
+    attributes.reprint = fields.reprint === true;
+    attributes.variation = fields.variation === true;
+    attributes.finishSelectionRequired = true;
+    attributes.oracleIdentityIsNotPhysicalPrintingIdentity = true;
+    attributes.providerIdentificationIsNotPhysicalAuthentication = true;
   }
 
   return Object.freeze({
-    title,
-    category,
-    manufacturer,
-    description,
-    series,
-    catalogIdentifier,
-    barcode,
-    attributes: Object.freeze(attributes),
-    reviewRequired: true,
-    mutationPerformed: false
+    title, category, manufacturer, description, series, catalogIdentifier, barcode,
+    attributes: Object.freeze(attributes), reviewRequired: true, mutationPerformed: false
   });
 }

@@ -40,11 +40,7 @@ async function api(path, options = {}) {
     }
   });
   let body = {};
-  try {
-    body = await response.json();
-  } catch {
-    body = {};
-  }
+  try { body = await response.json(); } catch { body = {}; }
   if (response.status === 401) {
     window.location.assign("/auth.html");
     throw new Error("Authentication is required.");
@@ -102,17 +98,15 @@ function prefillCatalogCandidate(item, candidate, status) {
   setEditorValue("#treasure-description", draft.description);
   setEditorValue("#treasure-barcode", draft.barcode);
   setEditorValue("#treasure-catalog", draft.catalogIdentifier);
-  if (Object.keys(draft.attributes).length) {
-    setEditorValue("#treasure-attributes", JSON.stringify(draft.attributes, null, 2));
-  }
+  if (Object.keys(draft.attributes).length) setEditorValue("#treasure-attributes", JSON.stringify(draft.attributes, null, 2));
 
   const editorStatus = document.querySelector("#treasure-status");
   if (editorStatus) {
-    editorStatus.textContent = `${candidate.providerName || "Catalog provider"} candidate copied into this unsaved editor. Review title, set/edition, exact physical variant, maker/publisher, condition, grade, category, and every identifier before saving. No Vault record has been written and no provider price was applied.`;
+    editorStatus.textContent = `${candidate.providerName || "Catalog provider"} candidate copied into this unsaved editor. Review title, set/edition, language, exact physical variant or finish, maker/publisher, condition, grade, category, and every identifier before saving. No Vault record has been written and no provider price was applied.`;
   }
   titleField?.focus();
   document.querySelector("#treasure-editor")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  status.textContent = "Catalog candidate copied into a new unsaved treasure editor. The Intake Queue item remains pending and no authoritative record, physical variant, grade, or value was changed.";
+  status.textContent = "Catalog candidate copied into a new unsaved treasure editor. The Intake Queue item remains pending and no authoritative record, physical variant/finish, grade, ownership fact, or value was changed.";
 }
 
 export function createVaultIntakeUi() {
@@ -122,7 +116,6 @@ export function createVaultIntakeUi() {
   if (document.querySelector("#royal-intake-panel")) return null;
 
   ensureStylesheet();
-
   const panel = node("section", "marble-panel intake-panel");
   panel.id = "royal-intake-panel";
   panel.setAttribute("aria-labelledby", "royal-intake-title");
@@ -132,7 +125,7 @@ export function createVaultIntakeUi() {
   headingCopy.append(
     node("p", "eyebrow", "Royal Intake Queue"),
     node("h2", "", "Capture now. Identify carefully. Finish anywhere."),
-    node("p", "muted-copy", "Save UPC, EAN, ISBN, Pokémon card, barcode, catalog, serial, SKU, or custom identifiers to your account queue. Repeated pending captures become a count instead of noisy duplicate rows. A captured identifier or provider candidate is evidence, not proof of exact collectible identity, physical variant, grade, or value.")
+    node("p", "muted-copy", "Save UPC, EAN, ISBN, Pokémon, Magic: The Gathering, barcode, catalog, serial, SKU, or custom identifiers to your account queue. Repeated pending captures become a count instead of noisy duplicate rows. A captured identifier or provider candidate is evidence, not proof of exact collectible identity, physical variant/finish, language, grade, authenticity, ownership, or value.")
   );
   headingCopy.querySelector("h2").id = "royal-intake-title";
   const cameraNote = node("aside", "intake-camera-note", "Secure camera scanning is progressive and appears only when this browser exposes the required camera and native barcode APIs. Manual capture remains available on every supported device.");
@@ -149,22 +142,15 @@ export function createVaultIntakeUi() {
 
   const form = node("form", "intake-form");
   form.id = "royal-intake-form";
-
   const typeLabel = node("label", "");
   typeLabel.append(node("span", "", "Identifier type"));
   const type = document.createElement("select");
   type.id = "intake-identifier-type";
   for (const identifierType of [
-    "barcode",
-    "upc",
-    "ean",
-    "isbn",
-    "pokemon-set-number",
-    "pokemon-card-id",
-    "catalog",
-    "serial",
-    "sku",
-    "custom"
+    "barcode", "upc", "ean", "isbn",
+    "pokemon-set-number", "pokemon-card-id",
+    "mtg-set-number", "mtg-scryfall-id",
+    "catalog", "serial", "sku", "custom"
   ]) {
     const option = document.createElement("option");
     option.value = identifierType;
@@ -185,14 +171,10 @@ export function createVaultIntakeUi() {
   valueLabel.append(value);
 
   function updateIdentifierHint() {
-    if (type.value === "pokemon-set-number") {
-      setHint(value, "Set ID/card number, for example base1/4");
-      return;
-    }
-    if (type.value === "pokemon-card-id") {
-      setHint(value, "Provider card ID, for example base1-4");
-      return;
-    }
+    if (type.value === "pokemon-set-number") return setHint(value, "Set ID/card number, for example base1/4");
+    if (type.value === "pokemon-card-id") return setHint(value, "Provider card ID, for example base1-4");
+    if (type.value === "mtg-set-number") return setHint(value, "Set code/collector number, for example lea/233");
+    if (type.value === "mtg-scryfall-id") return setHint(value, "Scryfall printing UUID");
     setHint(value, "Scan result or type the identifier");
   }
   type.addEventListener("change", updateIdentifierHint);
@@ -239,9 +221,7 @@ export function createVaultIntakeUi() {
   const list = node("div", "intake-list");
   list.id = "intake-list";
   panel.append(list);
-
   importPanel.before(panel);
-
   const state = { view: "pending", items: [] };
 
   async function resolveCatalogCandidates(item, output, button, policy) {
@@ -249,24 +229,19 @@ export function createVaultIntakeUi() {
     button.textContent = "Finding candidates…";
     output.replaceChildren(node("p", "muted-copy", policy.loadingMessage));
     try {
-      const params = new URLSearchParams({
-        identifierType: item.identifierType,
-        identifierValue: item.identifierValue
-      });
+      const params = new URLSearchParams({ identifierType: item.identifierType, identifierValue: item.identifierValue });
       const { result } = await api(`/api/catalog/candidates?${params.toString()}`);
       output.replaceChildren();
       if (!result.candidates.length) {
         output.append(node("p", "catalog-no-match", policy.noMatchMessage));
         return;
       }
-
       const evidenceHeader = node("div", "catalog-evidence-header");
       evidenceHeader.append(
         node("strong", "", `${result.candidates.length} review candidate${result.candidates.length === 1 ? "" : "s"}`),
         node("small", "", `Retrieved ${formatTime(result.retrievedAt)} • no Vault write or valuation performed`)
       );
       output.append(evidenceHeader);
-
       for (const candidate of result.candidates) {
         const candidateCard = node("article", "catalog-candidate-card");
         const copy = node("div", "catalog-candidate-copy");
@@ -276,7 +251,6 @@ export function createVaultIntakeUi() {
           node("p", "muted-copy", catalogCandidateSummary(candidate)),
           node("p", "catalog-match-reason", candidate.matchReason || "Provider identifier evidence requires collector review.")
         );
-
         const candidateActions = node("div", "catalog-candidate-actions");
         if (candidate.sourceUrl) {
           const source = node("a", "text-link", "View source evidence");
@@ -288,11 +262,7 @@ export function createVaultIntakeUi() {
         const review = node("button", "dark-button", "Review in treasure editor");
         review.type = "button";
         review.addEventListener("click", () => {
-          try {
-            prefillCatalogCandidate(item, candidate, status);
-          } catch (error) {
-            status.textContent = error.message;
-          }
+          try { prefillCatalogCandidate(item, candidate, status); } catch (error) { status.textContent = error.message; }
         });
         candidateActions.append(review);
         candidateCard.append(copy, candidateActions);
@@ -316,7 +286,6 @@ export function createVaultIntakeUi() {
       node("small", "", `${captureCountMessage(item.captureCount)} • last ${formatTime(item.lastCapturedAt)}`)
     );
     top.append(copy);
-
     let catalogOutput = null;
     if (item.status === "pending") {
       const actions = node("div", "intake-card-actions");
@@ -333,11 +302,7 @@ export function createVaultIntakeUi() {
       useButton.type = "button";
       dismissButton.type = "button";
       useButton.addEventListener("click", () => {
-        try {
-          prefillTreasureEditor(item, status);
-        } catch (error) {
-          status.textContent = error.message;
-        }
+        try { prefillTreasureEditor(item, status); } catch (error) { status.textContent = error.message; }
       });
       dismissButton.addEventListener("click", async () => {
         if (!window.confirm(`Dismiss ${item.identifierValue} from the pending intake queue? Its history will be preserved.`)) return;
@@ -346,9 +311,7 @@ export function createVaultIntakeUi() {
           await api(`/api/vault/intake/${encodeURIComponent(item.id)}`, { method: "DELETE" });
           status.textContent = "Intake item dismissed. Its capture history is preserved.";
           await load();
-        } catch (error) {
-          status.textContent = error.message;
-        }
+        } catch (error) { status.textContent = error.message; }
       });
       actions.append(useButton, dismissButton);
       top.append(actions);
@@ -356,20 +319,14 @@ export function createVaultIntakeUi() {
       top.append(node("span", "intake-dismissed-label", `Dismissed ${formatTime(item.dismissedAt)}`));
     }
     card.append(top);
-
     if (item.notes) card.append(node("p", "intake-notes", item.notes));
-    const existingMessage = node("p", item.existingVaultCandidates?.length ? "intake-candidate-warning" : "muted-copy", intakeCandidateMessage(item));
-    card.append(existingMessage);
-
+    card.append(node("p", item.existingVaultCandidates?.length ? "intake-candidate-warning" : "muted-copy", intakeCandidateMessage(item)));
     if (Array.isArray(item.existingVaultCandidates) && item.existingVaultCandidates.length) {
       const candidates = node("ul", "intake-candidates");
-      for (const candidate of item.existingVaultCandidates) {
-        candidates.append(node("li", "", `${candidate.title} • ${candidate.category}${candidate.variant ? ` • ${candidate.variant}` : ""}`));
-      }
+      for (const candidate of item.existingVaultCandidates) candidates.append(node("li", "", `${candidate.title} • ${candidate.category}${candidate.variant ? ` • ${candidate.variant}` : ""}`));
       card.append(candidates);
     }
     if (catalogOutput) card.append(catalogOutput);
-
     return card;
   }
 
@@ -400,13 +357,7 @@ export function createVaultIntakeUi() {
     try {
       const result = await api("/api/vault/intake", {
         method: "POST",
-        body: JSON.stringify({
-          sourceType: "manual",
-          identifierType: type.value,
-          identifierValue: value.value,
-          captureCount: Number(count.value),
-          notes: notes.value || null
-        })
+        body: JSON.stringify({ sourceType: "manual", identifierType: type.value, identifierValue: value.value, captureCount: Number(count.value), notes: notes.value || null })
       });
       status.textContent = result.merged
         ? `Matched an existing pending queue item. Capture count is now ${result.item.captureCount}.`
@@ -417,19 +368,11 @@ export function createVaultIntakeUi() {
       state.view = "pending";
       await load();
       value.focus();
-    } catch (error) {
-      status.textContent = error.message;
-    }
+    } catch (error) { status.textContent = error.message; }
   });
 
-  pendingButton.addEventListener("click", async () => {
-    state.view = "pending";
-    await load().catch((error) => { status.textContent = error.message; });
-  });
-  historyButton.addEventListener("click", async () => {
-    state.view = "dismissed";
-    await load().catch((error) => { status.textContent = error.message; });
-  });
+  pendingButton.addEventListener("click", async () => { state.view = "pending"; await load().catch((error) => { status.textContent = error.message; }); });
+  historyButton.addEventListener("click", async () => { state.view = "dismissed"; await load().catch((error) => { status.textContent = error.message; }); });
   refreshButton.addEventListener("click", () => load().catch((error) => { status.textContent = error.message; }));
   globalThis.addEventListener("kings:vault-intake-change", () => load().catch((error) => { status.textContent = error.message; }));
 

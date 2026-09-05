@@ -93,6 +93,9 @@ export function loadRuntimeConfig(env = process.env) {
     pokemonTcgBaseUrl: parseExternalHttpsUrl(env.KINGDOM_POKEMON_TCG_BASE_URL ?? "https://api.pokemontcg.io", "KINGDOM_POKEMON_TCG_BASE_URL"),
     pokemonTcgApiKey: parseOptionalSecret(env.KINGDOM_POKEMON_TCG_API_KEY, "KINGDOM_POKEMON_TCG_API_KEY"),
     pokemonTcgTimeoutMs: parsePositiveInteger(env.KINGDOM_POKEMON_TCG_TIMEOUT_MS ?? "5000", "KINGDOM_POKEMON_TCG_TIMEOUT_MS"),
-    pokemonTcgMinIntervalMs: parsePositiveInteger(env.KINGDOM_POKEMON_TCG_MIN_INTERVAL_MS ?? "5000", "KINGDOM_POKEMON_TCG_MIN_INTERVAL_MS")
+    pokemonTcgMinIntervalMs: parsePositiveInteger(env.KINGDOM_POKEMON_TCG_MIN_INTERVAL_MS ?? "5000", "KINGDOM_POKEMON_TCG_MIN_INTERVAL_MS"),
+    scryfallBaseUrl: parseExternalHttpsUrl(env.KINGDOM_SCRYFALL_BASE_URL ?? "https://api.scryfall.com", "KINGDOM_SCRYFALL_BASE_URL"),
+    scryfallTimeoutMs: parsePositiveInteger(env.KINGDOM_SCRYFALL_TIMEOUT_MS ?? "5000", "KINGDOM_SCRYFALL_TIMEOUT_MS"),
+    scryfallMinIntervalMs: parsePositiveInteger(env.KINGDOM_SCRYFALL_MIN_INTERVAL_MS ?? "150", "KINGDOM_SCRYFALL_MIN_INTERVAL_MS")
   });
 }
