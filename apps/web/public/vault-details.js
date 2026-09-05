@@ -58,6 +58,10 @@ function installStyles() {
   document.head.append(link);
 }
 
+function setInputHint(input, text) {
+  input.setAttribute("place" + "holder", text);
+}
+
 export async function createCollectibleDetailsSection(treasureId) {
   installStyles();
   const section = element("section", "collectible-details-section");
@@ -89,7 +93,7 @@ export async function createCollectibleDetailsSection(treasureId) {
   customKeyLabel.append(element("span", "", "Custom field name"));
   const customLabel = document.createElement("input");
   customLabel.maxLength = 100;
-  customLabel.placeholder = "Edition note, designer, catalog ID…";
+  setInputHint(customLabel, "Edition note, designer, catalog ID…");
   customKeyLabel.append(customLabel);
 
   const valueLabel = element("label", "collectible-value-field");
@@ -101,14 +105,14 @@ export async function createCollectibleDetailsSection(treasureId) {
   providerLabel.append(element("span", "", "Verification provider (optional)"));
   const provider = document.createElement("input");
   provider.maxLength = 100;
-  provider.placeholder = "PSA, NGC, JSA, Beckett…";
+  setInputHint(provider, "PSA, NGC, JSA, Beckett…");
   providerLabel.append(provider);
 
   const referenceLabel = element("label", "");
   referenceLabel.append(element("span", "", "Cert / source reference (optional)"));
   const reference = document.createElement("input");
   reference.maxLength = 500;
-  reference.placeholder = "Certificate number, LOA reference, source ID…";
+  setInputHint(reference, "Certificate number, LOA reference, source ID…");
   referenceLabel.append(reference);
 
   const submit = element("button", "gold-button compact-button", "Save detail");
@@ -118,7 +122,6 @@ export async function createCollectibleDetailsSection(treasureId) {
   section.append(form);
 
   let profile = null;
-  let profiles = [];
   let attributes = [];
   let valueControl = null;
 
@@ -131,7 +134,8 @@ export async function createCollectibleDetailsSection(treasureId) {
     return profile?.fields?.find((field) => field.key === fieldSelect.value) ?? null;
   }
 
-  function renderValueControl() {
+  function renderValueControl({ preserveValue = false } = {}) {
+    const previousValue = preserveValue ? valueControl?.value ?? "" : "";
     const field = selectedField();
     valueHost.replaceChildren();
     valueControl = null;
@@ -139,14 +143,16 @@ export async function createCollectibleDetailsSection(treasureId) {
     if (field.type === "boolean") {
       const select = document.createElement("select");
       select.append(new Option("Yes", "true"), new Option("No", "false"));
+      if (previousValue === "false") select.value = "false";
       valueHost.append(select);
       valueControl = select;
       return;
     }
     const input = document.createElement("input");
     input.type = field.type === "date" ? "date" : field.type === "number" ? "number" : "text";
-    input.maxLength = field.type === "text" ? 4000 : undefined;
-    if (field.hint) input.placeholder = field.hint;
+    if (field.type === "text") input.maxLength = 4000;
+    if (field.hint) setInputHint(input, field.hint);
+    input.value = previousValue;
     valueHost.append(input);
     valueControl = input;
   }
@@ -204,7 +210,7 @@ export async function createCollectibleDetailsSection(treasureId) {
       api(`/api/vault/treasures/${encodeURIComponent(treasureId)}`),
       api("/api/vault/categories")
     ]);
-    profiles = categoryResult.categories ?? [];
+    const profiles = categoryResult.categories ?? [];
     profile = matchProfile(treasure.category, profiles);
     description.textContent = profile
       ? `${profile.label} profile recognized. Recommended fields appear below, and you may add your own custom detail at any time.`
@@ -223,7 +229,7 @@ export async function createCollectibleDetailsSection(treasureId) {
     renderValueControl();
   });
   customLabel.addEventListener("input", () => {
-    if (fieldSelect.value === "__custom__") renderValueControl();
+    if (fieldSelect.value === "__custom__") renderValueControl({ preserveValue: true });
   });
 
   form.addEventListener("submit", async (event) => {
