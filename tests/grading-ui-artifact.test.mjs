@@ -5,12 +5,16 @@ import { readFile } from "node:fs/promises";
 const uiUrl = new URL("../apps/web/public/vault-grading-ui.js", import.meta.url);
 const cssUrl = new URL("../apps/web/public/vault-grading.css", import.meta.url);
 
-test("AI Pre-Grade Lab UI exposes centering, capture quality, geometry, contour and paired surface analysis without fake grading claims", async () => {
+test("AI Pre-Grade Lab UI exposes centering, detector snapshots, capture quality, geometry, contour and paired surface analysis without fake grading claims", async () => {
   const source = await readFile(uiUrl, "utf8");
   assert.match(source, /AI Pre-Grade Lab/);
   assert.match(source, /Measure first\. Estimate second\. Never fake an official grade/);
   assert.match(source, /grading-image-file/);
   assert.match(source, /grading-raking-companion-file/);
+  assert.match(source, /getCurrentGradingAnalysisSnapshot/);
+  assert.match(source, /primaryFile/);
+  assert.match(source, /companionFile/);
+  assert.match(source, /publishAnalysisSnapshot/);
   assert.match(source, /measureBrowserCentering/);
   assert.match(source, /evaluateBrowserCentering/);
   assert.match(source, /analyzeBrowserCapturePixels/);
