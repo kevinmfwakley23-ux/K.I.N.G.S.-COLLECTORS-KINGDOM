@@ -16,6 +16,7 @@ const contractFiles = [
   "packages/vault/src/service.mjs",
   "packages/vault/src/http.mjs",
   "packages/vault/src/ownership.mjs",
+  "packages/vault/src/portable.mjs",
   "apps/web/server.mjs"
 ];
 
@@ -29,4 +30,4 @@ for (const relative of contractFiles) {
 const entries = await readdir(resolve(root, "packages"), { withFileTypes: true });
 if (!entries.some((entry) => entry.isDirectory())) throw new Error("No package boundaries found.");
 
-console.log("Type contract check passed for the foundation, identity, KINGS AI, Great Hall, and Royal Vault service boundaries.");
+console.log("Type contract check passed for the foundation, identity, KINGS AI, Great Hall, and Royal Vault service boundaries, including portable intake.");
