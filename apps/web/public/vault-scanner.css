@@ -1,0 +1,111 @@
+.intake-scan-button {
+  margin-right: auto;
+}
+
+.vault-camera-scanner {
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(177,138,48,.34);
+  background: linear-gradient(145deg, rgba(255,255,255,.97), rgba(239,237,228,.96));
+  box-shadow: 0 16px 34px rgba(22,21,19,.1);
+}
+
+.scanner-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 12px;
+}
+
+.scanner-heading h3 {
+  margin: 2px 0 3px;
+  font-size: 1.3rem;
+}
+
+.scanner-heading p {
+  margin: 0;
+}
+
+.scanner-stage {
+  position: relative;
+  width: min(100%, 760px);
+  margin: 0 auto;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #10100f;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+}
+
+.scanner-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.scanner-guide {
+  position: absolute;
+  inset: 23% 10%;
+  border: 3px solid rgba(215,183,90,.9);
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 999px rgba(0,0,0,.32),
+    inset 0 0 20px rgba(215,183,90,.16);
+  pointer-events: none;
+}
+
+.scanner-guide::before,
+.scanner-guide::after {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: rgba(255,255,255,.78);
+  box-shadow: 0 0 9px rgba(255,255,255,.55);
+}
+
+.scanner-guide::before { top: 38%; }
+.scanner-guide::after { bottom: 38%; }
+
+.scanner-status {
+  min-height: 1.4em;
+  margin: 12px 0 0;
+  color: #5f5749;
+  font-weight: 700;
+  text-align: center;
+}
+
+.intake-camera-note[data-scanner-support="available"] {
+  border-color: rgba(44,123,77,.32);
+  background: rgba(44,123,77,.08);
+  color: #315d42;
+}
+
+.intake-camera-note[data-scanner-support="unavailable"] {
+  border-color: rgba(120,91,37,.25);
+  background: rgba(120,91,37,.07);
+}
+
+@media (max-width: 700px) {
+  .scanner-heading {
+    display: grid;
+  }
+
+  .scanner-stage {
+    aspect-ratio: 3 / 4;
+  }
+
+  .scanner-guide {
+    inset: 28% 7%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vault-camera-scanner {
+    scroll-behavior: auto;
+  }
+}
