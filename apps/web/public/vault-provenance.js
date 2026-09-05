@@ -1,4 +1,5 @@
 import { createCollectibleDetailsSection } from "./vault-details.js";
+import "./vault-categories.js";
 
 const EVENT_LABELS = Object.freeze({
   acquired: "Acquired",
