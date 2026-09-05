@@ -1,0 +1,232 @@
+.intake-panel {
+  padding: 22px;
+}
+
+.intake-heading {
+  align-items: start;
+}
+
+.intake-heading > div {
+  max-width: 920px;
+}
+
+.intake-camera-note {
+  max-width: 360px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(177,138,48,.28);
+  background: rgba(177,138,48,.08);
+  color: #665630;
+  font-size: .82rem;
+  line-height: 1.45;
+}
+
+.intake-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 220px));
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.intake-stat {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(22,22,20,.05);
+  display: grid;
+  gap: 2px;
+}
+
+.intake-stat span {
+  color: #6f695e;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.intake-stat strong {
+  font-size: 1.45rem;
+}
+
+.intake-form {
+  display: grid;
+  grid-template-columns: minmax(130px, .65fr) minmax(220px, 1.6fr) minmax(110px, .45fr) minmax(220px, 1.5fr) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(184,145,48,.2);
+  background: rgba(255,255,255,.7);
+}
+
+.intake-form label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  font-size: .82rem;
+  font-weight: 750;
+  color: #35322d;
+}
+
+.intake-form label > span {
+  color: #6d6657;
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.intake-form input,
+.intake-form select,
+.intake-form textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(30,29,27,.16);
+  border-radius: 10px;
+  background: rgba(255,255,255,.96);
+  color: #191817;
+  padding: 10px 11px;
+  font: inherit;
+}
+
+.intake-form textarea {
+  resize: vertical;
+}
+
+.intake-form input:focus,
+.intake-form select:focus,
+.intake-form textarea:focus {
+  outline: 2px solid rgba(184,145,48,.42);
+  outline-offset: 2px;
+  border-color: #a37a25;
+}
+
+.intake-status {
+  min-height: 1.4em;
+  margin: 10px 2px 0;
+}
+
+.intake-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.intake-toolbar .active {
+  border-color: #a37a25;
+  background: rgba(177,138,48,.12);
+}
+
+.intake-list {
+  display: grid;
+  gap: 10px;
+}
+
+.intake-card {
+  padding: 14px;
+  border: 1px solid rgba(29,28,26,.11);
+  border-radius: 14px;
+  background: rgba(255,255,255,.9);
+}
+
+.intake-card.status-dismissed {
+  opacity: .76;
+  background: rgba(245,244,240,.8);
+}
+
+.intake-card-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+}
+
+.intake-card-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.intake-type,
+.intake-dismissed-label {
+  width: fit-content;
+  color: #755a1f;
+  font-size: .69rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+
+.intake-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.12rem;
+  overflow-wrap: anywhere;
+}
+
+.intake-card-copy small,
+.intake-notes {
+  color: #716c62;
+}
+
+.intake-card-actions {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  justify-content: end;
+}
+
+.intake-candidate-warning {
+  margin: 10px 0 0;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: rgba(177,138,48,.12);
+  color: #684f19;
+  font-weight: 750;
+}
+
+.intake-candidates {
+  margin: 8px 0 0;
+  padding: 9px 10px 9px 27px;
+  border-radius: 10px;
+  background: rgba(28,28,26,.045);
+  color: #5d584e;
+}
+
+@media (max-width: 1180px) {
+  .intake-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .intake-notes-field {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
+  .intake-panel {
+    padding: 17px;
+  }
+
+  .intake-heading,
+  .intake-card-top,
+  .intake-form,
+  .intake-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .intake-heading {
+    display: grid;
+  }
+
+  .intake-camera-note {
+    max-width: none;
+  }
+
+  .intake-notes-field {
+    grid-column: auto;
+  }
+
+  .intake-card-actions {
+    justify-content: start;
+  }
+}
