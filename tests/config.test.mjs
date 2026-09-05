@@ -11,7 +11,8 @@ test("runtime configuration applies secure local defaults", () => {
     catalogCacheTtlMs: 21600000, catalogCacheEntries: 500, catalogMinIntervalMs: 1100,
     upcItemDbBaseUrl: "https://api.upcitemdb.com", upcItemDbUserKey: null, upcItemDbTimeoutMs: 5000, upcItemDbMinIntervalMs: 10000,
     pokemonTcgBaseUrl: "https://api.pokemontcg.io", pokemonTcgApiKey: null, pokemonTcgTimeoutMs: 5000, pokemonTcgMinIntervalMs: 5000,
-    scryfallBaseUrl: "https://api.scryfall.com", scryfallTimeoutMs: 5000, scryfallMinIntervalMs: 150
+    scryfallBaseUrl: "https://api.scryfall.com", scryfallTimeoutMs: 5000, scryfallMinIntervalMs: 150,
+    psaBaseUrl: "https://api.psacard.com/publicapi", psaAccessToken: null, psaTimeoutMs: 5000, psaMinIntervalMs: 1000
   });
 });
 
@@ -51,6 +52,23 @@ test("runtime configuration validates Scryfall HTTPS transport and resource limi
   assert.throws(() => loadRuntimeConfig({ KINGDOM_SCRYFALL_BASE_URL: "http://example.com" }), /SCRYFALL_BASE_URL/);
   assert.throws(() => loadRuntimeConfig({ KINGDOM_SCRYFALL_TIMEOUT_MS: "0" }), /SCRYFALL_TIMEOUT_MS/);
   assert.throws(() => loadRuntimeConfig({ KINGDOM_SCRYFALL_MIN_INTERVAL_MS: "0" }), /SCRYFALL_MIN_INTERVAL_MS/);
+});
+
+test("runtime configuration validates PSA HTTPS transport, server-only token, and resource limits", () => {
+  const config = loadRuntimeConfig({
+    KINGDOM_PSA_BASE_URL: "http://127.0.0.1:9930/",
+    KINGDOM_PSA_ACCESS_TOKEN: "server-only-psa-token",
+    KINGDOM_PSA_TIMEOUT_MS: "4300",
+    KINGDOM_PSA_MIN_INTERVAL_MS: "1200"
+  });
+  assert.equal(config.psaBaseUrl, "http://127.0.0.1:9930");
+  assert.equal(config.psaAccessToken, "server-only-psa-token");
+  assert.equal(config.psaTimeoutMs, 4300);
+  assert.equal(config.psaMinIntervalMs, 1200);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_PSA_BASE_URL: "http://example.com" }), /PSA_BASE_URL/);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_PSA_ACCESS_TOKEN: "bad\ntoken" }), /PSA_ACCESS_TOKEN/);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_PSA_TIMEOUT_MS: "0" }), /PSA_TIMEOUT_MS/);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_PSA_MIN_INTERVAL_MS: "0" }), /PSA_MIN_INTERVAL_MS/);
 });
 
 test("runtime configuration rejects invalid ports, sessions, cookies, and KINGS AI settings", () => {
