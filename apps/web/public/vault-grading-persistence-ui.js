@@ -43,6 +43,20 @@ function shortWarnings(values = []) {
   return [...new Set(values.filter((value) => typeof value === "string" && value.trim()).map((value) => value.trim().slice(0, 240)))];
 }
 
+function evidenceLabel(value) {
+  const labels = {
+    "front:centering": "Front centering",
+    "front:usable-capture": "Front usable straight-on capture",
+    "front:contour": "Front corner/edge contour coverage",
+    "front:paired-surface": "Front paired raking-light surface coverage",
+    "back:centering": "Back centering",
+    "back:usable-capture": "Back usable straight-on capture",
+    "back:contour": "Back corner/edge contour coverage",
+    "back:paired-surface": "Back paired raking-light surface coverage"
+  };
+  return labels[value] ?? value;
+}
+
 async function sha256File(file) {
   if (!(file instanceof File)) throw new Error("A browser File is required for media integrity matching.");
   if (!globalThis.crypto?.subtle) throw new Error("This browser does not provide WebCrypto SHA-256 support.");
@@ -193,10 +207,26 @@ export function createVaultGradingPersistenceUi() {
 
   const policy = node("p", "muted-copy", "Centering is always stored as a collector-reviewed measurement. Browser-computed capture-quality, contour findings and detector-completion coverage are stored only when the exact analyzed primary file SHA-256 matches private image media on the selected treasure. Paired surface findings and coverage require exact matches for both images. Color and autograph persistence remain separate until their source-image linkage is wired. No detector result becomes an official grade or authentication claim.");
   section.append(policy);
+
+  const estimatePanel = node("section", "grading-quality-panel grading-estimate-panel");
+  estimatePanel.append(node("h3", "", "Kingdom advisory evidence range"));
+  const estimateSummary = node("p", "grading-quality-summary", "Select a treasure to calculate the stored-evidence range.");
+  const estimateDetails = node("div", "grading-quality-metrics");
+  const estimateMissing = node("ul", "grading-quality-warnings");
+  estimatePanel.append(estimateSummary, estimateDetails, estimateMissing, node("p", "muted-copy", "Not an official PSA/BGS/CGC grade. This server-derived Kingdom range aggregates stored advisory evidence only; it does not authenticate the physical card and never updates condition, grade, authenticity or value."));
+  section.append(estimatePanel);
+
   const history = node("div", "grading-pregrade-history");
   section.append(history);
 
   function selectedTreasureId() { return treasureSelect.value || null; }
+
+  function clearEstimate(message = "Select a treasure to calculate the stored-evidence range.") {
+    estimateSummary.textContent = message;
+    estimateSummary.className = "grading-quality-summary";
+    estimateDetails.replaceChildren();
+    estimateMissing.replaceChildren();
+  }
 
   async function searchTreasures(query = "") {
     const params = new URLSearchParams({ pageSize: "50", sort: "title", order: "asc" });
@@ -220,6 +250,7 @@ export function createVaultGradingPersistenceUi() {
     save.disabled = true;
     refresh.disabled = true;
     history.replaceChildren();
+    clearEstimate("Choose a matching treasure to calculate its stored-evidence range.");
   }
 
   async function loadHistory() {
@@ -247,6 +278,41 @@ export function createVaultGradingPersistenceUi() {
     }
   }
 
+  async function loadEstimate() {
+    const treasureId = selectedTreasureId();
+    if (!treasureId) return clearEstimate();
+    const result = await api(`/api/grading/treasures/${encodeURIComponent(treasureId)}/pregrade-estimate`);
+    const estimate = result.estimate;
+    estimateDetails.replaceChildren();
+    estimateMissing.replaceChildren();
+    const completeness = `${Math.round(Number(estimate.completeness ?? 0) * 100)}%`;
+    if (!estimate.available) {
+      estimateSummary.textContent = "No advisory range yet — more verified evidence is required.";
+      estimateSummary.className = "grading-quality-summary miss";
+      estimateDetails.append(
+        node("div", "grading-quality-row", `Evidence completeness • ${completeness}`),
+        node("p", "muted-copy", estimate.reason ?? "Stored evidence has not reached the minimum range threshold."),
+        node("p", "muted-copy", `${result.sourceAnalysisCount ?? 0} immutable saved analysis record${result.sourceAnalysisCount === 1 ? "" : "s"} considered.`)
+      );
+    } else {
+      estimateSummary.textContent = `${estimate.range.min}–${estimate.range.max} • Kingdom advisory evidence range`;
+      estimateSummary.className = "grading-quality-summary pass";
+      estimateDetails.append(
+        node("div", "grading-quality-row", `Evidence level • ${estimate.evidenceLevel}`),
+        node("div", "grading-quality-row", `Completeness • ${completeness}`),
+        node("div", "grading-quality-row", `Range confidence • ${Math.round(Number(estimate.confidence ?? 0) * 100)}%`),
+        node("div", "grading-quality-row", `Review candidates considered • ${estimate.uniqueReviewCandidateCount ?? 0}`),
+        node("p", "muted-copy", estimate.reason),
+        node("p", "muted-copy", `Rubric ${estimate.rubric} • ${result.sourceAnalysisCount ?? 0} immutable saved analyses considered.`)
+      );
+    }
+    for (const missing of estimate.missing ?? []) estimateMissing.append(node("li", "", `Still missing: ${evidenceLabel(missing)}`));
+  }
+
+  async function loadEvidence() {
+    await Promise.all([loadHistory(), loadEstimate()]);
+  }
+
   searchForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     searchButton.disabled = true;
@@ -263,16 +329,17 @@ export function createVaultGradingPersistenceUi() {
     if (!enabled) {
       status.textContent = "No treasure selected.";
       history.replaceChildren();
+      clearEstimate();
       return;
     }
     status.textContent = "Treasure selected. Saving will append evidence only; no treasure field will be overwritten.";
     status.className = "grading-quality-summary pass";
-    loadHistory().catch((error) => { status.textContent = error.message; status.className = "grading-quality-summary miss"; });
+    loadEvidence().catch((error) => { status.textContent = error.message; status.className = "grading-quality-summary miss"; });
   });
 
   refresh.addEventListener("click", () => {
     refresh.disabled = true;
-    loadHistory().catch((error) => { status.textContent = error.message; status.className = "grading-quality-summary miss"; }).finally(() => { refresh.disabled = !selectedTreasureId(); });
+    loadEvidence().catch((error) => { status.textContent = error.message; status.className = "grading-quality-summary miss"; }).finally(() => { refresh.disabled = !selectedTreasureId(); });
   });
 
   save.addEventListener("click", async () => {
@@ -298,7 +365,7 @@ export function createVaultGradingPersistenceUi() {
       const defects = [];
       const limitations = [
         `Browser centering snapshot saved from ${measurement.horizontal.label} horizontal and ${measurement.vertical.label} vertical measurements.`,
-        "Current saved record does not contain an overall grade estimate."
+        "No overall grade estimate is client-supplied. The read-only Kingdom advisory range is computed server-side from stored evidence."
       ];
 
       let primaryMatch = null;
@@ -366,7 +433,7 @@ export function createVaultGradingPersistenceUi() {
       });
       status.textContent = `Saved advisory analysis ${result.analysis.id.slice(0, 8)}… • SHA-256 ${result.analysis.analysisSha256.slice(0, 12)}… • ${uniqueSourceMediaIds.length} linked media`;
       status.className = "grading-quality-summary pass";
-      await loadHistory();
+      await loadEvidence();
     } catch (error) {
       status.textContent = error.message;
       status.className = "grading-quality-summary miss";
@@ -377,7 +444,7 @@ export function createVaultGradingPersistenceUi() {
   });
 
   gradingPanel.append(section);
-  return Object.freeze({ panel: section, searchTreasures, loadHistory });
+  return Object.freeze({ panel: section, searchTreasures, loadHistory, loadEstimate, loadEvidence });
 }
 
 createVaultGradingPersistenceUi();
