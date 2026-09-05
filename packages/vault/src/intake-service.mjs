@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { VaultError } from "./service.mjs";
 
 const IDENTIFIER_TYPES = new Set(["barcode", "upc", "ean", "isbn", "catalog", "serial", "sku", "custom"]);
@@ -80,19 +80,6 @@ function cleanCaptureCount(value) {
   return numeric;
 }
 
-function normalizedSearchText(value) {
-  return String(value ?? "")
-    .normalize("NFKD")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-}
-
-function identifierFingerprint(key, value) {
-  const part = `${normalizedSearchText(key)}=${normalizedSearchText(value)}`;
-  return createHash("sha256").update(part).digest("hex");
-}
-
 function aliasKeys(type) {
   const aliases = new Set([type]);
   if (["upc", "ean", "isbn"].includes(type)) aliases.add("barcode");
@@ -103,31 +90,43 @@ function aliasKeys(type) {
   }
   if (type === "catalog") aliases.add("serial");
   if (type === "serial") aliases.add("catalog");
-  return [...aliases];
+  return aliases;
+}
+
+function normalizedComparable(value, type) {
+  return normalizeIdentifier(String(value ?? ""), type);
 }
 
 function existingCandidates(vaultStore, ownerAccountId, item) {
-  const found = new Map();
-  for (const key of aliasKeys(item.identifierType)) {
-    const candidates = vaultStore.findDuplicateCandidates(ownerAccountId, {
-      excludeId: "__royal_intake__",
-      identifierFingerprint: identifierFingerprint(key, item.identifierValue),
-      contentFingerprint: null,
-      limit: 10
-    });
-    for (const treasure of candidates) {
-      if (!found.has(treasure.id)) {
-        found.set(treasure.id, Object.freeze({
-          id: treasure.id,
-          title: treasure.title,
-          category: treasure.category,
-          variant: treasure.variant,
-          matchedIdentifierType: key
-        }));
+  const aliases = aliasKeys(item.identifierType);
+  const expected = item.normalizedIdentifier;
+  const candidates = vaultStore.listTreasures(ownerAccountId, {
+    query: item.identifierValue,
+    limit: 100
+  });
+  const found = [];
+
+  for (const treasure of candidates) {
+    let matchedIdentifierType = null;
+    for (const [key, value] of Object.entries(treasure.externalIdentifiers ?? {})) {
+      const normalizedKey = cleanIdentifierType(String(key).replace(/_/g, "-"));
+      if (!aliases.has(normalizedKey)) continue;
+      if (normalizedComparable(value, normalizedKey) === expected) {
+        matchedIdentifierType = normalizedKey;
+        break;
       }
     }
+    if (!matchedIdentifierType) continue;
+    found.push(Object.freeze({
+      id: treasure.id,
+      title: treasure.title,
+      category: treasure.category,
+      variant: treasure.variant,
+      matchedIdentifierType
+    }));
+    if (found.length >= 10) break;
   }
-  return [...found.values()];
+  return found;
 }
 
 function publicItem(vaultStore, item) {
