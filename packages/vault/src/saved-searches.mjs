@@ -102,11 +102,11 @@ export function createVaultSavedViewService({ filename, now = () => new Date() }
 
     return {
       name: name === undefined ? existing?.name : name,
-      query: query === undefined ? existing?.query : query,
-      category: category === undefined ? existing?.category : category,
+      query: query === undefined ? existing?.query ?? null : query,
+      category: category === undefined ? existing?.category ?? null : category,
       folderId: input.folderId === undefined ? existing?.folderId ?? null : requireFolder(accountId, input.folderId),
       locationId: input.locationId === undefined ? existing?.locationId ?? null : requireLocation(accountId, input.locationId),
-      tag: tag === undefined ? existing?.tag : tag,
+      tag: tag === undefined ? existing?.tag ?? null : tag,
       sort: sort === undefined ? existing?.sort ?? "updated-desc" : sort,
       view: view === undefined ? existing?.view ?? "grid" : view
     };
