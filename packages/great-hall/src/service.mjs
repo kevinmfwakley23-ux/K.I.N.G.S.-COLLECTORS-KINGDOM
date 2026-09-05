@@ -140,9 +140,9 @@ function sanitizeHistory(history) {
   });
 }
 
-function resolveRoom(roomId) {
+function resolveRoom(rooms, roomId) {
   const normalized = typeof roomId === "string" && roomId.trim() ? roomId.trim() : "great-hall";
-  const room = ROOM_DEFINITIONS.find((candidate) => candidate.id === normalized);
+  const room = rooms.find((candidate) => candidate.id === normalized);
   if (!room) throw new TypeError("The requested Keeper room context is not recognized.");
   return room;
 }
@@ -154,12 +154,20 @@ function roomContextLine(room) {
   return `Current room: ${room.name}, inside the castle. Room status: ${room.status}.`;
 }
 
-export function createGreatHallService({ identityService, now = () => new Date() } = {}) {
+export function createGreatHallService({ identityService, vaultService = null, now = () => new Date() } = {}) {
   if (!identityService) throw new TypeError("Great Hall requires the identity service.");
 
   function navigation(identity) {
     requireIdentity(identity);
-    return ROOM_DEFINITIONS.map((room) => Object.freeze({ ...room }));
+    return ROOM_DEFINITIONS.map((room) => {
+      if (room.id !== "vault" || !vaultService) return Object.freeze({ ...room });
+      return Object.freeze({
+        ...room,
+        status: "available",
+        href: "/vault.html",
+        description: "Your authoritative Royal Vault is open for real treasure records, collections, nested physical locations, search, condition, acquisition data, history, duplicate review, and export."
+      });
+    });
   }
 
   function recentActivity(identity) {
@@ -173,6 +181,8 @@ export function createGreatHallService({ identityService, now = () => new Date()
     const activity = recentActivity(collector);
     const signIns = activity.filter((entry) => entry.type === "identity.sign_in_succeeded").length;
     const displayName = safeDisplayName(collector);
+    const rooms = navigation(collector);
+    const vault = vaultService ? vaultService.snapshot(collector) : null;
 
     return Object.freeze({
       generatedAt: now().toISOString(),
@@ -182,13 +192,24 @@ export function createGreatHallService({ identityService, now = () => new Date()
         roles: Array.isArray(collector.roles) ? [...collector.roles] : [],
         emailVerified: Boolean(collector.emailVerified)
       }),
-      navigation: navigation(collector),
-      collectionOverview: Object.freeze({
-        available: false,
-        itemCount: null,
-        estimatedValue: null,
-        message: "Collection totals become authoritative when the Vault opens in IMP-005. No estimated collection data is manufactured before that service exists."
-      }),
+      navigation: rooms,
+      collectionOverview: vault
+        ? Object.freeze({
+            available: true,
+            itemCount: vault.stats.treasureCount,
+            unitCount: vault.stats.unitCount,
+            purchaseTotalCents: vault.stats.purchaseTotalCents,
+            estimatedValue: null,
+            message: `${vault.stats.treasureCount} treasure records representing ${vault.stats.unitCount} physical units are secured in your Royal Vault. Market value remains unavailable until evidence-backed valuation services are connected.`
+          })
+        : Object.freeze({
+            available: false,
+            itemCount: null,
+            unitCount: null,
+            purchaseTotalCents: null,
+            estimatedValue: null,
+            message: "Collection totals become authoritative when the Vault opens in IMP-005. No estimated collection data is manufactured before that service exists."
+          }),
       marketplaceHighlights: Object.freeze({
         available: false,
         items: [],
@@ -203,13 +224,16 @@ export function createGreatHallService({ identityService, now = () => new Date()
       recentActivity: activity,
       quickActions: Object.freeze([
         Object.freeze({ id: "keeper", label: "Call The Keeper", action: "keeper" }),
+        ...(vaultService ? [Object.freeze({ id: "vault", label: "Open my Royal Vault", href: "/vault.html" })] : []),
         Object.freeze({ id: "search", label: "Search the Kingdom", action: "search" }),
         Object.freeze({ id: "profile", label: "Review my profile", href: "/auth.html#account-panel" }),
         Object.freeze({ id: "sessions", label: "Review active sessions", href: "/auth.html#account-panel" })
       ]),
       announcement: Object.freeze({
-        title: "The Great Hall is opening in stages.",
-        message: "Identity, secure sessions, castle-and-grounds navigation, and The Keeper's Great Hall entry point are live. Rooms and outdoor services still under construction are labeled clearly rather than pretending their services are complete."
+        title: vaultService ? "The Royal Vault is opening for real collection management." : "The Great Hall is opening in stages.",
+        message: vaultService
+          ? "Identity, secure sessions, Great Hall navigation, The Keeper, and the first authoritative Royal Vault services are live. Market values and unfinished rooms remain clearly unavailable until their real services exist."
+          : "Identity, secure sessions, castle-and-grounds navigation, and The Keeper's Great Hall entry point are live. Rooms and outdoor services still under construction are labeled clearly rather than pretending their services are complete."
       }),
       keeper: Object.freeze({
         name: "The Keeper",
@@ -226,10 +250,13 @@ export function createGreatHallService({ identityService, now = () => new Date()
     const safeMessage = message.trim();
     if (safeMessage.length > 4000) throw new TypeError("Keeper messages must contain at most 4000 characters.");
     const safeHistory = sanitizeHistory(history);
-    const currentRoom = resolveRoom(roomId);
     const hall = snapshot(collector);
+    const currentRoom = resolveRoom(hall.navigation, roomId);
     const roomStatus = hall.navigation.map((room) => `${room.name}: ${room.status}`).join("; ");
     const activity = hall.recentActivity.map((entry) => entry.message).join(" ") || "No recent account activity is available.";
+    const vaultContext = hall.collectionOverview.available
+      ? `Verified Vault summary: ${hall.collectionOverview.itemCount} treasure records and ${hall.collectionOverview.unitCount} physical units. Market value is not yet authoritative.`
+      : "Verified Vault summary: the authoritative Vault service is not yet available.";
 
     return Object.freeze({
       messages: [
@@ -247,6 +274,7 @@ export function createGreatHallService({ identityService, now = () => new Date()
             `Collector display name: ${hall.collector.displayName}.`,
             roomContextLine(currentRoom),
             `Kingdom navigation status: ${roomStatus}.`,
+            vaultContext,
             `Recent verified account activity: ${activity}`
           ].join("\n")
         },
