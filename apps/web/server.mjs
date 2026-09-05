@@ -21,6 +21,8 @@ import { createVaultMediaService } from "../../packages/vault/src/media-service.
 import { LocalVaultMediaStorage } from "../../packages/vault/src/media-storage.mjs";
 import { createVaultProvenanceRepository } from "../../packages/vault/src/provenance-repository.mjs";
 import { createVaultProvenanceService } from "../../packages/vault/src/provenance-service.mjs";
+import { createVaultReorganizationRepository } from "../../packages/vault/src/reorganization-repository.mjs";
+import { createVaultReorganizationService } from "../../packages/vault/src/reorganization-service.mjs";
 import { createVaultService, VaultError } from "../../packages/vault/src/service.mjs";
 import { SqliteVaultStore } from "../../packages/vault/src/sqlite-store.mjs";
 import { handleCatalogRoute } from "./catalog-http.mjs";
@@ -28,6 +30,7 @@ import { handleVaultImportRoute } from "./vault-import-http.mjs";
 import { handleVaultIntakeRoute } from "./vault-intake-http.mjs";
 import { handleVaultMediaRoute } from "./vault-media-http.mjs";
 import { handleVaultProvenanceRoute } from "./vault-provenance-http.mjs";
+import { handleVaultReorganizationRoute } from "./vault-reorganization-http.mjs";
 
 const CONTENT_TYPES = Object.freeze({
   ".css": "text/css; charset=utf-8",
@@ -278,7 +281,8 @@ async function handleVaultRoute({
   vaultMediaService,
   vaultImportService,
   vaultIntakeService,
-  vaultProvenanceService
+  vaultProvenanceService,
+  vaultReorganizationService
 }) {
   if (!vaultService) throw new HttpError(503, "vault_unavailable", "The Royal Vault service is unavailable.");
   const method = request.method ?? "GET";
@@ -325,6 +329,17 @@ async function handleVaultRoute({
         message: vaultProvenanceService
           ? "Treasure provenance is recorded as append-only collector evidence. Corrections append linked events; stored claims are not automatically independently verified."
           : "The provenance ledger is unavailable until its service is wired."
+      },
+      reorganization: {
+        available: Boolean(vaultReorganizationService),
+        collectionEditAvailable: Boolean(vaultReorganizationService),
+        locationEditAvailable: Boolean(vaultReorganizationService),
+        cycleSafeReparentAvailable: Boolean(vaultReorganizationService),
+        bulkMoveAvailable: false,
+        destructiveBulkActionsAvailable: false,
+        message: vaultReorganizationService
+          ? "Collection and physical-location records can be edited without replacing permanent treasure identities. Location reparenting is cycle-checked server-side; bulk movement is not live yet."
+          : "Vault reorganization is unavailable until its service is wired."
       }
     }, method);
   }
@@ -413,7 +428,8 @@ export function createKingdomServer({
   vaultMediaService = null,
   vaultImportService = null,
   vaultIntakeService = null,
-  vaultProvenanceService = null
+  vaultProvenanceService = null,
+  vaultReorganizationService = null
 } = {}) {
   return createServer(async (request, response) => {
     const requestStartedAt = performance.now();
@@ -488,6 +504,19 @@ export function createKingdomServer({
       }
 
       if (requestUrl.pathname === "/api/vault" || requestUrl.pathname.startsWith("/api/vault/")) {
+        const reorganizationHandled = await handleVaultReorganizationRoute({
+          request,
+          response,
+          requestUrl,
+          identityService,
+          vaultReorganizationService,
+          securityHeaders: SECURITY_HEADERS
+        });
+        if (reorganizationHandled !== null) {
+          if (reorganizationHandled !== false) return;
+          return sendJson(response, 405, { error: "method_not_allowed" }, method);
+        }
+
         const provenanceHandled = await handleVaultProvenanceRoute({
           request,
           response,
@@ -549,7 +578,8 @@ export function createKingdomServer({
           vaultMediaService,
           vaultImportService,
           vaultIntakeService,
-          vaultProvenanceService
+          vaultProvenanceService,
+          vaultReorganizationService
         });
         if (handled !== false) return;
         return sendJson(response, 405, { error: "method_not_allowed" }, method);
@@ -613,6 +643,11 @@ async function run() {
     vaultStore,
     provenanceRepository: vaultProvenanceRepository
   });
+  const vaultReorganizationRepository = createVaultReorganizationRepository({ vaultStore });
+  const vaultReorganizationService = createVaultReorganizationService({
+    vaultStore,
+    reorganizationRepository: vaultReorganizationRepository
+  });
   const catalogRuntime = createCatalogRuntime({ config });
   const catalogService = catalogRuntime.service;
   const greatHallService = createGreatHallService({ identityService, vaultService });
@@ -632,7 +667,8 @@ async function run() {
     vaultMediaService,
     vaultImportService,
     vaultIntakeService,
-    vaultProvenanceService
+    vaultProvenanceService,
+    vaultReorganizationService
   });
 
   server.on("error", (error) => {
