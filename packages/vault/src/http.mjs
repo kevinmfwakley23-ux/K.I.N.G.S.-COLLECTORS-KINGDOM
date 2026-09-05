@@ -64,7 +64,8 @@ export async function handleVaultRequest({
   identity,
   vaultService,
   ownershipService = null,
-  attributeService = null
+  attributeService = null,
+  searchService = null
 } = {}) {
   if (!vaultService) throw new VaultError("vault_unavailable", "The Royal Vault service is unavailable.", 503);
   const method = request.method ?? "GET";
@@ -78,8 +79,8 @@ export async function handleVaultRequest({
 
   if (pathname === "/api/vault/treasures") {
     if (method === "GET") {
-      return json(200, vaultService.listTreasures(identity, {
-        query: searchParams.get("query") ?? undefined,
+      const query = searchParams.get("query") ?? undefined;
+      const options = {
         category: searchParams.get("category") ?? undefined,
         folderId: searchParams.get("folderId") ?? undefined,
         locationId: searchParams.get("locationId") ?? undefined,
@@ -87,7 +88,19 @@ export async function handleVaultRequest({
         sort: searchParams.get("sort") ?? undefined,
         limit: intParam(searchParams, "limit", 50),
         offset: intParam(searchParams, "offset", 0)
-      }));
+      };
+      if (query?.trim() && searchService) {
+        const result = searchService.search(identity, query, options);
+        return json(200, {
+          items: result.ids.map((id) => vaultService.getTreasure(identity, id)),
+          limit: result.limit,
+          offset: result.offset,
+          hasMore: result.hasMore,
+          searchApplied: result.searchApplied,
+          queryTokens: result.queryTokens
+        });
+      }
+      return json(200, vaultService.listTreasures(identity, { query, ...options }));
     }
     if (method === "POST") return json(201, { treasure: vaultService.createTreasure(identity, await readJson(request)) });
     return null;
