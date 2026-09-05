@@ -69,7 +69,10 @@ function requireIdentity(identity) {
 }
 
 function text(value, field, max, { required = false } = {}) {
-  if (value === undefined) return undefined;
+  if (value === undefined) {
+    if (required) throw new VaultError(`invalid_${field}`, `${field} is required.`);
+    return null;
+  }
   if (value === null || value === "") {
     if (required) throw new VaultError(`invalid_${field}`, `${field} is required.`);
     return null;
