@@ -45,7 +45,7 @@ function text(status, body, contentType, headers = {}) {
   return { kind: "text", status, body, contentType, headers };
 }
 
-export async function handleVaultRequest({ request, pathname, searchParams, identity, vaultService } = {}) {
+export async function handleVaultRequest({ request, pathname, searchParams, identity, vaultService, ownershipService = null } = {}) {
   if (!vaultService) throw new VaultError("vault_unavailable", "The Royal Vault service is unavailable.", 503);
   const method = request.method ?? "GET";
 
@@ -66,18 +66,24 @@ export async function handleVaultRequest({ request, pathname, searchParams, iden
     return null;
   }
 
-  const treasureMatch = pathname.match(/^\/api\/vault\/treasures\/([^/]+)$/);
-  if (treasureMatch) {
-    const id = decodeURIComponent(treasureMatch[1]);
-    if (method === "GET") return json(200, { treasure: vaultService.getTreasure(identity, id) });
-    if (method === "PATCH") return json(200, { treasure: vaultService.updateTreasure(identity, id, await readJson(request)) });
-    if (method === "DELETE") return json(200, await vaultService.deleteTreasure(identity, id));
-    return null;
-  }
-
   const historyMatch = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/history$/);
   if (historyMatch && method === "GET") {
     return json(200, { history: vaultService.history(identity, decodeURIComponent(historyMatch[1])) });
+  }
+
+  const ownershipMatch = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/ownership$/);
+  if (ownershipMatch) {
+    if (!ownershipService) throw new VaultError("ownership_history_unavailable", "Vault ownership history service is unavailable.", 503);
+    const treasureId = decodeURIComponent(ownershipMatch[1]);
+    if (method === "GET") return json(200, { ownershipHistory: ownershipService.list(identity, treasureId), eventTypes: ownershipService.eventTypes });
+    if (method === "POST") return json(201, { ownershipEvent: ownershipService.add(identity, treasureId, await readJson(request)) });
+    return null;
+  }
+
+  const ownershipEventMatch = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/ownership\/([^/]+)$/);
+  if (ownershipEventMatch && method === "DELETE") {
+    if (!ownershipService) throw new VaultError("ownership_history_unavailable", "Vault ownership history service is unavailable.", 503);
+    return json(200, ownershipService.remove(identity, decodeURIComponent(ownershipEventMatch[1]), decodeURIComponent(ownershipEventMatch[2])));
   }
 
   const imageMatch = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/images$/);
@@ -86,6 +92,15 @@ export async function handleVaultRequest({ request, pathname, searchParams, iden
     const body = await readBody(request, MAX_IMAGE_BYTES + 1);
     const originalName = String(request.headers["x-file-name"] ?? "").trim() || null;
     return json(201, { media: await vaultService.addImage(identity, decodeURIComponent(imageMatch[1]), { contentType, bytes: body, originalName }) });
+  }
+
+  const treasureMatch = pathname.match(/^\/api\/vault\/treasures\/([^/]+)$/);
+  if (treasureMatch) {
+    const id = decodeURIComponent(treasureMatch[1]);
+    if (method === "GET") return json(200, { treasure: vaultService.getTreasure(identity, id) });
+    if (method === "PATCH") return json(200, { treasure: vaultService.updateTreasure(identity, id, await readJson(request)) });
+    if (method === "DELETE") return json(200, await vaultService.deleteTreasure(identity, id));
+    return null;
   }
 
   if (pathname === "/api/vault/folders") {
