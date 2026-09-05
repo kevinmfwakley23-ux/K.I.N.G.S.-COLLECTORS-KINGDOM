@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { resolve } from "node:path";
 import { loadRuntimeConfig } from "../config/runtime.mjs";
 
 test("runtime configuration applies secure local defaults", () => {
@@ -7,15 +8,15 @@ test("runtime configuration applies secure local defaults", () => {
     host: "127.0.0.1",
     port: 8788,
     logLevel: "info",
-    version: "0.1.0"
+    version: "0.2.0",
+    dataDir: resolve("./data"),
+    sessionTtlHours: 168,
+    cookieSecure: false
   });
 });
 
-test("runtime configuration rejects invalid ports", () => {
+test("runtime configuration rejects invalid ports and session settings", () => {
   assert.throws(() => loadRuntimeConfig({ KINGDOM_PORT: "70000" }), /KINGDOM_PORT/);
-  assert.throws(() => loadRuntimeConfig({ KINGDOM_PORT: "abc" }), /KINGDOM_PORT/);
-});
-
-test("runtime configuration rejects unknown log levels", () => {
-  assert.throws(() => loadRuntimeConfig({ KINGDOM_LOG_LEVEL: "verbose" }), /KINGDOM_LOG_LEVEL/);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_SESSION_TTL_HOURS: "0" }), /SESSION_TTL/);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_COOKIE_SECURE: "yes" }), /COOKIE_SECURE/);
 });

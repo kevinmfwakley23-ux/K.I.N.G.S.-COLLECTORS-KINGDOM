@@ -23,7 +23,7 @@ await writeFile(resolve(dist, "package.json"), `${JSON.stringify({
 await writeFile(resolve(dist, "build-manifest.json"), `${JSON.stringify({
   product: "K.I.N.G.S. Collector's Kingdom",
   version: packageJson.version,
-  phase: "IMP-002",
+  phase: "IMP-003-IDENTITY-CORE",
   entrypoint: "apps/web/server.mjs"
 }, null, 2)}\n`);
 
