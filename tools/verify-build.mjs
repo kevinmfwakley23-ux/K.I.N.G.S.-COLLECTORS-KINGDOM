@@ -5,6 +5,7 @@ const root = resolve(new URL("..", import.meta.url).pathname);
 const required = [
   "dist/apps/web/server.mjs",
   "dist/apps/web/vault-import-http.mjs",
+  "dist/apps/web/vault-intake-http.mjs",
   "dist/apps/web/vault-media-http.mjs",
   "dist/apps/web/public/index.html",
   "dist/apps/web/public/auth.html",
@@ -38,6 +39,8 @@ const required = [
   "dist/packages/vault/src/service.mjs",
   "dist/packages/vault/src/import-repository.mjs",
   "dist/packages/vault/src/import-service.mjs",
+  "dist/packages/vault/src/intake-repository.mjs",
+  "dist/packages/vault/src/intake-service.mjs",
   "dist/packages/vault/src/media-repository.mjs",
   "dist/packages/vault/src/media-storage.mjs",
   "dist/packages/vault/src/media-service.mjs",
@@ -47,4 +50,4 @@ const required = [
 for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
 if (manifest.phase !== "IMP-005-ROYAL-VAULT-PHASE-1") throw new Error("Unexpected build phase in manifest.");
-console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1, transactional import review UI, secure media, and Kingdom voice output.");
+console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1, transactional import, Royal Intake Queue, secure media, and Kingdom voice output.");
