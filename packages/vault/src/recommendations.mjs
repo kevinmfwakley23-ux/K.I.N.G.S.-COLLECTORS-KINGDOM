@@ -105,7 +105,7 @@ export function createVaultRecommendationService({ filename } = {}) {
         sameYearPeers: Number(row.year_peer_count ?? 0)
       }),
       explanation: explanation(row, target.category)
-    }))));
+    })));
   }
 
   function close() {
