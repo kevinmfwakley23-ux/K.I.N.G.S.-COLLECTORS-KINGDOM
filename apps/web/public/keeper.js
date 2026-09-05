@@ -1,3 +1,5 @@
+import "./brand-runtime.js";
+
 function keeperElement(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
