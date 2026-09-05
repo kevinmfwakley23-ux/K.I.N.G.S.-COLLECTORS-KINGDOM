@@ -81,7 +81,10 @@ function normalizeCentering(input, profileId) {
 function referencedMediaIds(input = {}) {
   const ids = [];
   for (const capture of Array.isArray(input.captureQuality) ? input.captureQuality : []) if (capture?.sourceMediaId) ids.push(capture.sourceMediaId);
-  for (const defect of Array.isArray(input.defects) ? input.defects : []) if (defect?.sourceMediaId) ids.push(defect.sourceMediaId);
+  for (const defect of Array.isArray(input.defects) ? input.defects : []) {
+    if (defect?.sourceMediaId) ids.push(defect.sourceMediaId);
+    if (defect?.comparisonMediaId) ids.push(defect.comparisonMediaId);
+  }
   if (input.autographComparison?.sourceMediaId) ids.push(input.autographComparison.sourceMediaId);
   return ids;
 }
