@@ -1,4 +1,5 @@
-import { measureBrowserCentering } from "./vault-grading-core.js";
+import { BROWSER_CARD_SIZE_PROFILES, measureBrowserCentering } from "./vault-grading-core.js";
+import { createBrowserCalibrationEvidence, defaultCalibrationReferenceFields, previewBrowserCalibrationInputs } from "./vault-grading-calibration-core.js";
 import { getCurrentGradingAnalysisSnapshot } from "./vault-grading-ui.js";
 
 function node(tag, className, text) {
@@ -52,7 +53,9 @@ function evidenceLabel(value) {
     "back:centering": "Back centering",
     "back:usable-capture": "Back usable straight-on capture",
     "back:contour": "Back corner/edge contour coverage",
-    "back:paired-surface": "Back paired raking-light surface coverage"
+    "back:paired-surface": "Back paired raking-light surface coverage",
+    "front:independent-physical-scale-reference": "Front independent physical scale reference",
+    "back:independent-physical-scale-reference": "Back independent physical scale reference"
   };
   return labels[value] ?? value;
 }
@@ -86,11 +89,7 @@ function captureEvidence(snapshot, mediaId, side) {
     glareAcceptable: quality.glareAcceptable === true,
     perspectiveAcceptable: geometry?.perspectiveAcceptable === true,
     analyzerConfidence: confidence,
-    warnings: shortWarnings([
-      ...(quality.warnings ?? []),
-      ...(geometry?.warnings ?? []),
-      ...(!geometry?.detected && geometry?.reason ? [geometry.reason] : [])
-    ])
+    warnings: shortWarnings([...(quality.warnings ?? []), ...(geometry?.warnings ?? []), ...(!geometry?.detected && geometry?.reason ? [geometry.reason] : [])])
   };
 }
 
@@ -146,6 +145,20 @@ function surfaceCoverage(snapshot, primaryMediaId, companionMediaId, side) {
     method: snapshot.surface.method ?? "paired-raking-light-difference-v1",
     note: "Browser paired-raking-light detector completion record. A zero candidate count means no strong localized or linear reflectance review candidate was isolated; it is not proof of a flawless surface."
   };
+}
+
+function makeCalibrationInput(id, label, value, step = "0.1") {
+  const wrapper = node("label", "");
+  wrapper.append(node("span", "", label));
+  const input = document.createElement("input");
+  input.id = id;
+  input.type = "number";
+  input.min = "0";
+  input.step = step;
+  input.inputMode = "decimal";
+  if (value !== undefined) input.value = String(value);
+  wrapper.append(input);
+  return input;
 }
 
 export function createVaultGradingPersistenceUi() {
@@ -205,8 +218,33 @@ export function createVaultGradingPersistenceUi() {
   actions.append(save, refresh);
   section.append(actions);
 
-  const policy = node("p", "muted-copy", "Centering is always stored as a collector-reviewed measurement. Browser-computed capture-quality, contour findings and detector-completion coverage are stored only when the exact analyzed primary file SHA-256 matches private image media on the selected treasure. Paired surface findings and coverage require exact matches for both images. Color and autograph persistence remain separate until their source-image linkage is wired. No detector result becomes an official grade or authentication claim.");
-  section.append(policy);
+  section.append(node("p", "muted-copy", "Centering is always stored as a collector-reviewed measurement. Browser-computed image evidence persists only after exact SHA-256 media matching. Physical millimeter measurements persist only when a same-plane known-size reference passes calibration; the card-size profile is never used as the scale source. No detector result becomes an official grade or authentication claim."));
+
+  const defaults = defaultCalibrationReferenceFields();
+  const calibrationPanel = node("section", "grading-quality-panel grading-calibration-panel");
+  calibrationPanel.append(
+    node("h3", "", "Independent physical scale calibration"),
+    node("p", "muted-copy", "Place a same-plane 25 mm Kingdom marker or another measured rectangle beside the card, keep both fully visible, then enter marker and card edge pixel measurements. The Kingdom fails closed rather than inventing millimeters.")
+  );
+  const calibrationGrid = node("div", "grading-calibration-grid");
+  const calibrationInputs = {
+    referenceWidthMm: makeCalibrationInput("grading-cal-reference-width-mm", "Marker width mm", defaults.referenceWidthMm),
+    referenceHeightMm: makeCalibrationInput("grading-cal-reference-height-mm", "Marker height mm", defaults.referenceHeightMm),
+    referenceTopWidthPx: makeCalibrationInput("grading-cal-reference-top-width-px", "Marker top width px"),
+    referenceBottomWidthPx: makeCalibrationInput("grading-cal-reference-bottom-width-px", "Marker bottom width px"),
+    referenceLeftHeightPx: makeCalibrationInput("grading-cal-reference-left-height-px", "Marker left height px"),
+    referenceRightHeightPx: makeCalibrationInput("grading-cal-reference-right-height-px", "Marker right height px"),
+    cardTopWidthPx: makeCalibrationInput("grading-cal-card-top-width-px", "Card top width px"),
+    cardBottomWidthPx: makeCalibrationInput("grading-cal-card-bottom-width-px", "Card bottom width px"),
+    cardLeftHeightPx: makeCalibrationInput("grading-cal-card-left-height-px", "Card left height px"),
+    cardRightHeightPx: makeCalibrationInput("grading-cal-card-right-height-px", "Card right height px"),
+    confidence: makeCalibrationInput("grading-cal-confidence", "Measurement confidence", defaults.confidence, "0.05")
+  };
+  for (const input of Object.values(calibrationInputs)) calibrationGrid.append(input.parentElement);
+  const calibrationStatus = node("p", "grading-quality-summary", "Add complete marker/card pixel measurements to unlock physical millimeters.");
+  const calibrationDetails = node("div", "grading-quality-metrics grading-calibration-details");
+  calibrationPanel.append(calibrationGrid, calibrationStatus, calibrationDetails);
+  section.append(calibrationPanel);
 
   const estimatePanel = node("section", "grading-quality-panel grading-estimate-panel");
   estimatePanel.append(node("h3", "", "Kingdom advisory evidence range"));
@@ -220,6 +258,21 @@ export function createVaultGradingPersistenceUi() {
   section.append(history);
 
   function selectedTreasureId() { return treasureSelect.value || null; }
+  function calibrationFields() { return Object.fromEntries(Object.entries(calibrationInputs).map(([key, input]) => [key, input.value])); }
+
+  function renderCalibrationPreview() {
+    const preview = previewBrowserCalibrationInputs({ fields: calibrationFields(), cardSizeProfile: BROWSER_CARD_SIZE_PROFILES[size.value] ?? BROWSER_CARD_SIZE_PROFILES.custom });
+    calibrationStatus.textContent = preview.message;
+    calibrationStatus.className = `grading-quality-summary ${preview.hasInput ? (preview.valid ? "pass" : "miss") : ""}`.trim();
+    calibrationDetails.replaceChildren();
+    if (preview.measuredCard) {
+      calibrationDetails.append(
+        node("div", "grading-quality-row", `Estimated card width • ${preview.measuredCard.widthMm} mm${preview.measuredCard.widthDeltaMm === null ? "" : ` • Δ ${preview.measuredCard.widthDeltaMm} mm vs selected profile`}`),
+        node("div", "grading-quality-row", `Estimated card height • ${preview.measuredCard.heightMm} mm${preview.measuredCard.heightDeltaMm === null ? "" : ` • Δ ${preview.measuredCard.heightDeltaMm} mm vs selected profile`}`)
+      );
+    }
+    return preview;
+  }
 
   function clearEstimate(message = "Select a treasure to calculate the stored-evidence range.") {
     estimateSummary.textContent = message;
@@ -243,9 +296,7 @@ export function createVaultGradingPersistenceUi() {
       option.textContent = [treasure.title, treasure.series, treasure.variant].filter(Boolean).join(" • ");
       treasureSelect.append(option);
     }
-    status.textContent = result.treasures?.length
-      ? `${result.treasures.length} matching treasure${result.treasures.length === 1 ? "" : "s"} loaded${result.pageInfo?.hasNext ? " • refine the search for more" : ""}.`
-      : "No matching treasure was found. Save the treasure in the Vault before attaching pre-grade evidence.";
+    status.textContent = result.treasures?.length ? `${result.treasures.length} matching treasure${result.treasures.length === 1 ? "" : "s"} loaded.` : "No matching treasure was found. Save the treasure in the Vault before attaching pre-grade evidence.";
     status.className = `grading-quality-summary ${result.treasures?.length ? "pass" : "miss"}`;
     save.disabled = true;
     refresh.disabled = true;
@@ -258,19 +309,15 @@ export function createVaultGradingPersistenceUi() {
     if (!treasureId) return;
     const result = await api(`/api/grading/treasures/${encodeURIComponent(treasureId)}/pregrade-analyses?limit=20`);
     history.replaceChildren();
-    if (!result.analyses?.length) {
-      history.append(node("p", "muted-copy", "No saved advisory pre-grade records exist for this treasure yet."));
-      return;
-    }
+    if (!result.analyses?.length) return history.append(node("p", "muted-copy", "No saved advisory pre-grade records exist for this treasure yet."));
     for (const record of result.analyses) {
+      const calibrationCount = record.analysis?.calibrationEvidence?.length ?? 0;
+      const validCalibrationCount = (record.analysis?.calibrationEvidence ?? []).filter((entry) => entry.valid === true).length;
       const card = node("article", "grading-pregrade-history-card");
-      const captureCount = record.analysis?.captureQuality?.length ?? 0;
-      const coverageCount = record.analysis?.detectorCoverage?.length ?? 0;
-      const defectCount = record.analysis?.defects?.length ?? 0;
       card.append(
         node("strong", "", `${record.standardProfile.toUpperCase()} reference • ${centeringLabel(record)}`),
         node("span", "", formatTimestamp(record.createdAt)),
-        node("span", "", `${record.sourceMediaIds?.length ?? 0} linked media • ${captureCount} capture record${captureCount === 1 ? "" : "s"} • ${coverageCount} detector coverage record${coverageCount === 1 ? "" : "s"} • ${defectCount} detector signal${defectCount === 1 ? "" : "s"}`),
+        node("span", "", `${record.sourceMediaIds?.length ?? 0} linked media • ${calibrationCount} calibration record${calibrationCount === 1 ? "" : "s"} (${validCalibrationCount} valid) • ${record.analysis?.defects?.length ?? 0} detector signal${record.analysis?.defects?.length === 1 ? "" : "s"}`),
         node("code", "", record.analysisSha256),
         node("p", "muted-copy", "Append-only advisory evidence • not an official grade • does not authenticate the physical card")
       );
@@ -289,29 +336,16 @@ export function createVaultGradingPersistenceUi() {
     if (!estimate.available) {
       estimateSummary.textContent = "No advisory range yet — more verified evidence is required.";
       estimateSummary.className = "grading-quality-summary miss";
-      estimateDetails.append(
-        node("div", "grading-quality-row", `Evidence completeness • ${completeness}`),
-        node("p", "muted-copy", estimate.reason ?? "Stored evidence has not reached the minimum range threshold."),
-        node("p", "muted-copy", `${result.sourceAnalysisCount ?? 0} immutable saved analysis record${result.sourceAnalysisCount === 1 ? "" : "s"} considered.`)
-      );
+      estimateDetails.append(node("div", "grading-quality-row", `Evidence completeness • ${completeness}`), node("p", "muted-copy", estimate.reason ?? "Stored evidence has not reached the minimum range threshold."));
     } else {
       estimateSummary.textContent = `${estimate.range.min}–${estimate.range.max} • Kingdom advisory evidence range`;
       estimateSummary.className = "grading-quality-summary pass";
-      estimateDetails.append(
-        node("div", "grading-quality-row", `Evidence level • ${estimate.evidenceLevel}`),
-        node("div", "grading-quality-row", `Completeness • ${completeness}`),
-        node("div", "grading-quality-row", `Range confidence • ${Math.round(Number(estimate.confidence ?? 0) * 100)}%`),
-        node("div", "grading-quality-row", `Review candidates considered • ${estimate.uniqueReviewCandidateCount ?? 0}`),
-        node("p", "muted-copy", estimate.reason),
-        node("p", "muted-copy", `Rubric ${estimate.rubric} • ${result.sourceAnalysisCount ?? 0} immutable saved analyses considered.`)
-      );
+      estimateDetails.append(node("div", "grading-quality-row", `Evidence level • ${estimate.evidenceLevel}`), node("div", "grading-quality-row", `Completeness • ${completeness}`), node("p", "muted-copy", estimate.reason));
     }
     for (const missing of estimate.missing ?? []) estimateMissing.append(node("li", "", `Still missing: ${evidenceLabel(missing)}`));
   }
 
-  async function loadEvidence() {
-    await Promise.all([loadHistory(), loadEstimate()]);
-  }
+  async function loadEvidence() { await Promise.all([loadHistory(), loadEstimate()]); }
 
   searchForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -326,33 +360,22 @@ export function createVaultGradingPersistenceUi() {
     const enabled = Boolean(selectedTreasureId());
     save.disabled = !enabled;
     refresh.disabled = !enabled;
-    if (!enabled) {
-      status.textContent = "No treasure selected.";
-      history.replaceChildren();
-      clearEstimate();
-      return;
-    }
+    if (!enabled) { status.textContent = "No treasure selected."; history.replaceChildren(); clearEstimate(); return; }
     status.textContent = "Treasure selected. Saving will append evidence only; no treasure field will be overwritten.";
     status.className = "grading-quality-summary pass";
     loadEvidence().catch((error) => { status.textContent = error.message; status.className = "grading-quality-summary miss"; });
   });
 
-  refresh.addEventListener("click", () => {
-    refresh.disabled = true;
-    loadEvidence().catch((error) => { status.textContent = error.message; status.className = "grading-quality-summary miss"; }).finally(() => { refresh.disabled = !selectedTreasureId(); });
-  });
+  refresh.addEventListener("click", () => loadEvidence().catch((error) => { status.textContent = error.message; status.className = "grading-quality-summary miss"; }));
+  for (const input of Object.values(calibrationInputs)) input.addEventListener("input", () => renderCalibrationPreview());
+  size.addEventListener("change", () => renderCalibrationPreview());
 
   save.addEventListener("click", async () => {
     const treasureId = selectedTreasureId();
     if (!treasureId) return;
     let measurement;
-    try {
-      measurement = measureBrowserCentering({ left: left.value, right: right.value, top: top.value, bottom: bottom.value });
-    } catch (error) {
-      status.textContent = error.message;
-      status.className = "grading-quality-summary miss";
-      return;
-    }
+    try { measurement = measureBrowserCentering({ left: left.value, right: right.value, top: top.value, bottom: bottom.value }); }
+    catch (error) { status.textContent = error.message; status.className = "grading-quality-summary miss"; return; }
     save.disabled = true;
     save.textContent = "Saving advisory record…";
     try {
@@ -361,14 +384,13 @@ export function createVaultGradingPersistenceUi() {
       const companionFile = companionImage?.files?.[0] ?? null;
       const sourceMediaIds = [];
       const captureQuality = [];
+      const calibrationEvidence = [];
       const detectorCoverage = [];
       const defects = [];
-      const limitations = [
-        `Browser centering snapshot saved from ${measurement.horizontal.label} horizontal and ${measurement.vertical.label} vertical measurements.`,
-        "No overall grade estimate is client-supplied. The read-only Kingdom advisory range is computed server-side from stored evidence."
-      ];
-
+      const limitations = [`Browser centering snapshot saved from ${measurement.horizontal.label} horizontal and ${measurement.vertical.label} vertical measurements.`, "No overall grade estimate is client-supplied. The read-only Kingdom advisory range is computed server-side from stored evidence."];
+      const calibrationPreview = renderCalibrationPreview();
       let primaryMatch = null;
+
       if (primaryFile && snapshot.primaryFile === primaryFile) {
         try {
           primaryMatch = await matchPrivateImage(treasureId, primaryFile);
@@ -376,18 +398,28 @@ export function createVaultGradingPersistenceUi() {
             sourceMediaIds.push(primaryMatch.media.id);
             const capture = captureEvidence(snapshot, primaryMatch.media.id, side.value);
             if (capture) captureQuality.push(capture);
+            if (calibrationPreview.hasInput) {
+              try {
+                calibrationEvidence.push(createBrowserCalibrationEvidence({ sourceMediaId: primaryMatch.media.id, side: side.value, fields: calibrationFields(), cardSizeProfile: BROWSER_CARD_SIZE_PROFILES[size.value] ?? BROWSER_CARD_SIZE_PROFILES.custom }));
+                limitations.push(calibrationPreview.valid ? "Physical scale calibration was appended from a same-plane known-size reference. The selected card-size profile was used only for advisory comparison." : "Physical scale calibration input was appended but is expected to fail closed until the marker/card measurements are corrected.");
+              } catch (error) {
+                limitations.push(`Physical scale calibration was invalid (${String(error.message ?? error).slice(0, 220)}), so no millimeter conversion was appended.`);
+              }
+            } else {
+              limitations.push("No independent known-size marker measurements were supplied, so physical millimeter conversion remains unavailable.");
+            }
             const coverage = contourCoverage(snapshot, primaryMatch.media.id, side.value);
             if (coverage) detectorCoverage.push(coverage);
             defects.push(...contourEvidence(snapshot, primaryMatch.media.id));
             limitations.push("Primary-image detector evidence was computed in this browser and linked to private Vault media only after an exact SHA-256 byte match. The server stores the evidence but did not independently recompute the image pixels.");
           } else {
-            limitations.push("The analyzed primary image did not match private media on this treasure by SHA-256, so browser-computed capture, contour and detector-coverage evidence was omitted from the durable record.");
+            limitations.push("The analyzed primary image did not match private media on this treasure by SHA-256, so browser-computed capture, calibration, contour and detector-coverage evidence was omitted.");
           }
         } catch (error) {
           limitations.push(`Primary-image integrity linkage was unavailable (${String(error.message ?? error).slice(0, 280)}); pixel-derived primary-image findings were omitted.`);
         }
-      } else if (primaryFile) {
-        limitations.push("The selected primary image did not match the Lab's current analyzed File object, so stale pixel-derived findings were omitted.");
+      } else if (calibrationPreview.hasInput) {
+        limitations.push("Physical calibration measurements were entered but omitted because no current primary capture was available for exact Vault-media linkage.");
       }
 
       if (primaryMatch?.matched && primaryMatch.media?.id && companionFile && snapshot.companionFile === companionFile && snapshot.surface?.analyzed) {
@@ -398,15 +430,12 @@ export function createVaultGradingPersistenceUi() {
             const coverage = surfaceCoverage(snapshot, primaryMatch.media.id, companionMatch.media.id, side.value);
             if (coverage) detectorCoverage.push(coverage);
             defects.push(...surfaceEvidence(snapshot, primaryMatch.media.id, companionMatch.media.id, side.value));
-            limitations.push(`Paired raking-light comparison used two SHA-256-matched private Vault images and produced ${snapshot.surface.signals?.length ?? 0} advisory reflectance review candidate${snapshot.surface.signals?.length === 1 ? "" : "s"}. A reflectance signal is not a confirmed scratch, dent, print line or other physical defect.`);
           } else {
-            limitations.push("The companion raking-light image did not match private media on this treasure by SHA-256, so paired surface findings and detector coverage were omitted from the durable record.");
+            limitations.push("The companion raking-light image did not match private media on this treasure by SHA-256, so paired surface findings and detector coverage were omitted.");
           }
         } catch (error) {
           limitations.push(`Companion-image integrity linkage was unavailable (${String(error.message ?? error).slice(0, 280)}); paired surface findings were omitted.`);
         }
-      } else if (snapshot.surface?.analyzed && companionFile) {
-        limitations.push("Paired surface findings were not persisted because both currently analyzed files could not be proven as the exact Lab File objects linked to this treasure.");
       }
 
       const uniqueSourceMediaIds = [...new Set(sourceMediaIds)];
@@ -416,22 +445,15 @@ export function createVaultGradingPersistenceUi() {
           standardProfile: profile.value,
           cardSizeProfile: size.value,
           sourceMediaIds: uniqueSourceMediaIds,
-          centering: {
-            side: side.value,
-            left: Number(left.value),
-            right: Number(right.value),
-            top: Number(top.value),
-            bottom: Number(bottom.value),
-            method: "manual-anchor",
-            confidence: primaryMatch?.matched ? 0.8 : 0.65
-          },
+          centering: { side: side.value, left: Number(left.value), right: Number(right.value), top: Number(top.value), bottom: Number(bottom.value), method: "manual-anchor", confidence: primaryMatch?.matched ? 0.8 : 0.65 },
           captureQuality,
+          calibrationEvidence,
           detectorCoverage,
           defects,
           limitations
         })
       });
-      status.textContent = `Saved advisory analysis ${result.analysis.id.slice(0, 8)}… • SHA-256 ${result.analysis.analysisSha256.slice(0, 12)}… • ${uniqueSourceMediaIds.length} linked media`;
+      status.textContent = `Saved advisory analysis ${result.analysis.id.slice(0, 8)}… • SHA-256 ${result.analysis.analysisSha256.slice(0, 12)}… • ${uniqueSourceMediaIds.length} linked media • ${calibrationEvidence.length} calibration record${calibrationEvidence.length === 1 ? "" : "s"}`;
       status.className = "grading-quality-summary pass";
       await loadEvidence();
     } catch (error) {
@@ -443,8 +465,9 @@ export function createVaultGradingPersistenceUi() {
     }
   });
 
+  renderCalibrationPreview();
   gradingPanel.append(section);
-  return Object.freeze({ panel: section, searchTreasures, loadHistory, loadEstimate, loadEvidence });
+  return Object.freeze({ panel: section, searchTreasures, loadHistory, loadEstimate, loadEvidence, renderCalibrationPreview });
 }
 
 createVaultGradingPersistenceUi();
