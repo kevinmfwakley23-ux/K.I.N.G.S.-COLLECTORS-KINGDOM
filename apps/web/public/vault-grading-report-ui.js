@@ -41,7 +41,10 @@ function titleCase(value) {
 
 function findingExtentLabel(extent) {
   if (!extent) return "No reliable normalized extent available";
-  return `${extent.affectedFacePercent}% bounding area • ${extent.estimatedMajorSpanPercent}% major normalized span`;
+  const calibrated = extent.calibratedMillimeters;
+  const normalized = `${extent.affectedFacePercent}% bounding area • ${extent.estimatedMajorSpanPercent}% major normalized span`;
+  if (!calibrated) return normalized;
+  return `${calibrated.approximateMajorSpanMm} mm approximate major span • ${calibrated.approximateWidthMm} × ${calibrated.approximateHeightMm} mm bounding box • ${normalized}`;
 }
 
 function timestampLabel(value) {
@@ -58,7 +61,7 @@ export function createVaultGradingReportUi() {
   section.id = "grading-explainable-report";
   section.append(
     node("h3", "", "Explainable grading report"),
-    node("p", "muted-copy", "The Kingdom breaks stored pre-grade evidence into front/back centering, corners, edges and surface. Dimension ranges are advisory only. They are not official PSA, BGS, CGC, SGC or other professional subgrades.")
+    node("p", "muted-copy", "The Kingdom breaks stored pre-grade evidence into front/back centering, corners, edges and surface. Dimension ranges are advisory only. They are not official PSA, BGS, CGC, SGC or other professional subgrades. Physical millimeters appear only when a same-capture known-size reference passes calibration.")
   );
 
   const actions = node("div", "grading-persistence-actions");
@@ -69,10 +72,11 @@ export function createVaultGradingReportUi() {
 
   const status = node("p", "grading-quality-summary", "Choose a treasure in the Save advisory pre-grade evidence panel to view its report.");
   const overall = node("div", "grading-report-overall");
+  const physicalRoot = node("div", "grading-physical-measurement");
   const dimensionsRoot = node("div", "grading-dimension-grid");
   const findingsRoot = node("div", "grading-finding-review-list");
   const reviewHistoryRoot = node("div", "grading-finding-review-list grading-review-history");
-  section.append(status, overall, dimensionsRoot, findingsRoot, reviewHistoryRoot);
+  section.append(status, overall, physicalRoot, dimensionsRoot, findingsRoot, reviewHistoryRoot);
 
   function treasureId() { return treasureSelect.value || null; }
 
@@ -98,13 +102,42 @@ export function createVaultGradingReportUi() {
     overall.append(card);
   }
 
+  function renderPhysicalMeasurement(report) {
+    physicalRoot.replaceChildren();
+    const physical = report?.physicalMeasurement;
+    const card = node("article", `grading-physical-card ${physical?.physicalMeasurementAvailable ? "available" : "missing"}`);
+    card.append(
+      node("h4", "", "Physical scale calibration"),
+      node("strong", "", physical?.physicalMeasurementAvailable ? "Independent scale reference accepted" : "No calibrated millimeters yet"),
+      node("p", "muted-copy", physical?.physicalMeasurementAvailable
+        ? "The selected measurement comes from a known-size reference in the same capture. It is advisory evidence only, not physical authentication."
+        : "The Kingdom will not convert card dimensions or defect spans to millimeters until a same-plane known-size reference passes tolerance.")
+    );
+    if (physical?.measuredCard) {
+      card.append(
+        node("span", "", `Measured card: ${physical.measuredCard.widthMm} × ${physical.measuredCard.heightMm} mm`),
+        node("span", "", `Uncertainty: ±${physical.measuredCard.widthUncertaintyMm} mm width • ±${physical.measuredCard.heightUncertaintyMm} mm height`),
+        node("span", "", `Scale confidence: ${percentage(physical.bestConfidence)} • source media ${physical.bestSourceMediaId ?? "unknown"}`)
+      );
+    }
+    if (physical?.profileComparison?.available) {
+      card.append(node("span", "", `Profile comparison: Δ ${physical.profileComparison.widthDeltaMm} mm width • Δ ${physical.profileComparison.heightDeltaMm} mm height • within tolerance: ${physical.profileComparison.withinProfileTolerance ? "yes" : "no"}`));
+    }
+    if (physical?.failureReasons?.length) {
+      const failures = node("ul", "grading-quality-warnings");
+      for (const reason of physical.failureReasons) failures.append(node("li", "", `Calibration issue: ${reason}`));
+      card.append(failures);
+    }
+    physicalRoot.append(card);
+  }
+
   function dimensionCard(side, dimension, summary) {
     const card = node("article", `grading-dimension-card ${summary?.available ? "available" : "missing"}`);
     card.append(
       node("div", "grading-dimension-heading", `${titleCase(side)} ${titleCase(dimension)}`),
       node("strong", "grading-dimension-range", rangeLabel(summary)),
       node("span", "", `Confidence ${percentage(summary?.confidence ?? 0)} • completeness ${percentage(summary?.completeness ?? 0)}`),
-      node("span", "", `${summary?.candidateFindingIds?.length ?? 0} raw candidate${summary?.candidateFindingIds?.length === 1 ? "" : "s"} • official subgrade: no`)
+      node("span", "", `${summary?.candidateFindingIds?.length ?? 0} raw candidate${summary?.candidateFindingIds?.length === 1 ? "" : "s"} • physical mm: ${summary?.physicalMeasurementAvailable ? "yes" : "no"} • official subgrade: no`)
     );
     if (summary?.missingEvidence?.length) {
       const missing = node("ul", "grading-quality-warnings");
@@ -159,7 +192,7 @@ export function createVaultGradingReportUi() {
     );
     card.append(
       header,
-      node("span", "", `${titleCase(side)} ${titleCase(dimension)} • severity ${percentage(finding.severity)} • detector confidence ${percentage(finding.detectorConfidence)}`),
+      node("span", "", `${titleCase(side)} ${titleCase(dimension)} • severity ${percentage(finding.severity)} • detector confidence ${percentage(finding.detectorConfidence)} • calibrated mm ${finding.physicalMeasurementAvailable ? "available" : "unavailable"}`),
       node("span", "", findingExtentLabel(finding.extent)),
       node("code", "grading-finding-hash", finding.findingHash),
       node("p", "muted-copy", "Review changes interpretation only. This raw detector candidate remains in immutable evidence history regardless of the decision.")
@@ -234,6 +267,7 @@ export function createVaultGradingReportUi() {
   async function loadReport() {
     const selected = treasureId();
     overall.replaceChildren();
+    physicalRoot.replaceChildren();
     dimensionsRoot.replaceChildren();
     findingsRoot.replaceChildren();
     reviewHistoryRoot.replaceChildren();
@@ -248,10 +282,11 @@ export function createVaultGradingReportUi() {
     try {
       const payload = await api(`/api/grading/treasures/${encodeURIComponent(selected)}/pregrade-report`);
       renderOverall(payload);
+      renderPhysicalMeasurement(payload.explainableReport);
       renderDimensions(payload.explainableReport);
       renderFindings(payload.explainableReport);
       renderReviewHistory(payload.reviewHistory ?? []);
-      status.textContent = "Explainable report loaded from immutable stored pre-grade evidence and append-only collector reviews.";
+      status.textContent = "Explainable report loaded from immutable stored pre-grade evidence, calibrated scale evidence when available, and append-only collector reviews.";
       status.className = "grading-quality-summary pass";
       return payload;
     } catch (error) {
