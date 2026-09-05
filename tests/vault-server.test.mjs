@@ -8,6 +8,8 @@ import { createKingdomServer } from "../apps/web/server.mjs";
 import { createGreatHallService } from "../packages/great-hall/src/service.mjs";
 import { createIdentityService } from "../packages/identity/src/service.mjs";
 import { SqliteIdentityStore } from "../packages/identity/src/sqlite-store.mjs";
+import { createVaultImportRepository } from "../packages/vault/src/import-repository.mjs";
+import { createVaultImportService } from "../packages/vault/src/import-service.mjs";
 import { createVaultMediaRepository } from "../packages/vault/src/media-repository.mjs";
 import { createVaultMediaService } from "../packages/vault/src/media-service.mjs";
 import { LocalVaultMediaStorage } from "../packages/vault/src/media-storage.mjs";
@@ -29,6 +31,8 @@ async function withKingdom(run) {
   const vaultStore = new SqliteVaultStore(join(directory, "vault.sqlite"));
   const identityService = createIdentityService({ store: identityStore });
   const vaultService = createVaultService({ store: vaultStore });
+  const vaultImportRepository = createVaultImportRepository({ vaultStore });
+  const vaultImportService = createVaultImportService({ vaultService, vaultStore, importRepository: vaultImportRepository });
   const vaultMediaRepository = createVaultMediaRepository({ vaultStore });
   const vaultMediaService = createVaultMediaService({
     vaultStore,
@@ -49,7 +53,8 @@ async function withKingdom(run) {
     identityService,
     greatHallService,
     vaultService,
-    vaultMediaService
+    vaultMediaService,
+    vaultImportService
   });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -97,7 +102,7 @@ async function registerAndSignIn(baseUrl, suffix = "owner") {
   return cookie;
 }
 
-test("authenticated Vault APIs persist real records, protect media, support voice policy, and enforce collector isolation", async () => {
+test("authenticated Vault APIs persist real records, protect media, transact imports, support voice policy, and enforce collector isolation", async () => {
   await withKingdom(async (baseUrl) => {
     const denied = await json(baseUrl, "/api/vault");
     assert.equal(denied.response.status, 401);
@@ -211,6 +216,8 @@ test("authenticated Vault APIs persist real records, protect media, support voic
     assert.equal(stats.body.stats.treasureCount, 1);
     assert.deepEqual(stats.body.stats.purchaseTotals, [{ currency: "USD", totalCents: 45000, treasureCount: 1 }]);
     assert.equal(stats.body.stats.estimatedValueAvailable, false);
+    assert.equal(stats.body.media.uploadsAvailable, true);
+    assert.equal(stats.body.import.atomicCommitAvailable, true);
 
     const hall = await json(baseUrl, "/api/great-hall", { headers: { cookie: ownerCookie } });
     assert.equal(hall.response.status, 200);
@@ -245,11 +252,34 @@ test("authenticated Vault APIs persist real records, protect media, support voic
     const preview = await json(baseUrl, "/api/vault/import/preview", {
       method: "POST",
       headers: { cookie: ownerCookie },
-      body: JSON.stringify({ records: [{ title: "Spawn #1", category: "Comic Book" }] })
+      body: JSON.stringify({ sourceLabel: "server-test.json", records: [{ title: "Spawn #1", category: "Comic Book" }] })
     });
-    assert.equal(preview.response.status, 200);
-    assert.equal(preview.body.accepted.length, 1);
-    assert.equal(preview.body.canCommit, false);
+    assert.equal(preview.response.status, 201);
+    assert.equal(preview.body.batch.status, "preview");
+    assert.equal(preview.body.batch.acceptedCount, 1);
+    assert.equal(preview.body.batch.rows[0].status, "ready");
+    const batchId = preview.body.batch.id;
+
+    const outsiderBatch = await json(baseUrl, `/api/vault/import/${batchId}`, { headers: { cookie: outsiderCookie } });
+    assert.equal(outsiderBatch.response.status, 404);
+    assert.equal(outsiderBatch.body.error, "import_batch_not_found");
+
+    const committedImport = await json(baseUrl, `/api/vault/import/${batchId}/commit`, {
+      method: "POST",
+      headers: { cookie: ownerCookie, "idempotency-key": "server-import-test-001" },
+      body: JSON.stringify({ decisions: [] })
+    });
+    assert.equal(committedImport.response.status, 200);
+    assert.equal(committedImport.body.batch.status, "committed");
+    assert.equal(committedImport.body.batch.commitResult.importedCount, 1);
+
+    const replayImport = await json(baseUrl, `/api/vault/import/${batchId}/commit`, {
+      method: "POST",
+      headers: { cookie: ownerCookie, "idempotency-key": "server-import-test-001" },
+      body: JSON.stringify({ decisions: [] })
+    });
+    assert.equal(replayImport.response.status, 200);
+    assert.equal(replayImport.body.batch.idempotentReplay, true);
 
     const mediaDelete = await json(baseUrl, `/api/vault/media/${mediaId}`, {
       method: "DELETE",
@@ -265,6 +295,7 @@ test("authenticated Vault APIs persist real records, protect media, support voic
     assert.equal(archived.response.status, 200);
 
     const afterArchive = await json(baseUrl, "/api/vault/treasures", { headers: { cookie: ownerCookie } });
-    assert.equal(afterArchive.body.treasures.length, 0);
+    assert.equal(afterArchive.body.treasures.length, 1);
+    assert.equal(afterArchive.body.treasures[0].title, "Spawn #1");
   });
 });
