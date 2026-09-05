@@ -75,7 +75,7 @@ async function withServer(run) {
   }
 }
 
-test("bulk reorganization HTTP API requires auth, previews without mutation, commits with idempotency, and stays owner isolated", async () => {
+test("bulk reorganization HTTP API requires auth, reports capability truthfully, previews without mutation, commits with idempotency, and stays owner isolated", async () => {
   await withServer(async (baseUrl) => {
     const denied = await json(baseUrl, "/api/vault/reorganization/bulk/preview", {
       method: "POST",
@@ -85,6 +85,15 @@ test("bulk reorganization HTTP API requires auth, previews without mutation, com
 
     const ownerCookie = await registerAndSignIn(baseUrl, "owner");
     const outsiderCookie = await registerAndSignIn(baseUrl, "outsider");
+
+    const capabilities = await json(baseUrl, "/api/vault", { headers: { cookie: ownerCookie } });
+    assert.equal(capabilities.response.status, 200);
+    assert.equal(capabilities.body.reorganization.bulkMoveAvailable, true);
+    assert.equal(capabilities.body.reorganization.bulkMovePreviewRequired, true);
+    assert.equal(capabilities.body.reorganization.atomicBulkCommitAvailable, true);
+    assert.equal(capabilities.body.reorganization.maxBulkMoveSelection, 100);
+    assert.equal(capabilities.body.reorganization.destructiveBulkActionsAvailable, false);
+
     const source = await json(baseUrl, "/api/vault/collections", {
       method: "POST",
       headers: { cookie: ownerCookie },
