@@ -1,5 +1,6 @@
 import { createVaultPortableService } from "./portable.mjs";
 import { VaultError } from "./service.mjs";
+import { listVaultCategoryProfiles } from "./taxonomy.mjs";
 
 const MAX_JSON_BYTES = 256 * 1024;
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
@@ -56,10 +57,23 @@ function text(status, body, contentType, headers = {}) {
   return { kind: "text", status, body, contentType, headers };
 }
 
-export async function handleVaultRequest({ request, pathname, searchParams, identity, vaultService, ownershipService = null } = {}) {
+export async function handleVaultRequest({
+  request,
+  pathname,
+  searchParams,
+  identity,
+  vaultService,
+  ownershipService = null,
+  attributeService = null
+} = {}) {
   if (!vaultService) throw new VaultError("vault_unavailable", "The Royal Vault service is unavailable.", 503);
   const method = request.method ?? "GET";
   const portable = createVaultPortableService({ vaultService });
+
+  if (pathname === "/api/vault/categories") {
+    if (method === "GET") return json(200, { categories: listVaultCategoryProfiles(), customCategoriesAllowed: true });
+    return null;
+  }
 
   if (pathname === "/api/vault/treasures") {
     if (method === "GET") {
@@ -96,6 +110,21 @@ export async function handleVaultRequest({ request, pathname, searchParams, iden
   if (ownershipEventMatch && method === "DELETE") {
     if (!ownershipService) throw new VaultError("ownership_history_unavailable", "Vault ownership history service is unavailable.", 503);
     return json(200, ownershipService.remove(identity, decodeURIComponent(ownershipEventMatch[1]), decodeURIComponent(ownershipEventMatch[2])));
+  }
+
+  const attributesMatch = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/attributes$/);
+  if (attributesMatch) {
+    if (!attributeService) throw new VaultError("collectible_details_unavailable", "Vault collectible details service is unavailable.", 503);
+    const treasureId = decodeURIComponent(attributesMatch[1]);
+    if (method === "GET") return json(200, { attributes: attributeService.list(identity, treasureId) });
+    if (method === "POST") return json(201, { attribute: attributeService.upsert(identity, treasureId, await readJson(request)) });
+    return null;
+  }
+
+  const attributeMatch = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/attributes\/([^/]+)$/);
+  if (attributeMatch && method === "DELETE") {
+    if (!attributeService) throw new VaultError("collectible_details_unavailable", "Vault collectible details service is unavailable.", 503);
+    return json(200, attributeService.remove(identity, decodeURIComponent(attributeMatch[1]), decodeURIComponent(attributeMatch[2])));
   }
 
   const imageMatch = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/images$/);
