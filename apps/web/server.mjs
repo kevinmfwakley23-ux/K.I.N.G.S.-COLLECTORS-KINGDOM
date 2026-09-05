@@ -335,10 +335,13 @@ async function handleVaultRoute({
         collectionEditAvailable: Boolean(vaultReorganizationService),
         locationEditAvailable: Boolean(vaultReorganizationService),
         cycleSafeReparentAvailable: Boolean(vaultReorganizationService),
-        bulkMoveAvailable: false,
+        bulkMoveAvailable: Boolean(vaultReorganizationService),
+        bulkMovePreviewRequired: Boolean(vaultReorganizationService),
+        atomicBulkCommitAvailable: Boolean(vaultReorganizationService),
+        maxBulkMoveSelection: vaultReorganizationService?.maxBulkMoveSelection ?? null,
         destructiveBulkActionsAvailable: false,
         message: vaultReorganizationService
-          ? "Collection and physical-location records can be edited without replacing permanent treasure identities. Location reparenting is cycle-checked server-side; bulk movement is not live yet."
+          ? "Collection and physical-location records can be edited without replacing permanent treasure identities. Bulk movement uses a persistent server preview, explicit confirmation, stale-state revalidation, idempotency, and all-or-nothing commit; destructive bulk actions remain unavailable."
           : "Vault reorganization is unavailable until its service is wired."
       }
     }, method);
