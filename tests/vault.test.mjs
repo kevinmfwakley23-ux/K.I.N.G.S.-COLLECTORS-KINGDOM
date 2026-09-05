@@ -82,6 +82,14 @@ test("Vault persists owner-scoped treasures with hierarchical storage, search, s
       externalIdentifiers: { upc: "045496630584" }
     });
 
+    const euroItem = vault.createTreasure(collectorA, {
+      title: "European Collector Coin",
+      category: "Coin",
+      quantity: 1,
+      purchasePriceCents: 2500,
+      currency: "EUR"
+    });
+
     const duplicates = vault.duplicateCandidates(collectorA, first.id);
     assert.equal(duplicates.length, 1);
     assert.equal(duplicates[0].treasure.id, second.id);
@@ -97,9 +105,13 @@ test("Vault persists owner-scoped treasures with hierarchical storage, search, s
     assert.equal(games[0].id, other.id);
 
     const stats = vault.snapshot(collectorA).stats;
-    assert.equal(stats.treasureCount, 3);
-    assert.equal(stats.unitCount, 4);
-    assert.equal(stats.purchaseTotalCents, 19500);
+    assert.equal(stats.treasureCount, 4);
+    assert.equal(stats.unitCount, 5);
+    assert.equal(stats.pricedTreasureCount, 3);
+    assert.deepEqual(stats.purchaseTotals, [
+      { currency: "EUR", totalCents: 2500, treasureCount: 1 },
+      { currency: "USD", totalCents: 19500, treasureCount: 2 }
+    ]);
     assert.equal(stats.estimatedValueAvailable, false);
     assert.equal(stats.estimatedValue, null);
 
@@ -124,16 +136,17 @@ test("Vault persists owner-scoped treasures with hierarchical storage, search, s
 
     const archived = vault.archiveTreasure(collectorA, other.id);
     assert.equal(archived.id, other.id);
-    assert.equal(vault.listTreasures(collectorA, {}).length, 2);
-    assert.equal(vault.snapshot(collectorA).stats.treasureCount, 2);
+    assert.equal(vault.listTreasures(collectorA, {}).length, 3);
+    assert.equal(vault.snapshot(collectorA).stats.treasureCount, 3);
 
     const exported = vault.exportData(collectorA);
     assert.equal(exported.schema, "kings.collectors.vault.export");
     assert.equal(exported.schemaVersion, 1);
     assert.equal(exported.collections.length, 1);
     assert.equal(exported.locations.length, 6);
-    assert.equal(exported.treasures.length, 3);
+    assert.equal(exported.treasures.length, 4);
     assert.ok(exported.treasures.some((item) => item.id === other.id && item.archivedAt));
+    assert.ok(exported.treasures.some((item) => item.id === euroItem.id));
   });
 });
 
