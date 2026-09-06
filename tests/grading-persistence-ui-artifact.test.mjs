@@ -46,7 +46,7 @@ test("saved pre-grade UI exposes immutable history, calibration status and read-
   assert.match(source, /\/pregrade-estimate/);
   assert.match(source, /Kingdom advisory evidence range/);
   assert.match(source, /Evidence completeness/);
-  assert.match(source, /Range confidence/);
+  assert.match(source, /Evidence level/);
   assert.match(source, /Still missing/);
   assert.match(source, /Not an official PSA\/BGS\/CGC grade/);
   assert.match(source, /does not authenticate the physical card/);
