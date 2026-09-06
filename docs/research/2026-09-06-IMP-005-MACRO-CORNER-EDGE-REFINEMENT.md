@@ -52,20 +52,20 @@ Kingdom adaptation: macro inspection can improve evidence completeness, but an o
 
 ## Engineering decisions
 
-### 1. Dedicated macro capture is separate evidence
+### 1. Dedicated macro capture is separate, region-scoped evidence
 
-The macro workflow accepts one explicitly selected corner or edge region:
+Every macro detector record carries one structured region rather than relying on prose notes:
 
-- top-left;
-- top-right;
-- bottom-left;
-- bottom-right;
-- left edge;
-- right edge;
-- top edge;
-- bottom edge.
+- `top-left`;
+- `top-right`;
+- `bottom-left`;
+- `bottom-right`;
+- `left-edge`;
+- `right-edge`;
+- `top-edge`;
+- `bottom-edge`.
 
-The capture must show the physical edge against a matte contrasting background. Sleeves, glare, digital sharpening and hidden/cropped outer edges reduce reliability.
+The capture must show the physical edge against a matte contrasting background. Sleeves, glare, digital sharpening and hidden/cropped outer edges reduce reliability. A corner capture cannot satisfy edge coverage and an edge capture cannot satisfy corner coverage.
 
 ### 2. High-resolution evidence gate
 
@@ -115,26 +115,32 @@ Persisted macro evidence is:
 - append only;
 - tied to permanent treasure identity;
 - tied to exact private source media;
+- tied to one controlled corner/edge region;
 - advisory only;
 - unable to mutate authoritative condition, grade, authenticity, provenance, ownership or value.
 
 ### 7. Explainable report integration is completeness-aware, not grade-inflating
 
-Macro findings already flow into corner/edge finding interpretation because they are typed as corner/edge evidence.
+Macro findings flow into corner/edge finding interpretation because they are typed as corner/edge evidence, but completeness is deliberately stricter than “one closeup exists.”
 
-A separate macro-aware report wrapper improves **evidence completeness** only after the base whole-card evidence floor exists:
+The macro-aware report wrapper improves **evidence completeness** only after the base whole-card evidence floor exists:
 
-- usable macro capture clears the generic missing macro-corner-detail gap;
-- usable macro edge capture raises edge completeness modestly;
-- the generic edge color/whitening-detail gap is cleared only when the local tone-reference stability gate passed;
+- each usable corner macro improves corner completeness proportionally;
+- the generic `macro-corner-detail` gap remains until all four named corners have usable region-scoped captures;
+- each usable edge macro improves edge completeness proportionally;
+- a stable local border-tone reference is tracked independently for each named edge;
+- the generic edge color/whitening-detail gap remains until all four named edges have usable captures **and** all four local tone-reference gates pass;
+- one corner cannot clear an edge gap and one edge cannot clear a corner gap;
 - macro evidence never makes a previously unavailable base corner/edge dimension available by itself;
 - it does not manufacture an official subgrade or recalculate a professional-grader formula.
+
+This full-four-region requirement prevents a single convenient closeup from being misrepresented as inspection coverage of the entire card side.
 
 ## New evidence vocabulary
 
 Detector coverage:
 
-- `macro-corner-edge`
+- `macro-corner-edge`, with one required structured region from the eight-region vocabulary above.
 
 Defect/review candidates:
 
@@ -169,8 +175,10 @@ The branch must verify at minimum:
 - unstable printed-border reference fails closed for tone inference;
 - low-resolution captures remain analyzed but unusable for persisted condition inference;
 - macro UI requires exact SHA-256 private-media linkage before persistence;
-- macro evidence is admitted by the server evidence vocabulary;
-- explainable report completeness changes only when the relevant macro gate passed;
+- macro evidence requires a structured valid region at the server evidence boundary;
+- one corner capture cannot satisfy an edge gap and one edge capture cannot satisfy a corner gap;
+- generic four-corner detail remains incomplete until four corner regions exist;
+- generic edge whitening detail remains incomplete until four stable-tone edge regions exist;
 - module load order remains dependency safe;
 - production build contains every new runtime module;
 - full Kingdom quality gates pass with no production high-severity dependency findings.
@@ -179,4 +187,4 @@ The branch must verify at minimum:
 
 The Collector's Kingdom is intentionally more useful than a decorative grade guesser: it records measurable and reviewable evidence. It is also intentionally more conservative than systems that turn every image signal into certainty.
 
-A macro contour anomaly is not automatically damage. A lighter-tone anomaly is not automatically whitening. An unusual edge is not automatically trimming. A Kingdom advisory range is not an official professional grade. Collector and professional authority remain separate from image-analysis evidence.
+A macro contour anomaly is not automatically damage. A lighter-tone anomaly is not automatically whitening. An unusual edge is not automatically trimming. A single closeup is not full-card macro coverage. A Kingdom advisory range is not an official professional grade. Collector and professional authority remain separate from image-analysis evidence.
