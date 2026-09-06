@@ -1,4 +1,5 @@
 import { analyzeMacroCornerEdgeCapture, MACRO_CORNER_EDGE_REGIONS } from "./vault-grading-macro-core.js";
+import { buildMacroCoverageState, macroRegionStatus, MACRO_REQUIRED_REGIONS } from "./vault-grading-macro-coverage-core.js";
 
 function node(tag, className, text) {
   const element = document.createElement(tag);
@@ -95,8 +96,18 @@ export function createVaultGradingMacroUi() {
   panel.id = "grading-macro-panel";
   panel.append(
     node("h3", "", "Macro corner & edge evidence"),
-    node("p", "muted-copy", "Add one dedicated high-resolution corner or edge capture with a narrow strip of matte contrasting background visible outside the physical card. The Kingdom reviews magnified contour and, only when a stable local border reference exists, possible lighter-tone anomalies. It never confirms whitening, trimming, authenticity, or an official grade from this image alone.")
+    node("p", "muted-copy", "Build a complete region-scoped macro evidence set with dedicated high-resolution corner and edge captures. Keep a narrow strip of matte contrasting background visible outside the physical card. The Kingdom reviews magnified contour and, only when a stable local border reference exists, possible lighter-tone anomalies. It never confirms whitening, trimming, authenticity, or an official grade from these images alone.")
   );
+
+  const coveragePanel = node("div", "grading-quality-panel grading-macro-coverage");
+  const coverageHeading = node("strong", "", "Macro capture set • choose a treasure");
+  const coverageCopy = node("p", "muted-copy", "Four corner regions and four edge regions are tracked independently for each card side. Global detail gaps are not cleared from one convenient closeup.");
+  const coverageRows = node("div", "grading-quality-metrics");
+  const nextButton = node("button", "quiet-button", "Select next required region");
+  nextButton.type = "button";
+  nextButton.disabled = true;
+  coveragePanel.append(coverageHeading, coverageCopy, coverageRows, nextButton);
+  panel.append(coveragePanel);
 
   const toolbar = node("div", "grading-toolbar");
   const fileLabel = node("label", "grading-file-label");
@@ -153,9 +164,55 @@ export function createVaultGradingMacroUi() {
   let loadedImage = null;
   let analyzedFile = null;
   let currentResult = null;
+  let currentCoverage = null;
 
   function updateSaveState() {
     saveButton.disabled = !(currentResult?.usable && analyzedFile && treasureSelect.value);
+  }
+
+  function renderCoverage(state) {
+    currentCoverage = state;
+    coverageRows.replaceChildren();
+    if (!state) {
+      coverageHeading.textContent = "Macro capture set • choose a treasure";
+      coverageCopy.textContent = "Four corner regions and four edge regions are tracked independently for each card side. Global detail gaps are not cleared from one convenient closeup.";
+      nextButton.disabled = true;
+      return;
+    }
+    const sideName = sideSelect.value === "back" ? "Back" : "Front";
+    coverageHeading.textContent = `${sideName} macro capture set • ${state.capturedCount}/${state.requiredCount} regions captured`;
+    coverageCopy.textContent = state.evidenceSetComplete
+      ? "All four corners and all four edges are captured, and every edge has a stable local tone reference. This completes the Kingdom macro evidence set for this side; it still does not create an official grade."
+      : `Corner coverage ${state.capturedCorners.length}/4 • edge coverage ${state.capturedEdges.length}/4 • stable edge-tone references ${state.toneStableEdges.length}/4. Next recommended region: ${state.nextRegion ? regionLabel(state.nextRegion) : "none"}.`;
+    for (const region of MACRO_REQUIRED_REGIONS) {
+      const status = macroRegionStatus(state, region);
+      const tone = status.kind === "edge" && status.captured ? (status.toneStable ? " • tone stable" : " • tone needs retake/review") : "";
+      coverageRows.append(node("div", `grading-quality-row ${status.captured ? (status.kind === "edge" && status.toneStable === false ? "pending" : "pass") : "pending"}`, `${regionLabel(region)} • ${status.captured ? "captured" : "needed"}${tone}`));
+    }
+    nextButton.disabled = !state.nextRegion;
+  }
+
+  async function loadCoverage() {
+    const treasureId = treasureSelect.value;
+    if (!treasureId) {
+      renderCoverage(null);
+      return null;
+    }
+    coverageHeading.textContent = "Loading stored macro coverage…";
+    nextButton.disabled = true;
+    try {
+      const payload = await api(`/api/grading/treasures/${encodeURIComponent(treasureId)}/pregrade-report`);
+      const state = buildMacroCoverageState(payload, sideSelect.value);
+      renderCoverage(state);
+      return state;
+    } catch (error) {
+      currentCoverage = null;
+      coverageRows.replaceChildren();
+      coverageHeading.textContent = "Macro coverage unavailable";
+      coverageCopy.textContent = error.message;
+      nextButton.disabled = true;
+      return null;
+    }
   }
 
   function renderResult(result) {
@@ -244,7 +301,16 @@ export function createVaultGradingMacroUi() {
       summary.className = "grading-quality-summary miss";
     });
   });
-  treasureSelect.addEventListener("change", updateSaveState);
+  treasureSelect.addEventListener("change", () => {
+    updateSaveState();
+    loadCoverage();
+  });
+  sideSelect.addEventListener("change", () => loadCoverage());
+  nextButton.addEventListener("click", () => {
+    if (!currentCoverage?.nextRegion) return;
+    regionSelect.value = currentCoverage.nextRegion;
+    regionSelect.dispatchEvent(new Event("change"));
+  });
 
   saveButton.addEventListener("click", async () => {
     const treasureId = treasureSelect.value;
@@ -295,6 +361,7 @@ export function createVaultGradingMacroUi() {
       saveStatus.className = "grading-quality-summary pass";
       const refresh = [...persistencePanel.querySelectorAll("button")].find((button) => button.textContent?.includes("Refresh saved history"));
       if (refresh && !refresh.disabled) refresh.click();
+      await loadCoverage();
     } catch (error) {
       saveStatus.textContent = error.message;
       saveStatus.className = "grading-quality-summary miss";
@@ -305,7 +372,8 @@ export function createVaultGradingMacroUi() {
   });
 
   updateSaveState();
-  return Object.freeze({ panel, analyzeLoadedMacro });
+  loadCoverage();
+  return Object.freeze({ panel, analyzeLoadedMacro, loadCoverage });
 }
 
 createVaultGradingMacroUi();
