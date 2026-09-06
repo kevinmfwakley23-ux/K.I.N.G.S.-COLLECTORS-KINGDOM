@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { estimateAdvisoryGradeRange } from "./aggregate.mjs";
-import { buildExplainableGradingReport } from "./dimensions.mjs";
+import { buildExplainableGradingReport } from "./dimensions-macro.mjs";
 import { findFinding } from "./findings.mjs";
 import { VaultError } from "../../vault/src/service.mjs";
 
@@ -154,6 +154,7 @@ export function createExplainableGradingReportService({ vaultStore, analysisRepo
       rawEvidenceImmutable: true,
       collectorReviewAppendOnly: true,
       independentPhysicalScaleAvailable: explainableReport.physicalMeasurement.physicalMeasurementAvailable,
+      macroCornerEdgeEvidenceSupported: explainableReport.macroCornerEdgeEvidenceSupported === true,
       independentlyVerifiedPixels: false,
       officialGrade: false,
       officialSubgrades: false,

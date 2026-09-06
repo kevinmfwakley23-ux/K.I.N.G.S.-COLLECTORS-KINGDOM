@@ -10,6 +10,7 @@ export const VAULT_EXTRA_MODULES = Object.freeze([
   "./vault-grading-color-ui.js",
   "./vault-grading-autograph-ui.js",
   "./vault-grading-persistence-ui.js",
+  "./vault-grading-macro-ui.js",
   "./vault-grading-report-ui.js"
 ]);
 
