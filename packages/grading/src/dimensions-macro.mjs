@@ -6,6 +6,7 @@ import {
 
 const CORNER_REGIONS = new Set(["top-left", "top-right", "bottom-left", "bottom-right"]);
 const EDGE_REGIONS = new Set(["left-edge", "right-edge", "top-edge", "bottom-edge"]);
+const EXPECTED_REGION_COUNT = 4;
 
 function rounded(value, digits = 3) {
   const factor = 10 ** digits;
@@ -14,10 +15,15 @@ function rounded(value, digits = 3) {
 
 function summarizeCandidates(candidates) {
   const usable = candidates.filter((candidate) => candidate.usable);
+  const regions = [...new Set(usable.map((candidate) => candidate.region))];
+  const toneStableRegions = [...new Set(usable.filter((candidate) => candidate.method.includes("+tone-stable")).map((candidate) => candidate.region))];
   return Object.freeze({
     available: usable.length > 0,
-    toneStable: usable.some((candidate) => candidate.method.includes("+tone-stable")),
-    regions: Object.freeze([...new Set(usable.map((candidate) => candidate.region))]),
+    regions: Object.freeze(regions),
+    regionCount: regions.length,
+    coverageComplete: regions.length === EXPECTED_REGION_COUNT,
+    toneStableRegions: Object.freeze(toneStableRegions),
+    toneReferenceComplete: toneStableRegions.length === EXPECTED_REGION_COUNT,
     sourceAnalysisIds: Object.freeze([...new Set(usable.map((candidate) => candidate.recordId).filter(Boolean))]),
     sourceMediaIds: Object.freeze([...new Set(usable.flatMap((candidate) => candidate.sourceMediaIds))]),
     reviewCandidateCount: usable.reduce((sum, candidate) => sum + Math.max(0, candidate.reviewCandidateCount || 0), 0)
@@ -54,19 +60,23 @@ function enhanceDimension(summary, { side, dimension, macro }) {
   if (!relevant.available) return summary;
 
   const removedEvidence = new Set();
-  if (dimension === "corners") removedEvidence.add(`${side}:macro-corner-detail`);
-  if (dimension === "edges" && relevant.toneStable) removedEvidence.add(`${side}:edge-color-whitening-detail`);
+  if (dimension === "corners" && relevant.coverageComplete) removedEvidence.add(`${side}:macro-corner-detail`);
+  if (dimension === "edges" && relevant.toneReferenceComplete) removedEvidence.add(`${side}:edge-color-whitening-detail`);
 
   const missingEvidence = Object.freeze((summary.missingEvidence ?? []).filter((entry) => !removedEvidence.has(entry)));
-  const completenessBoost = dimension === "corners" ? 0.15 : relevant.toneStable ? 0.15 : 0.08;
+  const completenessBoost = dimension === "corners"
+    ? Math.min(0.15, 0.0375 * relevant.regionCount)
+    : Math.min(0.15, 0.02 * relevant.regionCount + 0.0175 * relevant.toneStableRegions.length);
   const completeness = rounded(Math.min(0.9, Number(summary.completeness ?? 0) + completenessBoost));
   const limitations = [
     ...(summary.limitations ?? []),
     dimension === "corners"
-      ? `Dedicated high-resolution macro corner evidence is available for ${relevant.regions.join(", ")}. It improves evidence completeness but does not imply that uncaptured corners were inspected and does not convert an image anomaly into a confirmed ding, chip, bend, layering defect or official subgrade.`
-      : relevant.toneStable
-        ? `Dedicated high-resolution macro edge evidence is available for ${relevant.regions.join(", ")} with a stable local border-tone reference. The generic edge whitening-detail gap is cleared for the captured edge evidence in this report; lighter-tone findings remain possible-condition evidence rather than confirmed whitening or chipping, and uncaptured edges are not implied to be inspected.`
-        : `Dedicated high-resolution macro edge contour evidence is available for ${relevant.regions.join(", ")}, but the local border-tone reference did not pass the stability gate; whitening/color-loss detail therefore remains incomplete and uncaptured edges are not implied to be inspected.`
+      ? relevant.coverageComplete
+        ? "Dedicated high-resolution macro evidence covers all four named corners. The generic macro-corner-detail gap is cleared, but image anomalies remain advisory and do not become confirmed damage or an official subgrade."
+        : `Dedicated high-resolution macro corner evidence currently covers ${relevant.regionCount}/4 named corners (${relevant.regions.join(", ")}). Completeness improves proportionally, but the generic macro-corner-detail gap remains until all four corners have usable captures.`
+      : relevant.toneReferenceComplete
+        ? "Dedicated high-resolution macro edge evidence covers all four named edges with stable local border-tone references. The generic edge whitening-detail gap is cleared, while lighter-tone findings remain possible-condition evidence rather than confirmed whitening or chipping."
+        : `Dedicated high-resolution macro edge evidence currently covers ${relevant.regionCount}/4 named edges (${relevant.regions.join(", ") || "none"}); stable local tone reference covers ${relevant.toneStableRegions.length}/4. Completeness improves only for captured evidence, and the generic whitening/color-loss detail gap remains until all four edges have stable usable tone references.`
   ];
 
   return Object.freeze({
@@ -75,8 +85,10 @@ function enhanceDimension(summary, { side, dimension, macro }) {
     missingEvidence,
     limitations: Object.freeze(limitations),
     macroEvidenceAvailable: true,
-    macroToneReferenceStable: relevant.toneStable,
+    macroCoverageComplete: relevant.coverageComplete,
+    macroToneReferenceComplete: relevant.toneReferenceComplete,
     macroCapturedRegions: relevant.regions,
+    macroToneStableRegions: relevant.toneStableRegions,
     macroSourceAnalysisIds: relevant.sourceAnalysisIds,
     macroSourceMediaIds: relevant.sourceMediaIds,
     macroReviewCandidateCount: relevant.reviewCandidateCount,
@@ -104,11 +116,11 @@ export function buildExplainableGradingReport(records = [], reviews = []) {
     previousReportVersion: base.reportVersion,
     dimensions: Object.freeze(dimensions),
     macroCornerEdgeEvidenceSupported: true,
-    macroEvidenceAuthority: "advisory-dedicated-region-scoped-corner-edge-capture",
+    macroEvidenceAuthority: "advisory-dedicated-region-scoped-four-corner-four-edge-capture",
     officialSubgrades: false,
     physicalAuthentication: false,
     mutatesTreasure: false,
-    disclaimer: `${base.disclaimer} Dedicated macro corner/edge captures improve evidence completeness only for their explicitly captured region and only when their capture gate passes; lighter-tone candidates do not confirm whitening, trimming, alteration or professional-grade condition.`
+    disclaimer: `${base.disclaimer} Dedicated macro corner/edge captures improve evidence completeness only for their explicitly captured regions. Generic corner-detail or edge whitening-detail gaps remain until the complete relevant four-region evidence set passes its gates; lighter-tone candidates do not confirm whitening, trimming, alteration or professional-grade condition.`
   });
 }
 
