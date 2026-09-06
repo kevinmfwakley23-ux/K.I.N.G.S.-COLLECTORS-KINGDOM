@@ -2,6 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { buildExplainableGradingReport } from "../packages/grading/src/dimensions-macro.mjs";
 
+const CORNERS = ["top-left", "top-right", "bottom-left", "bottom-right"];
+const EDGES = ["left-edge", "right-edge", "top-edge", "bottom-edge"];
+
 function macroCoverage({ region, method = "macro-corner-edge-review-v1+tone-stable", mediaId }) {
   return {
     detector: "macro-corner-edge",
@@ -16,7 +19,7 @@ function macroCoverage({ region, method = "macro-corner-edge-review-v1+tone-stab
   };
 }
 
-function record({ includeCorner = true, includeEdge = true, edgeMethod = "macro-corner-edge-review-v1+tone-stable" } = {}) {
+function record({ cornerRegions = CORNERS, edgeRegions = EDGES, unstableEdgeRegions = [] } = {}) {
   const detectorCoverage = [
     {
       detector: "contour",
@@ -37,13 +40,23 @@ function record({ includeCorner = true, includeEdge = true, edgeMethod = "macro-
       method: "paired-raking-light-difference-v1"
     }
   ];
-  if (includeCorner) detectorCoverage.push(macroCoverage({ region: "top-left", mediaId: "front-macro-corner" }));
-  if (includeEdge) detectorCoverage.push(macroCoverage({ region: "left-edge", method: edgeMethod, mediaId: "front-macro-edge" }));
+  for (const region of cornerRegions) {
+    detectorCoverage.push(macroCoverage({ region, mediaId: `front-macro-${region}` }));
+  }
+  for (const region of edgeRegions) {
+    detectorCoverage.push(macroCoverage({
+      region,
+      mediaId: `front-macro-${region}`,
+      method: unstableEdgeRegions.includes(region)
+        ? "macro-corner-edge-review-v1+tone-unavailable"
+        : "macro-corner-edge-review-v1+tone-stable"
+    }));
+  }
 
   return {
     id: "analysis-front",
     treasureId: "treasure-1",
-    sourceMediaIds: ["front-primary", "front-raking", "front-macro-corner", "front-macro-edge"],
+    sourceMediaIds: ["front-primary", "front-raking", ...cornerRegions.map((region) => `front-macro-${region}`), ...edgeRegions.map((region) => `front-macro-${region}`)],
     analysisSha256: "a".repeat(64),
     analysis: {
       evidenceClass: "ai-card-pregrade",
@@ -60,7 +73,7 @@ function record({ includeCorner = true, includeEdge = true, edgeMethod = "macro-
   };
 }
 
-test("macro-aware report clears only the corner and stable-tone edge detail gaps actually captured", () => {
+test("macro-aware report clears global corner and edge detail gaps only after complete four-region evidence sets", () => {
   const report = buildExplainableGradingReport([record()], []);
   assert.equal(report.reportVersion, "kingdom-explainable-grading-report-v3");
   assert.equal(report.previousReportVersion, "kingdom-explainable-grading-report-v2");
@@ -68,15 +81,18 @@ test("macro-aware report clears only the corner and stable-tone edge detail gaps
 
   const corners = report.dimensions.front.corners;
   assert.equal(corners.macroEvidenceAvailable, true);
-  assert.deepEqual(corners.macroCapturedRegions, ["top-left"]);
+  assert.equal(corners.macroCoverageComplete, true);
+  assert.deepEqual(corners.macroCapturedRegions, CORNERS);
   assert.equal(corners.missingEvidence.includes("front:macro-corner-detail"), false);
   assert.ok(corners.completeness > 0.55);
   assert.equal(corners.officialSubgrade, false);
 
   const edges = report.dimensions.front.edges;
   assert.equal(edges.macroEvidenceAvailable, true);
-  assert.equal(edges.macroToneReferenceStable, true);
-  assert.deepEqual(edges.macroCapturedRegions, ["left-edge"]);
+  assert.equal(edges.macroCoverageComplete, true);
+  assert.equal(edges.macroToneReferenceComplete, true);
+  assert.deepEqual(edges.macroCapturedRegions, EDGES);
+  assert.deepEqual(edges.macroToneStableRegions, EDGES);
   assert.equal(edges.missingEvidence.includes("front:edge-color-whitening-detail"), false);
   assert.ok(edges.completeness > 0.6);
   assert.equal(edges.officialSubgrade, false);
@@ -84,27 +100,39 @@ test("macro-aware report clears only the corner and stable-tone edge detail gaps
   assert.equal(report.mutatesTreasure, false);
 });
 
-test("a corner macro never clears an edge evidence gap", () => {
-  const report = buildExplainableGradingReport([record({ includeEdge: false })], []);
-  assert.equal(report.dimensions.front.corners.macroEvidenceAvailable, true);
+test("one corner macro improves completeness but never clears the global corner-detail gap or an edge gap", () => {
+  const report = buildExplainableGradingReport([record({ cornerRegions: ["top-left"], edgeRegions: [] })], []);
+  const corners = report.dimensions.front.corners;
+  assert.equal(corners.macroEvidenceAvailable, true);
+  assert.equal(corners.macroCoverageComplete, false);
+  assert.deepEqual(corners.macroCapturedRegions, ["top-left"]);
+  assert.equal(corners.missingEvidence.includes("front:macro-corner-detail"), true);
+  assert.match(corners.limitations.at(-1), /1\/4 named corners/i);
   assert.equal(report.dimensions.front.edges.macroEvidenceAvailable, undefined);
   assert.equal(report.dimensions.front.edges.missingEvidence.includes("front:edge-color-whitening-detail"), true);
 });
 
-test("an edge macro never clears the corner-detail gap", () => {
-  const report = buildExplainableGradingReport([record({ includeCorner: false })], []);
-  assert.equal(report.dimensions.front.edges.macroEvidenceAvailable, true);
+test("one edge macro improves completeness but never clears the global whitening-detail gap or corner-detail gap", () => {
+  const report = buildExplainableGradingReport([record({ cornerRegions: [], edgeRegions: ["left-edge"] })], []);
+  const edges = report.dimensions.front.edges;
+  assert.equal(edges.macroEvidenceAvailable, true);
+  assert.equal(edges.macroCoverageComplete, false);
+  assert.equal(edges.macroToneReferenceComplete, false);
+  assert.deepEqual(edges.macroCapturedRegions, ["left-edge"]);
+  assert.equal(edges.missingEvidence.includes("front:edge-color-whitening-detail"), true);
+  assert.match(edges.limitations.at(-1), /1\/4 named edges/i);
   assert.equal(report.dimensions.front.corners.macroEvidenceAvailable, undefined);
   assert.equal(report.dimensions.front.corners.missingEvidence.includes("front:macro-corner-detail"), true);
 });
 
-test("macro edge contour evidence improves completeness but keeps whitening detail missing when tone reference fails closed", () => {
-  const report = buildExplainableGradingReport([record({ edgeMethod: "macro-corner-edge-review-v1+tone-unavailable" })], []);
+test("all four edge captures still keep whitening detail incomplete when any local tone reference fails closed", () => {
+  const report = buildExplainableGradingReport([record({ cornerRegions: [], unstableEdgeRegions: ["bottom-edge"] })], []);
   const edges = report.dimensions.front.edges;
-  assert.equal(edges.macroEvidenceAvailable, true);
-  assert.equal(edges.macroToneReferenceStable, false);
+  assert.equal(edges.macroCoverageComplete, true);
+  assert.equal(edges.macroToneReferenceComplete, false);
+  assert.equal(edges.macroToneStableRegions.length, 3);
   assert.equal(edges.missingEvidence.includes("front:edge-color-whitening-detail"), true);
-  assert.match(edges.limitations.at(-1), /tone reference did not pass/i);
+  assert.match(edges.limitations.at(-1), /stable local tone reference covers 3\/4/i);
 });
 
 test("macro evidence never promotes a dimension that lacks its base whole-card evidence floor", () => {
