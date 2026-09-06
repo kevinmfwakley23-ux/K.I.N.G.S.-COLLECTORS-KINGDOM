@@ -33,18 +33,20 @@ test("pre-grade persistence UI searches the paged Vault and appends SHA-linked a
   assert.doesNotMatch(source, /officialGrade\s*:\s*true|physicalAuthentication\s*:\s*true|mayMutateValue\s*:\s*true/);
 });
 
-test("saved pre-grade UI exposes immutable history plus read-only Kingdom advisory range without third-party grading claims", async () => {
+test("saved pre-grade UI exposes immutable history, calibration status and read-only Kingdom advisory range", async () => {
   const source = await readFile(uiUrl, "utf8");
   assert.match(source, /analysisSha256/);
   assert.match(source, /linked media/);
-  assert.match(source, /capture record/);
-  assert.match(source, /detector coverage record/);
+  assert.match(source, /calibration record/);
+  assert.match(source, /validCalibrationCount/);
   assert.match(source, /detector signal/);
   assert.match(source, /Append-only advisory evidence/);
+  assert.match(source, /Physical millimeter measurements persist only when/i);
+  assert.match(source, /card-size profile is never used as the scale source/i);
   assert.match(source, /\/pregrade-estimate/);
   assert.match(source, /Kingdom advisory evidence range/);
   assert.match(source, /Evidence completeness/);
-  assert.match(source, /Range confidence/);
+  assert.match(source, /Evidence level/);
   assert.match(source, /Still missing/);
   assert.match(source, /Not an official PSA\/BGS\/CGC grade/);
   assert.match(source, /does not authenticate the physical card/);

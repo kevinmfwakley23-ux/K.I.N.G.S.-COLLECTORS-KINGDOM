@@ -6,11 +6,16 @@ K.I.N.G.S. Collector's Kingdom is being built as a collector-first environment f
 
 Active milestone: **IMP-005 — Royal Vault, Phase 1**.
 
-**Latest verified implementation checkpoint:** **Explainable AI Card Grading Report + Dimension Evidence**, integrated on the current official owner-approved Kingdom branding + installable PWA baseline.
+**Latest verified branch checkpoint:** **Calibrated Physical Measurement + Capture Scale**, integrated with the explainable AI card grading report and the official owner-approved Kingdom branding + installable PWA baseline.
 
-**Latest verified implementation gate:** **Kingdom Quality Gates #630** — run `33995211864` — **PASS** on combined implementation head `c0e670f82dee0e71ca1585b7da678a071ae1c116`.
+**Latest verified implementation gate:** **Kingdom Quality Gates #637** — run `34017972903` — **PASS** on branch head `a89f4b6eeddb7c6b168cae9c580bbac4d696d42f`.
 
-#630 passed lint, type contracts, **244/244 tests**, production build/artifact verification, and the production dependency audit with **0 vulnerabilities**.
+#637 passed lint, type contracts, **249/249 tests**, production build/artifact verification, and the production dependency audit with **0 vulnerabilities**.
+
+**Working branch:** `imp-005-calibrated-physical-measurement`  
+**Pull request:** `#20` — `IMP-005: calibrated physical measurement scale`
+
+This branch is verified by automation and ready for review/merge consideration. It is not the `main` production baseline until PR #20 is merged.
 
 The official K.I.N.G.S. Collector's Kingdom crest remains wired into the landing page, Royal Gate, Great Hall/Vault/room topbars through the shared browser bootstrap, and the install manifest. The install service worker remains static-only: it excludes `/api/` requests and document navigations so authenticated collector records, Vault data, grading evidence and other owner data are not silently cached.
 
@@ -65,7 +70,7 @@ Research: `docs/research/2026-09-05-IMP-005-AI-CARD-PREGRADING.md`.
 
 ## Explainable grading report — verified capability
 
-The current verified report makes grading evidence inspectable instead of hiding it behind a single number.
+The report makes grading evidence inspectable instead of hiding it behind a single number.
 
 It includes:
 
@@ -84,6 +89,27 @@ It includes:
 - no authoritative grade, condition, authenticity or value mutation.
 
 Research: `docs/research/2026-09-05-IMP-005-GRADING-EXPLAINABILITY.md`.
+
+## Calibrated physical measurement — verified branch capability
+
+The branch `imp-005-calibrated-physical-measurement` adds a real physical-scale layer to grading evidence without crossing the truth boundary.
+
+Verified capability includes:
+
+- versioned physical-scale calibration evidence inside append-only pre-grade records;
+- accepted calibration reference types: `kingdom-square-fiducial-v1`, `kingdom-rectangle-fiducial-v1`, and `known-size-reference-v1`;
+- same-plane known-size marker evidence as the only source for pixel-to-millimeter conversion;
+- fail-closed validation when the reference is cropped, ambiguous, distorted, skewed, below confidence tolerance, or not in the same plane;
+- perspective-aware card width/height estimates with uncertainty and confidence;
+- measured-dimension comparison against selected card-size profiles as advisory evidence only, never authenticity proof;
+- calibrated approximate defect bounding-box millimeter spans only when the source media has valid calibration;
+- normalized-only metrics when calibration is absent or invalid;
+- physical measurement summary in the explainable grading report response and UI;
+- browser calibration input/preview guidance connected to the SHA-linked private Vault media persistence path;
+- regression tests that prevent card-size profiles from becoming fake scale sources;
+- all official-grade, authentication, condition, value and ownership mutation flags remain false.
+
+Research: `docs/research/2026-09-05-IMP-005-CALIBRATED-PHYSICAL-MEASUREMENT.md`.
 
 ## Durable engineering records
 
@@ -126,6 +152,7 @@ Current verified Vault capability includes:
 - duplicate-review warnings and normalized search/filter/sort;
 - append-only audit/provenance history;
 - append-only hashed pre-grade analysis and finding-review history;
+- append-only calibrated physical measurement evidence on the verified PR #20 branch;
 - real statistics and currency-separated purchase totals;
 - portable versioned JSON export;
 - transactional review-first JSON/CSV migration;
@@ -153,23 +180,12 @@ Market value remains absent until a real, legally usable valuation system is imp
 
 Likewise, a Kingdom AI pre-grade is an **estimated condition analysis** based on captured evidence. It remains distinct from an official PSA/BGS/CGC/SGC grade, from professional autograph authentication, and from physical-card authentication.
 
+Calibrated physical measurement is a scale-aided advisory evidence layer. It estimates dimensions only when an independent same-capture known-size reference is valid; it does not authenticate a physical card, prove factory size, prove trimming, or replace hands-on inspection.
+
 ## Current next target
 
-**IMP-005 — Calibrated Physical Measurement + Capture Scale.**
+**Merge/review gate:** review PR #20 and merge only if the final PR head remains green.
 
-The next measurement slice must not infer millimeters merely because a card-size profile is known. Absolute physical measurements require an independent known-size reference in the capture.
-
-Build next in this order:
-
-1. research and define an independent calibration-reference format suitable for phone/Chromebook/desktop capture;
-2. version the calibration geometry and fail closed when the scale reference is absent, cropped, distorted or ambiguous;
-3. compute pixel-to-millimeter calibration only from the independent reference;
-4. add perspective-aware card width/height estimates with explicit confidence/uncertainty;
-5. compare measured card dimensions against the selected card-size profile as advisory evidence, never authenticity proof;
-6. convert normalized detector bounding spans to approximate millimeter spans only when calibration quality is sufficient;
-7. retain normalized metrics when physical calibration is unavailable;
-8. expose calibration status, source image, profile, confidence and limitations in the explainable report;
-9. add responsive capture guidance and calibration validation;
-10. pass full Kingdom Quality Gates and update the durable records before merge.
+**Next engineering slice after merge:** macro corner/edge capture refinement. Build higher-detail corner and edge capture guidance and detector evidence so tiny whitening, layering, bends, dings and edge wear are represented more honestly than whole-card contour alone.
 
 Later separate milestones remain: reliable manufacturing-vs-handling origin assessment, lawful evidence-backed market valuation/value history, image-based collectible identification, alternate-light/UV/spectral analysis, additional official grader integrations, insurance/reporting expansion, **native Android APK packaging with adaptive launcher assets**, Marketplace ownership transfer/settlement, and destructive bulk archive/delete flows.

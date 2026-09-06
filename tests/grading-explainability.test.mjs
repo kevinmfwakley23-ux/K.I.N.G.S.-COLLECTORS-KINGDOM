@@ -74,7 +74,8 @@ test("normalized defect extent reports image-relative area/span without fabricat
 
 test("explainable report exposes eight front/back dimensions and fails closed for missing back evidence", () => {
   const report = buildExplainableGradingReport([record()], []);
-  assert.equal(report.reportVersion, "kingdom-explainable-grading-report-v1");
+  assert.equal(report.reportVersion, "kingdom-explainable-grading-report-v2");
+  assert.equal(report.previousReportVersion, "kingdom-explainable-grading-report-v1");
   assert.deepEqual(Object.keys(report.dimensions.front), ["centering", "corners", "edges", "surface"]);
   assert.deepEqual(Object.keys(report.dimensions.back), ["centering", "corners", "edges", "surface"]);
   assert.equal(report.dimensions.front.centering.available, true);
@@ -85,6 +86,7 @@ test("explainable report exposes eight front/back dimensions and fails closed fo
   assert.equal(report.dimensions.back.corners.available, false);
   assert.equal(report.dimensions.back.edges.available, false);
   assert.equal(report.dimensions.back.surface.available, false);
+  assert.equal(report.physicalMeasurement.physicalMeasurementAvailable, false);
   assert.equal(report.officialSubgrades, false);
   assert.equal(report.physicalAuthentication, false);
   assert.equal(report.mutatesTreasure, false);

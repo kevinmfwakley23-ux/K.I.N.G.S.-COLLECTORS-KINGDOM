@@ -1,3 +1,6 @@
+import { normalizeCalibrationEvidence } from "./calibration.mjs";
+import { getCardSizeProfile } from "./profiles.mjs";
+
 const DEFECT_TYPES = new Set([
   "corner-whitening", "corner-rounding", "corner-ding", "corner-bend", "corner-layering", "corner-crease",
   "edge-chipping", "edge-roughness", "edge-notch", "edge-layering",
@@ -99,6 +102,11 @@ export function normalizeDetectorCoverage(input = {}) {
   });
 }
 
+export function normalizePhysicalCalibrationEvidence(input = {}, { cardSizeProfile = "custom" } = {}) {
+  const profile = typeof cardSizeProfile === "string" ? getCardSizeProfile(cardSizeProfile) : cardSizeProfile;
+  return normalizeCalibrationEvidence(input, { cardSizeProfile: profile });
+}
+
 export function createAutographComparisonEvidence(input = {}) {
   const references = Array.isArray(input.references) ? input.references : [];
   if (references.length < 1) throw new RangeError("Autograph comparison requires at least one sourced reference exemplar.");
@@ -130,6 +138,9 @@ export function createPregradeAnalysis(input = {}) {
   const defects = Array.isArray(input.defects) ? input.defects.map(normalizeDefectEvidence) : [];
   const captures = Array.isArray(input.captureQuality) ? input.captureQuality.map(createCaptureQualityEvidence) : [];
   const detectorCoverage = Array.isArray(input.detectorCoverage) ? input.detectorCoverage.map(normalizeDetectorCoverage) : [];
+  const calibrationEvidence = Array.isArray(input.calibrationEvidence)
+    ? input.calibrationEvidence.map((entry) => normalizePhysicalCalibrationEvidence(entry, { cardSizeProfile: input.cardSizeProfile ?? "custom" }))
+    : [];
   const estimatedGradeRange = input.estimatedGradeRange == null ? null : {
     min: Number(input.estimatedGradeRange.min),
     max: Number(input.estimatedGradeRange.max)
@@ -146,6 +157,7 @@ export function createPregradeAnalysis(input = {}) {
     cardSizeProfile: safeText(input.cardSizeProfile ?? "custom", "Card-size profile", 80),
     centering: input.centering ?? null,
     captureQuality: captures,
+    calibrationEvidence,
     detectorCoverage,
     defects,
     autographComparison: input.autographComparison == null ? null : createAutographComparisonEvidence(input.autographComparison),

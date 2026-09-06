@@ -139,6 +139,7 @@ export function createExplainableGradingReportService({ vaultStore, analysisRepo
     const analyses = analysisRepository.listForTreasure(collector.id, treasureId, { limit: 200 });
     const reviews = reviewRepository.listForTreasure(collector.id, treasureId, { limit: 1000 });
     const rawEvidenceOverallEstimate = estimateAdvisoryGradeRange(analyses);
+    const explainableReport = buildExplainableGradingReport(analyses, reviews);
     return Object.freeze({
       treasureId,
       rawEvidenceOverallEstimate,
@@ -146,11 +147,13 @@ export function createExplainableGradingReportService({ vaultStore, analysisRepo
       overallEstimateAuthority: "raw-stored-analysis-evidence",
       overallEstimateReviewAware: false,
       dimensionInterpretationReviewAware: true,
-      explainableReport: buildExplainableGradingReport(analyses, reviews),
+      explainableReport,
+      physicalMeasurement: explainableReport.physicalMeasurement,
       reviewHistory: Object.freeze(reviews.map(publicReview)),
       sourceAnalysisCount: analyses.length,
       rawEvidenceImmutable: true,
       collectorReviewAppendOnly: true,
+      independentPhysicalScaleAvailable: explainableReport.physicalMeasurement.physicalMeasurementAvailable,
       independentlyVerifiedPixels: false,
       officialGrade: false,
       officialSubgrades: false,
