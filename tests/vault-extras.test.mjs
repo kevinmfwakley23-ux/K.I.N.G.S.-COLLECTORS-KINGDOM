@@ -15,6 +15,7 @@ test("Vault enhancement modules load in dependency-safe order", async () => {
     "./vault-grading-color-ui.js",
     "./vault-grading-autograph-ui.js",
     "./vault-grading-persistence-ui.js",
+    "./vault-grading-macro-ui.js",
     "./vault-grading-report-ui.js"
   ]);
 
