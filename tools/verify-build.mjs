@@ -50,6 +50,8 @@ const required = [
   "dist/apps/web/public/vault-grading-image-core.js",
   "dist/apps/web/public/vault-grading-geometry-core.js",
   "dist/apps/web/public/vault-grading-contour-core.js",
+  "dist/apps/web/public/vault-grading-macro-core.js",
+  "dist/apps/web/public/vault-grading-macro-ui.js",
   "dist/apps/web/public/vault-grading-surface-core.js",
   "dist/apps/web/public/vault-grading-color-core.js",
   "dist/apps/web/public/vault-grading-color-ui.js",
@@ -87,6 +89,7 @@ const required = [
   "dist/packages/grading/src/evidence.mjs",
   "dist/packages/grading/src/aggregate.mjs",
   "dist/packages/grading/src/findings.mjs",
+  "dist/packages/grading/src/calibration.mjs",
   "dist/packages/grading/src/measurement.mjs",
   "dist/packages/grading/src/dimensions.mjs",
   "dist/packages/grading/src/review-repository.mjs",
@@ -115,4 +118,4 @@ const required = [
 for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
 if (manifest.phase !== "IMP-005-ROYAL-VAULT-PHASE-1") throw new Error("Unexpected build phase in manifest.");
-console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 including AI card pre-grading profiles, centering, capture-quality/card-geometry/contour/paired-raking-light surface/color analysis, web-backed autograph visual similarity with authenticated Commons search/proxy, SHA-linked detector coverage, append-only hashed pre-grade persistence, read-only server-derived Kingdom advisory range, deterministic finding identity, normalized defect extent, explainable front/back dimension summaries, append-only finding-review/report service and responsive report/review UI, catalog/cert evidence, provenance, saved views, bulk reorganization, transactional import, Royal Intake, scanner, secure media and Kingdom voice output.");
+console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 including AI card pre-grading profiles, centering, capture-quality/card-geometry/contour/macro-corner-edge/paired-raking-light surface/color analysis, web-backed autograph visual similarity with authenticated Commons search/proxy, SHA-linked detector coverage, append-only hashed pre-grade persistence, read-only server-derived Kingdom advisory range, deterministic finding identity, normalized defect extent, explainable front/back dimension summaries, append-only finding-review/report service and responsive report/review UI, catalog/cert evidence, provenance, saved views, bulk reorganization, transactional import, Royal Intake, scanner, secure media and Kingdom voice output.");
