@@ -7,9 +7,10 @@ const DEFECT_TYPES = new Set([
   "surface-scratch", "surface-scuff", "surface-print-line", "surface-dent", "surface-indentation", "surface-stain",
   "surface-wrinkle", "surface-crease", "gloss-loss", "print-spot", "registration", "focus", "color-fade", "discoloration",
   "suspected-trimming", "suspected-recoloration", "suspected-restoration", "suspected-cleaning", "suspected-altered-stock",
-  "corner-contour-anomaly", "edge-contour-anomaly", "surface-reflectance-anomaly"
+  "corner-contour-anomaly", "edge-contour-anomaly", "surface-reflectance-anomaly",
+  "corner-macro-contour-anomaly", "edge-macro-contour-anomaly", "corner-border-tone-anomaly", "edge-border-tone-anomaly"
 ]);
-const DETECTOR_TYPES = new Set(["contour", "paired-raking-light"]);
+const DETECTOR_TYPES = new Set(["contour", "paired-raking-light", "macro-corner-edge"]);
 
 function bounded(value, name) {
   if (!Number.isFinite(value) || value < 0 || value > 1) throw new RangeError(`${name} must be between 0 and 1.`);
