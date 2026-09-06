@@ -7,8 +7,8 @@ import { normalizedBoundingBoxExtent } from "../packages/grading/src/measurement
 
 const standardProfile = Object.freeze({ id: "standard-western", nominalWidthMm: 63.5, nominalHeightMm: 88.9 });
 
-function validCalibration(overrides = {}) {
-  return normalizeCalibrationEvidence({
+function calibrationInput(overrides = {}) {
+  return {
     referenceType: "kingdom-square-fiducial-v1",
     sourceMediaId: "front-primary",
     side: "front",
@@ -27,10 +27,14 @@ function validCalibration(overrides = {}) {
     cardRightHeightPx: 356,
     confidence: 0.82,
     ...overrides
-  }, { cardSizeProfile: standardProfile });
+  };
 }
 
-function pregradeRecord(calibration = validCalibration()) {
+function validCalibration(overrides = {}) {
+  return normalizeCalibrationEvidence(calibrationInput(overrides), { cardSizeProfile: standardProfile });
+}
+
+function pregradeRecord(calibration = calibrationInput()) {
   const analysis = createPregradeAnalysis({
     analysisId: "analysis-front",
     treasureId: "treasure-1",
