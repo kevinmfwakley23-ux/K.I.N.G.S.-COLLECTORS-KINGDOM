@@ -25,6 +25,7 @@ test("macro corner and edge evidence types are admitted only as advisory detecto
   const coverage = normalizeDetectorCoverage({
     detector: "macro-corner-edge",
     side: "front",
+    region: "top-left",
     sourceMediaIds: ["macro-media-1"],
     completed: true,
     usableForConditionInference: true,
@@ -33,5 +34,20 @@ test("macro corner and edge evidence types are admitted only as advisory detecto
     note: "Dedicated macro capture."
   });
   assert.equal(coverage.detector, "macro-corner-edge");
+  assert.equal(coverage.region, "top-left");
   assert.equal(coverage.advisoryOnly, true);
+});
+
+test("macro detector coverage fails closed without a supported structured region", () => {
+  const base = {
+    detector: "macro-corner-edge",
+    side: "front",
+    sourceMediaIds: ["macro-media-1"],
+    completed: true,
+    usableForConditionInference: true,
+    reviewCandidateCount: 0,
+    method: "macro-corner-edge-review-v1+tone-stable"
+  };
+  assert.throws(() => normalizeDetectorCoverage(base), /Macro detector region is required/);
+  assert.throws(() => normalizeDetectorCoverage({ ...base, region: "whole-front" }), /four named corners or four named edges/);
 });
