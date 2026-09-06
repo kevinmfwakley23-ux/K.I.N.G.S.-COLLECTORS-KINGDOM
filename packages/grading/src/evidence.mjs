@@ -11,6 +11,10 @@ const DEFECT_TYPES = new Set([
   "corner-macro-contour-anomaly", "edge-macro-contour-anomaly", "corner-border-tone-anomaly", "edge-border-tone-anomaly"
 ]);
 const DETECTOR_TYPES = new Set(["contour", "paired-raking-light", "macro-corner-edge"]);
+const MACRO_REGIONS = new Set([
+  "top-left", "top-right", "bottom-left", "bottom-right",
+  "left-edge", "right-edge", "top-edge", "bottom-edge"
+]);
 
 function bounded(value, name) {
   if (!Number.isFinite(value) || value < 0 || value > 1) throw new RangeError(`${name} must be between 0 and 1.`);
@@ -90,9 +94,19 @@ export function normalizeDetectorCoverage(input = {}) {
   const sourceMediaIds = [...new Set(input.sourceMediaIds.map((value) => safeText(value, "Detector source media ID", 160)))];
   const count = Number(input.reviewCandidateCount);
   if (!Number.isInteger(count) || count < 0 || count > 1000) throw new RangeError("Detector review candidate count must be an integer between 0 and 1000.");
+
+  let macroRegion = null;
+  if (detector === "macro-corner-edge") {
+    macroRegion = safeText(input.region, "Macro detector region", 40);
+    if (!MACRO_REGIONS.has(macroRegion)) throw new RangeError("Macro detector coverage region must be one of the four named corners or four named edges.");
+  } else if (input.region != null) {
+    throw new RangeError("Detector region is currently supported only for macro-corner-edge coverage.");
+  }
+
   return freeze({
     detector,
     side,
+    ...(macroRegion == null ? {} : { region: macroRegion }),
     sourceMediaIds,
     completed: input.completed === true,
     usableForConditionInference: input.usableForConditionInference === true,
@@ -178,3 +192,4 @@ export function createPregradeAnalysis(input = {}) {
 
 export const GRADING_DEFECT_TYPES = Object.freeze([...DEFECT_TYPES].sort());
 export const GRADING_DETECTOR_TYPES = Object.freeze([...DETECTOR_TYPES].sort());
+export const GRADING_MACRO_REGIONS = Object.freeze([...MACRO_REGIONS]);
