@@ -268,6 +268,7 @@ export function createVaultGradingMacroUi() {
       const detectorCoverage = [{
         detector: "macro-corner-edge",
         side: sideSelect.value,
+        region: currentResult.region,
         sourceMediaIds: [sourceMediaId],
         completed: true,
         usableForConditionInference: true,
