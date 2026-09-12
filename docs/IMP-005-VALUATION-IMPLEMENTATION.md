@@ -2,7 +2,18 @@
 
 ## Status
 
-Implementation branch assembled for repository Quality Gate validation.
+**Verified on PR #22 branch head `6ff1eba5671efd5f86c2df6c694cca019e3b7a46`.**
+
+Kingdom Quality Gates run **#654** (`34672838622`) passed:
+
+- exact dependency installation;
+- `npm run verify`;
+- lint and module-contract checks included by the canonical verification command;
+- automated regression/integration tests;
+- production build and artifact verification;
+- production dependency audit.
+
+The implementation remains a PR branch until merged. After any change to the branch, the new exact head must pass again before merge.
 
 ## What this increment adds
 
@@ -35,4 +46,4 @@ The repository authority remains:
 npm run verify
 ```
 
-The GitHub `Kingdom Quality Gates` workflow must pass before this increment is considered integrated.
+The GitHub `Kingdom Quality Gates` workflow must pass on the exact PR head before this increment is considered merge-ready.
