@@ -5,18 +5,22 @@ K.I.N.G.S. Collector's Kingdom is a collector-first system for cataloging, locat
 ## Engineering status
 
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Current production baseline:** `main` at `5addf3d483e978c79028ff00812d8beca08b9661`  
-**Latest verified gate:** **Kingdom Quality Gates #658** — run `34672966858` — **PASS**
+**Current `main` checkpoint:** `42d0a8b8c047d9aee01c30fe6e7edeac87cb57d5`  
+**Current production valuation code baseline:** `5addf3d483e978c79028ff00812d8beca08b9661`  
+**Active engineering PR:** **#24 — `IMP-005: realized-sale value-history linkage`**  
+**Verified PR #24 head:** `6fc5c4651232d85dff25deb545c98b1a0f52af7a`  
+**Latest PR verification:** **Kingdom Quality Gates #662** — run `34682629889` — **PASS**
 
 The current `main` baseline includes:
 
 - PR #20 — calibrated physical measurement + capture scale;
 - PR #21 — macro corner/edge evidence refinement;
-- PR #22 — evidence-backed valuation foundation.
+- PR #22 — evidence-backed valuation foundation;
+- PR #23 — documentation closure/recovery checkpoint for the valuation foundation.
 
-Quality Gates #658 verified the exact merged PR #22 production head through the canonical `npm run verify` path and production dependency audit.
+PR #24 is the next verified candidate slice. It links realized collector-recorded sales into a derived value-history read model without rewriting provenance or allowing those owner sales to distort the current sold-comparable estimate.
 
-The next engineering slice is **Valuation Source Adapter + Realized-Sale/Value-History Linkage**. Automatic market providers must prove licensing/terms compatibility, source freshness and auditable evidence before their observations can enter the Kingdom valuation ledger.
+Automatic market providers still must prove licensing/terms compatibility, source freshness and auditable evidence before their observations can enter the Kingdom valuation ledger.
 
 ## Permanent truth boundary
 
@@ -27,6 +31,7 @@ The Kingdom never silently upgrades evidence into authoritative truth.
 - Autograph image similarity is not professional authentication.
 - Collector-entered provenance is not independently verified unless a separate authority verifies it.
 - A sold comparable or asking listing is not automatically authoritative market value.
+- A collector's own realized sale is historical lifecycle evidence, not automatically a current market comparable.
 - A Kingdom valuation estimate is advisory evidence, not an appraisal or guaranteed sale price.
 - No grading, valuation, catalog, AI, provenance or marketplace subsystem may silently overwrite authoritative ownership or physical treasure identity.
 
@@ -42,7 +47,7 @@ This is **not** a claim that a signed native Android APK is already complete. Na
 
 Research: `docs/research/2026-09-05-OFFICIAL-BRAND-AND-INSTALL-SURFACE.md`.
 
-## Royal Vault — verified capability
+## Royal Vault — verified capability on `main`
 
 Current production capability includes:
 
@@ -71,7 +76,7 @@ Current production capability includes:
 
 PR #22 intentionally improves on the common collector-app pattern of showing one unexplained price.
 
-The production baseline now provides:
+The production baseline provides:
 
 - owner-scoped append-only valuation evidence tied to permanent treasure UUIDs;
 - separate `sold-comparable` and `asking-listing` evidence types;
@@ -94,6 +99,31 @@ No commercial pricing dataset is copied into the repository. Automatic market fe
 
 Research: `docs/research/2026-09-11-IMP-005-EVIDENCE-BACKED-VALUATION.md`  
 Implementation record: `docs/IMP-005-VALUATION-IMPLEMENTATION.md`
+
+## Realized-sale value history — verified candidate in PR #24
+
+PR #24 adds a derived historical read model without creating a mutable mystery-value field.
+
+Verified behavior on PR head `6fc5c4651232d85dff25deb545c98b1a0f52af7a`:
+
+- valuation evidence is projected into history with exact valuation evidence IDs;
+- collector-recorded provenance events of type `sold` are projected as `realized-sale` entries with exact provenance event IDs;
+- priced and unpriced realized sales remain distinguishable;
+- an unpriced sale stays visible but never manufactures an amount or currency;
+- provenance corrections mark the original realized sale as corrected and expose correction IDs instead of rewriting history;
+- realized owner sales do **not** influence the current market-comparable estimate;
+- asking listings still do not influence the estimate;
+- currencies remain separate and cross-currency aggregation remains disabled;
+- value history is explicitly `derived: true` and `persistedAsMutableValue: false`;
+- the valuation module remains usable in isolated runtimes where provenance is not wired and truthfully reports `provenanceAvailable: false`;
+- existing valuation behavior remains covered by the canonical repository gates.
+
+Verification:
+
+- code-bearing head `beaefdd2d3e9e2ed5d6b136b19f6d00b9faf3901` — Kingdom Quality Gates #661 — **PASS**;
+- research-complete head `6fc5c4651232d85dff25deb545c98b1a0f52af7a` — Kingdom Quality Gates #662 / run `34682629889` — **PASS**.
+
+Research: `docs/research/2026-09-12-IMP-005-VALUATION-SOURCE-AND-HISTORY.md`
 
 ## AI card pre-grading — verified capability
 
@@ -167,21 +197,21 @@ Documentation is part of implementation. After substantial verified build batche
 - External evidence must surface uncertainty instead of silently inventing identity, variant, condition, grade, authenticity, provenance or value.
 - Mobile, Android, Chromebook, tablet and desktop workflows are first-class.
 
-## Current next target
+## Current next target after PR #24
 
-**Valuation Source Adapter + Realized-Sale/Value-History Linkage**
+**Provider-Neutral Valuation Observation Adapter + Collection-Level Evidence Rollups**
 
 Build order:
 
-1. research lawful sold-comparable provider APIs and redistribution/data-use terms;
-2. define a provider-neutral observation adapter;
-3. require provider/source/date/freshness/condition/grade/currency evidence on imported observations;
-4. preserve collector-recorded evidence separately from provider-verified observations;
-5. link realized sale provenance events into valuation history without rewriting either ledger;
-6. derive immutable evidence-backed value-history snapshots;
-7. build collection-level rollups only with explicit currency/evidence compatibility;
-8. make Keeper valuation explanations cite exact evidence records;
+1. define a provider-neutral observation adapter contract with explicit provider ID, provider observation ID, observation type, source/reference, observed date, retrieval/build timestamp, amount, currency, item state, condition and grade context;
+2. require an explicit provider policy/terms identifier before a network adapter can be enabled;
+3. preserve collector-recorded evidence separately from provider-originated observations and never let provider IDs replace permanent treasure UUIDs;
+4. fail closed when required source, freshness, condition/grade or currency evidence is missing;
+5. investigate only officially permitted provider feeds by collectible category; do not scrape around restricted APIs;
+6. derive collection-level valuation coverage and rollups only for compatible evidence/currency buckets;
+7. expose exact valuation evidence and realized-sale record IDs behind Keeper explanations;
+8. keep automatic FX conversion disabled until a separate governed FX policy exists;
 9. pass full Kingdom Quality Gates;
-10. update README and `docs/MISSION-PROGRESS.md` before merge.
+10. update README and `docs/MISSION-PROGRESS.md` at the next verified checkpoint.
 
 Later milestones include broader image identification, alternate-light/UV/spectral analysis, additional official grader integrations, insurance/reporting expansion, native Android APK packaging, Marketplace ownership transfer/settlement and destructive bulk archive/delete flows.
