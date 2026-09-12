@@ -5,12 +5,11 @@ K.I.N.G.S. Collector's Kingdom is a collector-first system for cataloging, locat
 ## Engineering status
 
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Current production baseline:** `main` at `30b6a4cd55fc577d1218c112389244aeb06a9f15`  
-**Latest integrated slice:** **PR #24 — Realized-Sale / Value-History Linkage**  
-**Verified candidate:** **PR #26 — Live Vault Bootstrap + Evidence-Backed Portfolio Intelligence**  
-**Candidate verification:** **Kingdom Quality Gates #668** — run `34718610662` — **PASS**
+**Current production baseline:** `main` at `82624118f88d367c687ba2aee5499287bf19a5a6`  
+**Latest integrated slice:** **PR #26 — Live Vault Bootstrap + Evidence-Backed Portfolio Intelligence**  
+**Latest verified gate:** **Kingdom Quality Gates #670** — run `34718684431` — **PASS**
 
-PR #26 is verified but is **not production until merged**. It closes a runtime-wiring gap that allowed advanced Vault UI modules to exist and pass artifact tests without the production Vault page invoking their loader. It also adds collection-level evidence coverage and per-currency portfolio rollups with exact sold-evidence IDs behind every included treasure.
+PR #26 is integrated in production. It closes a runtime-wiring gap that allowed advanced Vault UI modules to exist and pass artifact tests without the production Vault page invoking their loader, and it adds collection-level evidence coverage and per-currency portfolio rollups with exact sold-evidence IDs behind every included treasure.
 
 The current `main` baseline includes:
 
@@ -19,7 +18,8 @@ The current `main` baseline includes:
 - PR #22 — evidence-backed valuation foundation;
 - PR #23 — valuation-foundation documentation/recovery closure;
 - PR #24 — realized-sale/value-history linkage;
-- PR #25 — realized-sale/value-history production recovery closure.
+- PR #25 — realized-sale/value-history production recovery closure;
+- PR #26 — live advanced-Vault bootstrap + evidence-backed portfolio intelligence.
 
 Automatic market providers still must prove licensing/terms compatibility, source freshness and auditable evidence before their observations can enter the Kingdom valuation ledger.
 
@@ -72,7 +72,9 @@ Current `main` capability includes:
 - calibrated physical-measurement evidence;
 - macro corner/edge evidence refinement;
 - append-only market-comparable evidence and transparent advisory valuation;
-- derived realized-sale/value-history linkage with exact source-record references.
+- derived realized-sale/value-history linkage with exact source-record references;
+- production-wired advanced Vault modules rather than artifact-only UI files;
+- evidence-backed collection portfolio coverage and per-currency rollups.
 
 ## Evidence-backed valuation — verified on `main`
 
@@ -117,18 +119,17 @@ Production behavior includes:
 - asking listings still excluded from the estimate;
 - currencies kept separate and cross-currency aggregation disabled;
 - value history explicitly declared `derived: true` and `persistedAsMutableValue: false`;
-- valuation remaining usable in isolated runtimes where provenance is not wired, reporting `provenanceAvailable: false`;
-- dedicated regression coverage in `tests/vault-valuation-history.test.mjs`.
+- valuation remaining usable in isolated runtimes where provenance is not wired, reporting `provenanceAvailable: false`.
 
 Final PR #24 head `56e95a7658e4c2ae3cbaac055f28e7add88e412e` passed Kingdom Quality Gates #664 / run `34682718156`; production implementation commit is `061e29ab129ec5ee8e09a240afb8018ae408c996`.
 
 Research: `docs/research/2026-09-12-IMP-005-VALUATION-SOURCE-AND-HISTORY.md`
 
-## Live Vault + portfolio intelligence — verified PR #26 candidate
+## Live Vault + portfolio intelligence — verified and merged
 
 Fresh competitor research reviewed Ludex, Card Ladder and hobbyDB portfolio/value behavior plus current TCGplayer and eBay developer-access realities. The product lesson is to combine collection-level value visibility with inspectable supporting evidence rather than another unexplained total.
 
-PR #26 currently provides, pending merge:
+Production behavior from PR #26 includes:
 
 - `/vault-bootstrap.js` as the real Royal Vault browser entry point;
 - explicit loading of the ordered advanced-Vault module stack after the base Vault;
@@ -145,7 +146,7 @@ PR #26 currently provides, pending merge:
 - explicit exclusion reasons, coverage percentage and non-appraisal language;
 - responsive Royal Vault portfolio UI and updated evidence-backed hero/stat language.
 
-Verification: PR #26 head `e11866cac0fd44c349b60f5b4800bc2a332e104d` — Kingdom Quality Gates #668 / run `34718610662` — **PASS**.
+Verification: final PR #26 head `88487686375d6a0648fd96616a69ecf1c43a7c0f` — Kingdom Quality Gates #670 / run `34718684431` — **PASS**. Squash-merged production commit: `82624118f88d367c687ba2aee5499287bf19a5a6`.
 
 Research: `docs/research/2026-09-12-IMP-005-LIVE-VAULT-PORTFOLIO.md`
 
@@ -153,21 +154,7 @@ Research: `docs/research/2026-09-12-IMP-005-LIVE-VAULT-PORTFOLIO.md`
 
 The Kingdom contains a real advisory card-condition analysis system rather than a fake official-grade generator.
 
-Current capability includes:
-
-- standard-western and Japanese-size card profiles;
-- front/back centering measurement;
-- published grader centering references used as evidence, not proprietary-score reverse engineering;
-- resolution/focus/glare/exposure/contrast checks;
-- whole-card geometry, crop and perspective analysis;
-- contour plus macro corner/edge review signals;
-- paired raking-light surface anomaly comparison;
-- same-printing color/fade comparison;
-- authenticated Wikimedia Commons autograph reference discovery/proxy with license/source metadata;
-- append-only SHA-linked pre-grade records;
-- detector-completion evidence;
-- fail-closed server-generated advisory range;
-- explicit no-mutation flags for official grade, condition, authenticity and value.
+Current capability includes standard-western and Japanese-size card profiles, centering measurement, capture-quality checks, card geometry/crop/perspective analysis, contour/macro corner-edge signals, paired raking-light surface comparison, same-printing color/fade comparison, authenticated Commons autograph reference discovery, append-only SHA-linked pre-grade records, detector-completion evidence, fail-closed server-generated advisory range, and explicit no-mutation flags for official grade/condition/authenticity/value.
 
 Research: `docs/research/2026-09-05-IMP-005-AI-CARD-PREGRADING.md`.
 
@@ -221,7 +208,7 @@ Documentation is part of implementation. After substantial verified build batche
 - External evidence must surface uncertainty instead of silently inventing identity, variant, condition, grade, authenticity, provenance or value.
 - Mobile, Android, Chromebook, tablet and desktop workflows are first-class.
 
-## Current next target after PR #26 integration
+## Current next target
 
 **Provider-Neutral Valuation Observation Adapter + Evidence-Cited Keeper Explanations**
 

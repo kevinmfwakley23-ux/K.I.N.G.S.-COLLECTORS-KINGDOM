@@ -18,16 +18,14 @@ This file is the durable engineering recovery ledger. Read it before substantial
 
 **Date:** 2026-09-12 (America/Denver)  
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Latest integrated production slice:** **Realized-Sale / Value-History Linkage**  
-**Current `main` head:** `30b6a4cd55fc577d1218c112389244aeb06a9f15`  
-**Integrated implementation commit:** `061e29ab129ec5ee8e09a240afb8018ae408c996`  
-**Merged implementation pull request:** **#24 — `IMP-005: realized-sale value-history linkage`**  
-**Verified unmerged candidate:** **#26 — Live Vault Bootstrap + Evidence-Backed Portfolio Intelligence**  
-**Candidate verification:** **Kingdom Quality Gates #668** — run `34718610662` — **PASS**
+**Latest integrated production slice:** **Live Vault Bootstrap + Evidence-Backed Portfolio Intelligence**  
+**Production commit:** `82624118f88d367c687ba2aee5499287bf19a5a6`  
+**Merged pull request:** **#26 — `IMP-005: live Vault bootstrap and evidence-backed portfolio intelligence`**  
+**Latest pre-merge verification:** **Kingdom Quality Gates #670** — run `34718684431` — **PASS**
 
-PR #26 head `e11866cac0fd44c349b60f5b4800bc2a332e104d` passed the full canonical quality gates. **Do not treat PR #26 as production until it is merged.**
+PR #26 was squash-merged after exact final head `88487686375d6a0648fd96616a69ecf1c43a7c0f` passed the canonical quality gates and production dependency audit.
 
-### Exact production recovery point
+### Exact recovery point
 
 Do **not** rebuild these verified production IMP-005 slices:
 
@@ -64,17 +62,19 @@ Do **not** rebuild these verified production IMP-005 slices:
 - calibrated same-plane physical-scale evidence and perspective-aware measurements;
 - macro corner/edge refinement linked to exact private media;
 - append-only evidence-backed market valuation with transparent estimate rules;
-- realized-sale/value-history linkage derived from immutable valuation and provenance records.
+- realized-sale/value-history linkage derived from immutable valuation and provenance records;
+- production-wired advanced Royal Vault UI enhancement stack;
+- evidence-backed collection portfolio coverage, per-currency totals, category/collection rollups and exact contribution evidence IDs.
 
 ---
 
-## Verified candidate — PR #26 Live Vault Bootstrap + Portfolio Intelligence
+## Latest integrated slice — Live Vault Bootstrap + Portfolio Intelligence
 
 ### Why this slice was prioritized
 
 A repository audit found that advanced Vault UI modules already existed behind `apps/web/public/vault-extras.js`, and the loader itself had unit coverage, but the production `vault.html` entry point loaded only `/vault.js`. This allowed source files and artifact tests to succeed without proving that intake/provenance/valuation/reorganization/grading enhancements were actually mounted in a real Vault browser session.
 
-The verified PR candidate closes that runtime-proof gap before layering more features on top.
+PR #26 closes that runtime-proof gap before additional advanced features are layered on top.
 
 ### Fresh competitive/provider research
 
@@ -88,18 +88,16 @@ Current research reviewed:
 
 Research record: `docs/research/2026-09-12-IMP-005-LIVE-VAULT-PORTFOLIO.md`.
 
-### Candidate runtime behavior
+### Integrated runtime behavior
 
-PR #26 introduces:
+- `apps/web/public/vault-bootstrap.js` is now the real Royal Vault browser entry point;
+- base `vault.js` loads before the ordered advanced enhancement stack;
+- enhancement bootstrap failure produces explicit browser-visible failure messaging instead of silent success;
+- regression coverage pins `vault.html` to the enhancement bootstrap;
+- portfolio UI is mounted through the same live `vault-extras.js` chain;
+- type-contract and production-artifact gates include the bootstrap/portfolio modules.
 
-- `apps/web/public/vault-bootstrap.js` as the real Royal Vault browser entry point;
-- base `vault.js` loading before the ordered advanced enhancement stack;
-- explicit browser failure messaging when enhancement bootstrap fails;
-- regression coverage proving `vault.html` invokes the enhancement bootstrap rather than only checking that files exist;
-- portfolio UI mounted through the real `vault-extras.js` chain;
-- type-contract and production-artifact gates for the new bootstrap/portfolio files.
-
-### Candidate portfolio behavior
+### Integrated portfolio behavior
 
 The portfolio read model:
 
@@ -118,7 +116,7 @@ The portfolio read model:
 - states that portfolio estimates are advisory and not appraisals;
 - never mutates an authoritative market-value field.
 
-Primary files:
+Primary implementation files:
 
 - `apps/web/public/vault-bootstrap.js`
 - `apps/web/public/vault-extras.js`
@@ -132,43 +130,22 @@ Primary files:
 - `tools/typecheck.mjs`
 - `tools/verify-build.mjs`
 
-Verification:
+Verification sequence:
 
-- implementation/research head `e11866cac0fd44c349b60f5b4800bc2a332e104d` — Kingdom Quality Gates #668 / run `34718610662` — **PASS**.
-
-Status: **verified PR candidate, not yet production**.
+- implementation/research head `e11866cac0fd44c349b60f5b4800bc2a332e104d` — Kingdom Quality Gates #668 / run `34718610662` — **PASS**;
+- README checkpoint `fd7ce54e553e7cd3d4b450293d479f545dfbcf94` — Kingdom Quality Gates #669 / run `34718659669` — **PASS**;
+- final PR #26 head `88487686375d6a0648fd96616a69ecf1c43a7c0f` — Kingdom Quality Gates #670 / run `34718684431` — **PASS**;
+- squash-merged production commit `82624118f88d367c687ba2aee5499287bf19a5a6`.
 
 ---
 
-## Latest integrated production slice — Realized-Sale / Value-History Linkage
+## Previous integrated slice — Realized-Sale / Value-History Linkage
 
-### Research used
+PR #24 provides the derived value-history read model. Valuation evidence is projected with exact evidence IDs; collector-recorded `sold` provenance events are projected with exact provenance IDs; corrections remain append-only; unpriced sales do not receive manufactured amounts; realized owner sales do not influence the current sold-comparable estimate; and cross-currency aggregation remains disabled.
 
-Fresh research reviewed Ludex, CollX, Collectr, PriceCharting, Card Ladder, CLZ/CovrPrice, Discogs, hobbyDB, HomeBox, Foilstack and OpenBinder. Provider feasibility research found that eBay sold-history access is restricted, PriceCharting's documented API does not supply historical prices/sales, and Cardmarket is not accepting new API applications. Restricted APIs or public-search scraping are not being mislabeled as automatic sold-comparable feeds.
+Final PR #24 head `56e95a7658e4c2ae3cbaac055f28e7add88e412e` passed Quality Gates #664 / run `34682718156`; implementation commit `061e29ab129ec5ee8e09a240afb8018ae408c996`; production recovery closure PR #25 merged as `30b6a4cd55fc577d1218c112389244aeb06a9f15`.
 
 Research record: `docs/research/2026-09-12-IMP-005-VALUATION-SOURCE-AND-HISTORY.md`.
-
-### Integrated production behavior
-
-- `packages/vault/src/value-history.mjs` provides the derived value-history read model;
-- valuation evidence is projected as `market-observation` history with exact valuation evidence IDs;
-- provenance events of type `sold` are projected as `realized-sale` entries with exact provenance event IDs;
-- priced/unpriced realized sales remain distinguishable;
-- unpriced sales remain visible without a manufactured amount/currency;
-- provenance correction descendants mark a realized sale corrected and expose correction IDs instead of rewriting the sale;
-- realized owner sales remain separate from the current sold-comparable estimate;
-- asking listings remain excluded from the estimate;
-- currencies remain separate and cross-currency aggregation remains disabled;
-- history declares `derived: true` and `persistedAsMutableValue: false`;
-- isolated valuation runtimes remain functional when provenance is absent and report `provenanceAvailable: false`.
-
-Verification sequence:
-
-- code-bearing PR head `beaefdd2d3e9e2ed5d6b136b19f6d00b9faf3901` — Quality Gates #661 — **PASS**;
-- research-complete head `6fc5c4651232d85dff25deb545c98b1a0f52af7a` — Quality Gates #662 / run `34682629889` — **PASS**;
-- final PR #24 head `56e95a7658e4c2ae3cbaac055f28e7add88e412e` — Quality Gates #664 / run `34682718156` — **PASS**;
-- squash-merged implementation commit `061e29ab129ec5ee8e09a240afb8018ae408c996`;
-- production recovery closure PR #25 merged as `30b6a4cd55fc577d1218c112389244aeb06a9f15`.
 
 ---
 
@@ -207,10 +184,11 @@ Production verification:
 - Macro Corner/Edge Evidence Refinement — PR #21 — PASS and merged.
 - Evidence-Backed Valuation Foundation — PR #22 / #658 — PASS and merged.
 - Realized-Sale / Value-History Linkage — PR #24 / #664 — PASS and merged.
+- Live Vault Bootstrap + Evidence-Backed Portfolio Intelligence — PR #26 / #670 — PASS and merged.
 
 ---
 
-## Exact next engineering target after PR #26 integration
+## Exact next engineering target
 
 **Provider-Neutral Valuation Observation Adapter + Evidence-Cited Keeper Explanations**
 
