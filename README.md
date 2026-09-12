@@ -5,20 +5,19 @@ K.I.N.G.S. Collector's Kingdom is a collector-first system for cataloging, locat
 ## Engineering status
 
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Current `main` checkpoint:** `42d0a8b8c047d9aee01c30fe6e7edeac87cb57d5`  
-**Current production valuation code baseline:** `5addf3d483e978c79028ff00812d8beca08b9661`  
-**Active engineering PR:** **#24 — `IMP-005: realized-sale value-history linkage`**  
-**Verified PR #24 head:** `6fc5c4651232d85dff25deb545c98b1a0f52af7a`  
-**Latest PR verification:** **Kingdom Quality Gates #662** — run `34682629889` — **PASS**
+**Current production checkpoint:** `main` at `061e29ab129ec5ee8e09a240afb8018ae408c996`  
+**Latest integrated slice:** **PR #24 — Realized-Sale / Value-History Linkage**  
+**Latest pre-merge verification:** **Kingdom Quality Gates #664** — run `34682718156` — **PASS**
 
 The current `main` baseline includes:
 
 - PR #20 — calibrated physical measurement + capture scale;
 - PR #21 — macro corner/edge evidence refinement;
 - PR #22 — evidence-backed valuation foundation;
-- PR #23 — documentation closure/recovery checkpoint for the valuation foundation.
+- PR #23 — valuation-foundation documentation/recovery closure;
+- PR #24 — realized-sale/value-history linkage.
 
-PR #24 is the next verified candidate slice. It links realized collector-recorded sales into a derived value-history read model without rewriting provenance or allowing those owner sales to distort the current sold-comparable estimate.
+PR #24 links realized collector-recorded sales into a derived value-history read model without rewriting provenance or allowing those owner sales to distort the current sold-comparable estimate.
 
 Automatic market providers still must prove licensing/terms compatibility, source freshness and auditable evidence before their observations can enter the Kingdom valuation ledger.
 
@@ -47,7 +46,7 @@ This is **not** a claim that a signed native Android APK is already complete. Na
 
 Research: `docs/research/2026-09-05-OFFICIAL-BRAND-AND-INSTALL-SURFACE.md`.
 
-## Royal Vault — verified capability on `main`
+## Royal Vault — verified capability
 
 Current production capability includes:
 
@@ -70,11 +69,12 @@ Current production capability includes:
 - append-only grading evidence and finding-review history;
 - calibrated physical-measurement evidence;
 - macro corner/edge evidence refinement;
-- append-only market-comparable evidence and transparent advisory valuation.
+- append-only market-comparable evidence and transparent advisory valuation;
+- derived realized-sale/value-history linkage with exact source-record references.
 
 ## Evidence-backed valuation — verified on `main`
 
-PR #22 intentionally improves on the common collector-app pattern of showing one unexplained price.
+The Kingdom deliberately improves on the common collector-app pattern of showing one unexplained price.
 
 The production baseline provides:
 
@@ -100,28 +100,30 @@ No commercial pricing dataset is copied into the repository. Automatic market fe
 Research: `docs/research/2026-09-11-IMP-005-EVIDENCE-BACKED-VALUATION.md`  
 Implementation record: `docs/IMP-005-VALUATION-IMPLEMENTATION.md`
 
-## Realized-sale value history — verified candidate in PR #24
+## Realized-sale value history — verified and merged
 
 PR #24 adds a derived historical read model without creating a mutable mystery-value field.
 
-Verified behavior on PR head `6fc5c4651232d85dff25deb545c98b1a0f52af7a`:
+Production behavior now includes:
 
-- valuation evidence is projected into history with exact valuation evidence IDs;
-- collector-recorded provenance events of type `sold` are projected as `realized-sale` entries with exact provenance event IDs;
-- priced and unpriced realized sales remain distinguishable;
-- an unpriced sale stays visible but never manufactures an amount or currency;
-- provenance corrections mark the original realized sale as corrected and expose correction IDs instead of rewriting history;
-- realized owner sales do **not** influence the current market-comparable estimate;
-- asking listings still do not influence the estimate;
-- currencies remain separate and cross-currency aggregation remains disabled;
-- value history is explicitly `derived: true` and `persistedAsMutableValue: false`;
-- the valuation module remains usable in isolated runtimes where provenance is not wired and truthfully reports `provenanceAvailable: false`;
-- existing valuation behavior remains covered by the canonical repository gates.
+- valuation evidence projected into history with exact valuation evidence IDs;
+- collector-recorded provenance events of type `sold` projected as `realized-sale` entries with exact provenance event IDs;
+- priced and unpriced realized sales kept distinguishable;
+- unpriced sales remaining visible without manufacturing an amount or currency;
+- provenance corrections marking the original realized sale as corrected and exposing correction IDs instead of rewriting history;
+- realized owner sales excluded from the current market-comparable estimate;
+- asking listings still excluded from the estimate;
+- currencies kept separate and cross-currency aggregation disabled;
+- value history explicitly declared `derived: true` and `persistedAsMutableValue: false`;
+- valuation remaining usable in isolated runtimes where provenance is not wired, reporting `provenanceAvailable: false`;
+- dedicated regression coverage in `tests/vault-valuation-history.test.mjs`.
 
-Verification:
+Verification sequence:
 
-- code-bearing head `beaefdd2d3e9e2ed5d6b136b19f6d00b9faf3901` — Kingdom Quality Gates #661 — **PASS**;
-- research-complete head `6fc5c4651232d85dff25deb545c98b1a0f52af7a` — Kingdom Quality Gates #662 / run `34682629889` — **PASS**.
+- code-bearing PR head `beaefdd2d3e9e2ed5d6b136b19f6d00b9faf3901` — Kingdom Quality Gates #661 — **PASS**;
+- research-complete PR head `6fc5c4651232d85dff25deb545c98b1a0f52af7a` — Kingdom Quality Gates #662 / run `34682629889` — **PASS**;
+- final PR head `56e95a7658e4c2ae3cbaac055f28e7add88e412e` — Kingdom Quality Gates #664 / run `34682718156` — **PASS**;
+- squash-merged production commit `061e29ab129ec5ee8e09a240afb8018ae408c996`.
 
 Research: `docs/research/2026-09-12-IMP-005-VALUATION-SOURCE-AND-HISTORY.md`
 
@@ -197,7 +199,7 @@ Documentation is part of implementation. After substantial verified build batche
 - External evidence must surface uncertainty instead of silently inventing identity, variant, condition, grade, authenticity, provenance or value.
 - Mobile, Android, Chromebook, tablet and desktop workflows are first-class.
 
-## Current next target after PR #24
+## Current next target
 
 **Provider-Neutral Valuation Observation Adapter + Collection-Level Evidence Rollups**
 
