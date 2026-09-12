@@ -16,18 +16,19 @@ This file is the durable engineering recovery ledger. Read it before substantial
 
 ## Current checkpoint
 
-**Date:** 2026-09-11 (America/Denver)  
+**Date:** 2026-09-12 (America/Denver)  
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Latest integrated slice:** **Evidence-Backed Valuation Foundation**  
-**Production commit:** `5addf3d483e978c79028ff00812d8beca08b9661`  
-**Merged pull request:** **#22 — `IMP-005: evidence-backed valuation foundation`**  
-**Latest production verification:** **Kingdom Quality Gates #658** — run `34672966858` — **PASS**
+**Current production checkpoint:** `main` at `42d0a8b8c047d9aee01c30fe6e7edeac87cb57d5`  
+**Production valuation implementation:** PR #22 / `5addf3d483e978c79028ff00812d8beca08b9661`  
+**Active verified candidate:** **PR #24 — Realized-Sale / Value-History Linkage**  
+**Verified candidate head:** `6fc5c4651232d85dff25deb545c98b1a0f52af7a`  
+**Latest candidate verification:** **Kingdom Quality Gates #662** — run `34682629889` — **PASS**
 
-Quality Gates #658 passed on the exact merged `main` head and included the canonical `npm run verify` path plus the production dependency audit.
+`main` remains the production authority until PR #24 is merged. The PR #24 code-bearing head `beaefdd2d3e9e2ed5d6b136b19f6d00b9faf3901` passed Quality Gates #661, and the research-complete head `6fc5c4651232d85dff25deb545c98b1a0f52af7a` passed Quality Gates #662.
 
 ### Exact recovery point
 
-Do **not** rebuild these verified IMP-005 slices:
+Do **not** rebuild these verified `main` IMP-005 slices:
 
 - permanent owner-scoped treasure UUIDs and SQLite persistence;
 - treasure create/read/update/archive;
@@ -63,25 +64,73 @@ Do **not** rebuild these verified IMP-005 slices:
 - macro corner/edge refinement linked to exact private media;
 - append-only evidence-backed market valuation with transparent estimate rules.
 
+If PR #24 is still open, do not represent its value-history linkage as production. Its implementation is nevertheless verified and should be reviewed/merged rather than rebuilt from scratch.
+
 ---
 
-## Latest integrated slice — Evidence-Backed Valuation Foundation
+## Latest verified candidate — Realized-Sale / Value-History Linkage
 
-### Competitive research used
+### Research used
 
-The build reviewed current collector products and open-source collection managers for interaction and architecture patterns:
+Fresh research reviewed current collector products and relevant open-source architectures:
 
-- CollX — fast photo identification, market-price presentation, portfolio tracking and marketplace flow;
-- Ludex — scanner-first collection workflow, price ranges, binders and fast seller workflow;
-- PriceCharting — historic collection values, grade/condition tracking, sold history and realized profit tracking;
-- HomeBox — portable SQLite, locations/categories/custom fields, images/documents and data ownership;
-- OmniCard — bulk identification, OCR/perceptual hashing, storage locations, set completion, CSV interoperability and a web companion.
+- Ludex — scanner-first intake, recent sales evidence, price reports and seller flow;
+- CollX — image-assisted collection tracking plus negotiated marketplace deals;
+- Collectr — portfolio history, gains/losses, trade analysis and raw/graded price views;
+- PriceCharting — collection history plus collector-recorded sale price/date/profit;
+- Card Ladder — vetted multi-market sales history and market analytics;
+- CLZ Comics + CovrPrice — deep category metadata, barcode/cover intake, locations and optional value integration;
+- Discogs — explicit approximate value based on sales history and omission of items lacking price evidence;
+- hobbyDB — value history, gains/losses, marketplace lifecycle and human-vetted price points;
+- HomeBox — portable SQLite inventory, nested organization, media/documents and responsive UX;
+- Foilstack — review-first machine matching, provider/plugin boundaries, ambiguity fail-closed behavior and durable price history;
+- OpenBinder — mobile-first PWA, multiple binders, checklist/inventory separation and offline read-only collection mirrors.
 
-Research record: `docs/research/2026-09-11-IMP-005-EVIDENCE-BACKED-VALUATION.md`.
+Provider feasibility research found:
 
-### What was adopted and improved
+- eBay Browse is an active-inventory surface; Marketplace Insights sold-history access is currently restricted and not open to new users;
+- PriceCharting's documented API exposes current values but explicitly does not support historic prices/historic sales;
+- Cardmarket is not currently accepting new API applications and imposes explicit data-use restrictions on existing access;
+- therefore no restricted API, public search scrape or active asking listing is being mislabeled as an automatic sold-comparable feed.
 
-The Kingdom deliberately avoids the opaque-one-number market-value pattern. Authoritative treasure identity, ownership/provenance, market evidence and estimates remain separate.
+Research record: `docs/research/2026-09-12-IMP-005-VALUATION-SOURCE-AND-HISTORY.md`.
+
+### What PR #24 implements
+
+- new `packages/vault/src/value-history.mjs` derived read model;
+- valuation evidence projected as `market-observation` history with exact valuation evidence IDs;
+- provenance events of type `sold` projected as `realized-sale` entries with exact provenance event IDs;
+- priced/unpriced realized-sale distinction;
+- unpriced sales remain visible without manufactured amount/currency;
+- provenance correction descendants mark a realized sale corrected and expose correction IDs rather than rewriting the sale;
+- realized owner sales remain separate from the current sold-comparable estimate;
+- asking listings remain excluded from the estimate;
+- currency aggregation remains explicit and disabled across currencies;
+- history declares `derived: true` and `persistedAsMutableValue: false`;
+- isolated valuation runtimes continue to function when the provenance table is absent and report `provenanceAvailable: false`;
+- new dedicated regression coverage in `tests/vault-valuation-history.test.mjs`.
+
+Primary changed files:
+
+- `packages/vault/src/value-history.mjs`
+- `packages/vault/src/valuation-service.mjs`
+- `tests/vault-valuation-history.test.mjs`
+- `docs/research/2026-09-12-IMP-005-VALUATION-SOURCE-AND-HISTORY.md`
+- `README.md`
+- `docs/MISSION-PROGRESS.md`
+
+Verification sequence so far:
+
+- code-bearing PR head `beaefdd2d3e9e2ed5d6b136b19f6d00b9faf3901` — Quality Gates #661 — **PASS**;
+- research-complete PR head `6fc5c4651232d85dff25deb545c98b1a0f52af7a` — Quality Gates #662 / run `34682629889` — **PASS**.
+
+The final documentation head must also pass the canonical gate before merge.
+
+---
+
+## Production valuation foundation — PR #22
+
+The production baseline deliberately avoids the opaque-one-number market-value pattern. Authoritative treasure identity, ownership/provenance, market evidence and estimates remain separate.
 
 Verified production behavior:
 
@@ -105,27 +154,12 @@ Verified production behavior:
 - no authoritative treasure value, grade, condition, authenticity, provenance or ownership mutation;
 - initial evidence class is `collector-recorded-comparable` and exposed as `independentlyVerified: false`.
 
-Primary implementation files:
+Production verification sequence:
 
-- `packages/vault/src/valuation-repository.mjs`
-- `packages/vault/src/valuation-service.mjs`
-- `apps/web/vault-valuation-http.mjs`
-- `apps/web/public/vault-valuation-core.js`
-- `apps/web/public/vault-valuation-ui.js`
-- `apps/web/public/vault-valuation.css`
-- `apps/web/server.mjs`
-- `apps/web/public/vault-extras.js`
-- `tests/vault-valuation.test.mjs`
-- `tests/vault-valuation-server.test.mjs`
-- `tests/vault-valuation-ui.test.mjs`
-- `tools/typecheck.mjs`
-- `tools/verify-build.mjs`
-
-Verification sequence:
-
-- PR #22 code-bearing head `6ff1eba5671efd5f86c2df6c694cca019e3b7a46` — Quality Gates #654 / run `34672838622` — PASS.
-- Final PR head `9e218849d657373cfe8a9564f3114defbfbd710a` — Quality Gates #657 / run `34672939698` — PASS.
-- Squash-merged `main` head `5addf3d483e978c79028ff00812d8beca08b9661` — Quality Gates #658 / run `34672966858` — PASS.
+- PR #22 code-bearing head `6ff1eba5671efd5f86c2df6c694cca019e3b7a46` — Quality Gates #654 / run `34672838622` — PASS;
+- final PR #22 head `9e218849d657373cfe8a9564f3114defbfbd710a` — Quality Gates #657 / run `34672939698` — PASS;
+- squash-merged implementation head `5addf3d483e978c79028ff00812d8beca08b9661` — Quality Gates #658 / run `34672966858` — PASS;
+- documentation recovery checkpoint on `main`: `42d0a8b8c047d9aee01c30fe6e7edeac87cb57d5`.
 
 ---
 
@@ -149,26 +183,27 @@ Verification sequence:
 - Official Kingdom Brand + Installable PWA Surface — #624 — PASS.
 - Calibrated Physical Measurement + Capture Scale — PR #20 / #637 — PASS and merged.
 - Macro Corner/Edge Evidence Refinement — PR #21 — PASS and merged.
-- Evidence-Backed Valuation Foundation — PR #22 / #658 on merged `main` — PASS.
+- Evidence-Backed Valuation Foundation — PR #22 / #658 on implementation `main` — PASS.
+- Realized-Sale / Value-History candidate — PR #24 / #661 and #662 — PASS; merge still required at this checkpoint.
 
 ---
 
-## Exact next engineering target
+## Exact next engineering target after PR #24
 
-**Valuation Source Adapter + Realized-Sale/Value-History Linkage**
+**Provider-Neutral Valuation Observation Adapter + Collection-Level Evidence Rollups**
 
 Build next in this order:
 
-1. research lawful sold-comparable provider APIs, data-use terms, redistribution limits, rate limits and freshness guarantees;
-2. define a provider-neutral observation adapter that cannot mutate treasure identity or provenance;
-3. require source/provider/date/freshness/condition/grade/currency evidence on every imported observation;
-4. preserve collector-recorded evidence separately from provider-verified observations;
-5. link realized sale provenance events into historical valuation context without rewriting the provenance ledger;
-6. derive value-history snapshots from immutable evidence rather than storing an unexplained mutable market-value field;
-7. build collection-level rollups only when currency and evidence compatibility are explicit;
-8. expose exact evidence IDs behind every Keeper valuation explanation;
+1. define a provider-neutral normalized observation contract with explicit provider ID, provider observation ID, observation type, source/reference, observed date, retrieved/build timestamp, amount, currency, item state, condition and grading context;
+2. require an explicit provider policy/terms identifier before a network market adapter can be enabled;
+3. preserve collector-recorded evidence separately from provider-originated evidence and never replace permanent treasure UUIDs with provider IDs;
+4. fail closed when source, freshness, amount/currency, condition or grade context required by the observation is missing;
+5. research and integrate only officially permitted provider feeds by collectible category; do not scrape around access restrictions;
+6. derive collection-level valuation coverage and rollups only where currency/evidence compatibility is explicit;
+7. make Keeper valuation explanations cite exact valuation evidence and realized-sale source record IDs;
+8. keep automatic FX conversion disabled until a separately researched/verified FX policy exists;
 9. pass full Kingdom Quality Gates;
-10. update README and this recovery ledger before merge.
+10. update README and this ledger at the next verified checkpoint.
 
 ---
 
@@ -177,8 +212,9 @@ Build next in this order:
 Do not represent these as live until separately implemented and verified:
 
 - automatic licensed market-data provider adapters;
-- realized-sale/value-history linkage and collection-level valuation history;
+- collection-level valuation history/coverage rollups;
 - automatic currency conversion/FX policy;
+- Keeper evidence-cited valuation explanations across the new history model;
 - review-aware overall grading advisory estimate;
 - reliable manufacturing-vs-handling defect classification;
 - alternate-light/UV/spectral analysis;
@@ -198,6 +234,6 @@ Do not represent these as live until separately implemented and verified:
 
 ### Permanent truthfulness boundary
 
-A catalog result, AI pre-grade, photograph, autograph similarity result, barcode, title match, grading label, cert number, collector statement, sold comparable or asking listing is not silently promoted into an authoritative independent claim.
+A catalog result, AI pre-grade, photograph, autograph similarity result, barcode, title match, grading label, cert number, collector statement, sold comparable, asking listing or realized owner sale is not silently promoted into an authoritative independent claim.
 
-AI grading is estimated condition evidence; professional grading and authentication remain separate authorities. Valuation estimates are evidence-derived advisory read models, not appraisals or guaranteed sale prices. Permanent Kingdom treasure UUIDs remain provider-independent physical-item identities. Collector ownership/provenance records remain distinct from valuation evidence.
+AI grading is estimated condition evidence; professional grading and authentication remain separate authorities. Valuation estimates are evidence-derived advisory read models, not appraisals or guaranteed sale prices. Realized sales are lifecycle evidence and remain separate from current market-comparable estimation. Permanent Kingdom treasure UUIDs remain provider-independent physical-item identities. Collector ownership/provenance records remain distinct from valuation evidence.
