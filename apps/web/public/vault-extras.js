@@ -4,6 +4,7 @@ export const VAULT_EXTRA_MODULES = Object.freeze([
   "./vault-scanner-ui.js",
   "./vault-provenance-ui.js",
   "./vault-valuation-ui.js",
+  "./vault-provider-observation-ui.js",
   "./vault-portfolio-ui.js",
   "./vault-reorganization-ui.js",
   "./vault-bulk-reorganization-ui.js",
