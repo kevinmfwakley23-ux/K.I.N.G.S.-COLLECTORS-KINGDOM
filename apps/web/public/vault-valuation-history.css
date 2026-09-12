@@ -1,0 +1,141 @@
+.vault-valuation-history-section {
+  margin: 6px 0 0;
+  padding: 18px;
+  border: 1px solid rgba(162, 123, 39, .24);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(255,255,255,.97), rgba(246,243,235,.9));
+}
+
+.vault-valuation-history-section > legend {
+  padding: 0 8px;
+  font-size: 1rem;
+  font-weight: 850;
+  color: #29251f;
+}
+
+.valuation-history-truth {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgba(162,123,39,.22);
+  border-radius: 12px;
+  background: rgba(181,143,53,.08);
+}
+
+.valuation-history-truth strong { color: #6e531d; }
+.valuation-history-truth p { margin: 0; }
+
+.valuation-history-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: end;
+  margin: 18px 0 10px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(30,29,27,.1);
+}
+
+.valuation-history-heading h3 { margin: 0; }
+.valuation-history-heading small { color: #756f64; }
+
+.valuation-source-grid,
+.valuation-history-timeline {
+  display: grid;
+  gap: 10px;
+}
+
+.valuation-source-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.valuation-source-card,
+.valuation-history-entry {
+  position: relative;
+  padding: 13px 14px;
+  border: 1px solid rgba(29,28,26,.11);
+  border-radius: 13px;
+  background: rgba(255,255,255,.92);
+  overflow: hidden;
+}
+
+.valuation-source-card::before,
+.valuation-history-entry::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: rgba(163,122,37,.7);
+}
+
+.valuation-source-card.source-restricted-unavailable::before,
+.valuation-source-card.source-blocked-without-written-permission::before,
+.valuation-source-card.source-blocked-pending-terms-review::before,
+.valuation-history-entry.unresolved-sale::before {
+  background: rgba(122,82,45,.65);
+}
+
+.valuation-source-head,
+.valuation-history-entry-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+}
+
+.valuation-source-head > strong,
+.valuation-history-entry-head strong { color: #312d27; }
+
+.valuation-source-status {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgba(31,29,25,.07);
+  font-size: .68rem;
+  font-weight: 800;
+  color: #6b6255;
+  white-space: nowrap;
+}
+
+.valuation-source-capabilities,
+.valuation-source-reason,
+.valuation-history-detail,
+.valuation-history-trust,
+.valuation-history-warning {
+  margin: 8px 0 0;
+  color: #625d54;
+  line-height: 1.42;
+  font-size: .8rem;
+}
+
+.valuation-source-capabilities,
+.valuation-history-trust { font-weight: 700; }
+.valuation-history-warning { color: #79581a; font-weight: 700; }
+
+.valuation-history-entry-head > div {
+  display: grid;
+  gap: 3px;
+}
+
+.valuation-history-entry-head small { color: #756e62; }
+
+.valuation-history-money {
+  flex: 0 0 auto;
+  color: #6d5118;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.valuation-history-entry.realized-sale::before { background: rgba(45,92,61,.7); }
+.valuation-history-entry.market-asking-listing::before { background: rgba(83,80,72,.42); }
+
+.valuation-history-status { min-height: 1.3em; }
+.valuation-source-card .text-link,
+.valuation-history-entry .text-link { display: inline-block; margin-top: 9px; }
+
+@media (max-width: 720px) {
+  .vault-valuation-history-section { padding: 14px; }
+  .valuation-history-heading,
+  .valuation-source-head,
+  .valuation-history-entry-head { display: grid; }
+  .valuation-history-money { text-align: left; }
+  .valuation-source-status { justify-self: start; }
+}
