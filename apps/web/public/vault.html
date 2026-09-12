@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="/world.css" />
     <link rel="stylesheet" href="/vault.css" />
-    <script type="module" src="/vault.js"></script>
+    <script type="module" src="/vault-bootstrap.js"></script>
   </head>
   <body class="kingdom-page vault-page">
     <a class="skip-link" href="#vault-main">Skip to Royal Vault</a>
@@ -30,7 +30,7 @@
         <div class="vault-hero-copy">
           <p class="eyebrow">Royal Collection Vault • IMP-005</p>
           <h1 id="vault-title">Your treasures. One permanent record for each.</h1>
-          <p class="hall-intro">Catalog, locate, organize, inspect, and preserve the authoritative record of every collectible you own. The Vault reports only data actually stored here; market valuation remains separate until evidence-backed sources are connected.</p>
+          <p class="hall-intro">Catalog, locate, organize, inspect, preserve, and value the authoritative record of every collectible you own. Market intelligence remains evidence-backed and advisory: unsupported or ambiguous records are excluded rather than assigned a guessed value.</p>
           <div class="vault-hero-actions">
             <button id="new-treasure-button" class="gold-button" type="button">Add a treasure</button>
             <a class="dark-button" href="/api/vault/export">Export Vault JSON</a>
@@ -45,7 +45,7 @@
         <article class="vault-stat marble-panel"><span>Treasure records</span><strong id="stat-treasures">—</strong></article>
         <article class="vault-stat marble-panel"><span>Physical units</span><strong id="stat-units">—</strong></article>
         <article class="vault-stat marble-panel"><span>Recorded purchase cost</span><strong id="stat-cost">—</strong><small id="stat-cost-note">Only records with purchase prices</small></article>
-        <article class="vault-stat marble-panel"><span>Market value</span><strong>Not yet claimed</strong><small>Evidence-backed valuation service pending</small></article>
+        <article class="vault-stat marble-panel"><span>Evidence-backed portfolio estimate</span><strong>Loading evidence…</strong><small>Only supported estimates are included; currencies stay separate</small></article>
       </section>
 
       <section class="vault-workspace">
