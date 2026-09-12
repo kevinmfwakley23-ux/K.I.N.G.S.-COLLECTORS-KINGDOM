@@ -5,9 +5,12 @@ K.I.N.G.S. Collector's Kingdom is a collector-first system for cataloging, locat
 ## Engineering status
 
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Current production checkpoint:** `main` at `061e29ab129ec5ee8e09a240afb8018ae408c996`  
+**Current production baseline:** `main` at `30b6a4cd55fc577d1218c112389244aeb06a9f15`  
 **Latest integrated slice:** **PR #24 — Realized-Sale / Value-History Linkage**  
-**Latest pre-merge verification:** **Kingdom Quality Gates #664** — run `34682718156` — **PASS**
+**Verified candidate:** **PR #26 — Live Vault Bootstrap + Evidence-Backed Portfolio Intelligence**  
+**Candidate verification:** **Kingdom Quality Gates #668** — run `34718610662` — **PASS**
+
+PR #26 is verified but is **not production until merged**. It closes a runtime-wiring gap that allowed advanced Vault UI modules to exist and pass artifact tests without the production Vault page invoking their loader. It also adds collection-level evidence coverage and per-currency portfolio rollups with exact sold-evidence IDs behind every included treasure.
 
 The current `main` baseline includes:
 
@@ -15,9 +18,8 @@ The current `main` baseline includes:
 - PR #21 — macro corner/edge evidence refinement;
 - PR #22 — evidence-backed valuation foundation;
 - PR #23 — valuation-foundation documentation/recovery closure;
-- PR #24 — realized-sale/value-history linkage.
-
-PR #24 links realized collector-recorded sales into a derived value-history read model without rewriting provenance or allowing those owner sales to distort the current sold-comparable estimate.
+- PR #24 — realized-sale/value-history linkage;
+- PR #25 — realized-sale/value-history production recovery closure.
 
 Automatic market providers still must prove licensing/terms compatibility, source freshness and auditable evidence before their observations can enter the Kingdom valuation ledger.
 
@@ -31,7 +33,7 @@ The Kingdom never silently upgrades evidence into authoritative truth.
 - Collector-entered provenance is not independently verified unless a separate authority verifies it.
 - A sold comparable or asking listing is not automatically authoritative market value.
 - A collector's own realized sale is historical lifecycle evidence, not automatically a current market comparable.
-- A Kingdom valuation estimate is advisory evidence, not an appraisal or guaranteed sale price.
+- A Kingdom valuation or portfolio estimate is advisory evidence, not an appraisal or guaranteed sale price.
 - No grading, valuation, catalog, AI, provenance or marketplace subsystem may silently overwrite authoritative ownership or physical treasure identity.
 
 Permanent Kingdom treasure UUIDs remain provider-independent physical-item identities.
@@ -46,9 +48,9 @@ This is **not** a claim that a signed native Android APK is already complete. Na
 
 Research: `docs/research/2026-09-05-OFFICIAL-BRAND-AND-INSTALL-SURFACE.md`.
 
-## Royal Vault — verified capability
+## Royal Vault — verified production capability
 
-Current production capability includes:
+Current `main` capability includes:
 
 - owner-scoped permanent treasure UUIDs and SQLite persistence;
 - treasure create/read/update/archive;
@@ -104,7 +106,7 @@ Implementation record: `docs/IMP-005-VALUATION-IMPLEMENTATION.md`
 
 PR #24 adds a derived historical read model without creating a mutable mystery-value field.
 
-Production behavior now includes:
+Production behavior includes:
 
 - valuation evidence projected into history with exact valuation evidence IDs;
 - collector-recorded provenance events of type `sold` projected as `realized-sale` entries with exact provenance event IDs;
@@ -118,14 +120,34 @@ Production behavior now includes:
 - valuation remaining usable in isolated runtimes where provenance is not wired, reporting `provenanceAvailable: false`;
 - dedicated regression coverage in `tests/vault-valuation-history.test.mjs`.
 
-Verification sequence:
-
-- code-bearing PR head `beaefdd2d3e9e2ed5d6b136b19f6d00b9faf3901` — Kingdom Quality Gates #661 — **PASS**;
-- research-complete PR head `6fc5c4651232d85dff25deb545c98b1a0f52af7a` — Kingdom Quality Gates #662 / run `34682629889` — **PASS**;
-- final PR head `56e95a7658e4c2ae3cbaac055f28e7add88e412e` — Kingdom Quality Gates #664 / run `34682718156` — **PASS**;
-- squash-merged production commit `061e29ab129ec5ee8e09a240afb8018ae408c996`.
+Final PR #24 head `56e95a7658e4c2ae3cbaac055f28e7add88e412e` passed Kingdom Quality Gates #664 / run `34682718156`; production implementation commit is `061e29ab129ec5ee8e09a240afb8018ae408c996`.
 
 Research: `docs/research/2026-09-12-IMP-005-VALUATION-SOURCE-AND-HISTORY.md`
+
+## Live Vault + portfolio intelligence — verified PR #26 candidate
+
+Fresh competitor research reviewed Ludex, Card Ladder and hobbyDB portfolio/value behavior plus current TCGplayer and eBay developer-access realities. The product lesson is to combine collection-level value visibility with inspectable supporting evidence rather than another unexplained total.
+
+PR #26 currently provides, pending merge:
+
+- `/vault-bootstrap.js` as the real Royal Vault browser entry point;
+- explicit loading of the ordered advanced-Vault module stack after the base Vault;
+- visible failure messaging if advanced enhancement bootstrap fails;
+- a regression test that pins the production `vault.html` page to the enhancement bootstrap;
+- evidence-backed collection valuation coverage;
+- separate portfolio totals by currency with **no cross-currency grand total**;
+- category and collection-group rollups inside each currency;
+- exact sold-evidence IDs behind every included treasure contribution;
+- quantity-aware totals only when safe integer math is possible;
+- corrected evidence, asking listings and archived treasures excluded from totals;
+- a minimum of three compatible sold comparables within the existing 180-day window;
+- treasures with multiple independently-supported condition/grade estimate buckets excluded as ambiguous instead of guessed;
+- explicit exclusion reasons, coverage percentage and non-appraisal language;
+- responsive Royal Vault portfolio UI and updated evidence-backed hero/stat language.
+
+Verification: PR #26 head `e11866cac0fd44c349b60f5b4800bc2a332e104d` — Kingdom Quality Gates #668 / run `34718610662` — **PASS**.
+
+Research: `docs/research/2026-09-12-IMP-005-LIVE-VAULT-PORTFOLIO.md`
 
 ## AI card pre-grading — verified capability
 
@@ -199,9 +221,9 @@ Documentation is part of implementation. After substantial verified build batche
 - External evidence must surface uncertainty instead of silently inventing identity, variant, condition, grade, authenticity, provenance or value.
 - Mobile, Android, Chromebook, tablet and desktop workflows are first-class.
 
-## Current next target
+## Current next target after PR #26 integration
 
-**Provider-Neutral Valuation Observation Adapter + Collection-Level Evidence Rollups**
+**Provider-Neutral Valuation Observation Adapter + Evidence-Cited Keeper Explanations**
 
 Build order:
 
@@ -210,8 +232,8 @@ Build order:
 3. preserve collector-recorded evidence separately from provider-originated observations and never let provider IDs replace permanent treasure UUIDs;
 4. fail closed when required source, freshness, condition/grade or currency evidence is missing;
 5. investigate only officially permitted provider feeds by collectible category; do not scrape around restricted APIs;
-6. derive collection-level valuation coverage and rollups only for compatible evidence/currency buckets;
-7. expose exact valuation evidence and realized-sale record IDs behind Keeper explanations;
+6. expose exact valuation evidence and realized-sale record IDs behind Keeper explanations;
+7. begin collection-value history snapshots only from immutable evidence/read models, never a mutable mystery-value field;
 8. keep automatic FX conversion disabled until a separate governed FX policy exists;
 9. pass full Kingdom Quality Gates;
 10. update README and `docs/MISSION-PROGRESS.md` at the next verified checkpoint.

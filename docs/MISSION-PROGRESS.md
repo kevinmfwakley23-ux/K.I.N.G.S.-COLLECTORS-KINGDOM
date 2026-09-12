@@ -18,16 +18,18 @@ This file is the durable engineering recovery ledger. Read it before substantial
 
 **Date:** 2026-09-12 (America/Denver)  
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Latest integrated slice:** **Realized-Sale / Value-History Linkage**  
-**Production commit:** `061e29ab129ec5ee8e09a240afb8018ae408c996`  
-**Merged pull request:** **#24 — `IMP-005: realized-sale value-history linkage`**  
-**Latest pre-merge verification:** **Kingdom Quality Gates #664** — run `34682718156` — **PASS**
+**Latest integrated production slice:** **Realized-Sale / Value-History Linkage**  
+**Current `main` head:** `30b6a4cd55fc577d1218c112389244aeb06a9f15`  
+**Integrated implementation commit:** `061e29ab129ec5ee8e09a240afb8018ae408c996`  
+**Merged implementation pull request:** **#24 — `IMP-005: realized-sale value-history linkage`**  
+**Verified unmerged candidate:** **#26 — Live Vault Bootstrap + Evidence-Backed Portfolio Intelligence**  
+**Candidate verification:** **Kingdom Quality Gates #668** — run `34718610662` — **PASS**
 
-PR #24 was squash-merged after its exact final head `56e95a7658e4c2ae3cbaac055f28e7add88e412e` passed the canonical Kingdom Quality Gates.
+PR #26 head `e11866cac0fd44c349b60f5b4800bc2a332e104d` passed the full canonical quality gates. **Do not treat PR #26 as production until it is merged.**
 
-### Exact recovery point
+### Exact production recovery point
 
-Do **not** rebuild these verified IMP-005 slices:
+Do **not** rebuild these verified production IMP-005 slices:
 
 - permanent owner-scoped treasure UUIDs and SQLite persistence;
 - treasure create/read/update/archive;
@@ -66,30 +68,83 @@ Do **not** rebuild these verified IMP-005 slices:
 
 ---
 
-## Latest integrated slice — Realized-Sale / Value-History Linkage
+## Verified candidate — PR #26 Live Vault Bootstrap + Portfolio Intelligence
+
+### Why this slice was prioritized
+
+A repository audit found that advanced Vault UI modules already existed behind `apps/web/public/vault-extras.js`, and the loader itself had unit coverage, but the production `vault.html` entry point loaded only `/vault.js`. This allowed source files and artifact tests to succeed without proving that intake/provenance/valuation/reorganization/grading enhancements were actually mounted in a real Vault browser session.
+
+The verified PR candidate closes that runtime-proof gap before layering more features on top.
+
+### Fresh competitive/provider research
+
+Current research reviewed:
+
+- Ludex — collection totals by category plus per-card recent sales and selectable price reports;
+- Card Ladder — deep vetted public-sales history and day-by-day collection values;
+- hobbyDB — collection value/gain-loss plus separation between verifiable completed-sale price points and unverified owner-entered prices;
+- TCGplayer developer documentation — currently not granting new API access;
+- eBay Browse — useful active-listing search surface, not a public general-purpose completed-sales-history feed.
+
+Research record: `docs/research/2026-09-12-IMP-005-LIVE-VAULT-PORTFOLIO.md`.
+
+### Candidate runtime behavior
+
+PR #26 introduces:
+
+- `apps/web/public/vault-bootstrap.js` as the real Royal Vault browser entry point;
+- base `vault.js` loading before the ordered advanced enhancement stack;
+- explicit browser failure messaging when enhancement bootstrap fails;
+- regression coverage proving `vault.html` invokes the enhancement bootstrap rather than only checking that files exist;
+- portfolio UI mounted through the real `vault-extras.js` chain;
+- type-contract and production-artifact gates for the new bootstrap/portfolio files.
+
+### Candidate portfolio behavior
+
+The portfolio read model:
+
+- considers active, non-archived treasures only;
+- requires at least three compatible sold comparables inside the existing 180-day freshness window;
+- uses the same median/up-to-20 sold-comparable policy as the per-treasure valuation foundation;
+- excludes asking listings from estimates;
+- excludes corrected evidence;
+- excludes a treasure if more than one independently-supported condition/grade bucket exists instead of guessing which bucket represents the physical item;
+- multiplies a supported per-item estimate by quantity only when safe-integer math remains valid;
+- keeps currencies completely separate and performs no automatic FX conversion;
+- exposes evidence coverage percentage;
+- exposes category and collection-group rollups inside each currency;
+- exposes exact sold-evidence IDs behind every included treasure contribution;
+- exposes explicit reasons for unsupported/excluded records;
+- states that portfolio estimates are advisory and not appraisals;
+- never mutates an authoritative market-value field.
+
+Primary files:
+
+- `apps/web/public/vault-bootstrap.js`
+- `apps/web/public/vault-extras.js`
+- `apps/web/public/vault-portfolio-core.js`
+- `apps/web/public/vault-portfolio-ui.js`
+- `apps/web/public/vault-portfolio.css`
+- `apps/web/public/vault.html`
+- `tests/vault-runtime-bootstrap.test.mjs`
+- `tests/vault-portfolio.test.mjs`
+- `tests/vault-portfolio-ui.test.mjs`
+- `tools/typecheck.mjs`
+- `tools/verify-build.mjs`
+
+Verification:
+
+- implementation/research head `e11866cac0fd44c349b60f5b4800bc2a332e104d` — Kingdom Quality Gates #668 / run `34718610662` — **PASS**.
+
+Status: **verified PR candidate, not yet production**.
+
+---
+
+## Latest integrated production slice — Realized-Sale / Value-History Linkage
 
 ### Research used
 
-Fresh research reviewed current collector products and relevant open-source architectures:
-
-- Ludex — scanner-first intake, recent sales evidence, price reports and seller flow;
-- CollX — image-assisted collection tracking plus negotiated marketplace deals;
-- Collectr — portfolio history, gains/losses, trade analysis and raw/graded price views;
-- PriceCharting — collection history plus collector-recorded sale price/date/profit;
-- Card Ladder — vetted multi-market sales history and market analytics;
-- CLZ Comics + CovrPrice — deep category metadata, barcode/cover intake, locations and optional value integration;
-- Discogs — explicit approximate value based on sales history and omission of items lacking price evidence;
-- hobbyDB — value history, gains/losses, marketplace lifecycle and human-vetted price points;
-- HomeBox — portable SQLite inventory, nested organization, media/documents and responsive UX;
-- Foilstack — review-first machine matching, provider/plugin boundaries, ambiguity fail-closed behavior and durable price history;
-- OpenBinder — mobile-first PWA, multiple binders, checklist/inventory separation and offline read-only collection mirrors.
-
-Provider feasibility research found:
-
-- eBay Browse is an active-inventory surface; Marketplace Insights sold-history access is currently restricted and not open to new users;
-- PriceCharting's documented API exposes current values but explicitly does not support historic prices/historic sales;
-- Cardmarket is not currently accepting new API applications and imposes explicit data-use restrictions on existing access;
-- therefore no restricted API, public search scrape or active asking listing is being mislabeled as an automatic sold-comparable feed.
+Fresh research reviewed Ludex, CollX, Collectr, PriceCharting, Card Ladder, CLZ/CovrPrice, Discogs, hobbyDB, HomeBox, Foilstack and OpenBinder. Provider feasibility research found that eBay sold-history access is restricted, PriceCharting's documented API does not supply historical prices/sales, and Cardmarket is not accepting new API applications. Restricted APIs or public-search scraping are not being mislabeled as automatic sold-comparable feeds.
 
 Research record: `docs/research/2026-09-12-IMP-005-VALUATION-SOURCE-AND-HISTORY.md`.
 
@@ -105,56 +160,27 @@ Research record: `docs/research/2026-09-12-IMP-005-VALUATION-SOURCE-AND-HISTORY.
 - asking listings remain excluded from the estimate;
 - currencies remain separate and cross-currency aggregation remains disabled;
 - history declares `derived: true` and `persistedAsMutableValue: false`;
-- isolated valuation runtimes remain functional when the provenance table is absent and report `provenanceAvailable: false`;
-- dedicated regression coverage exists in `tests/vault-valuation-history.test.mjs`.
-
-Primary implementation files:
-
-- `packages/vault/src/value-history.mjs`
-- `packages/vault/src/valuation-service.mjs`
-- `tests/vault-valuation-history.test.mjs`
-- `docs/research/2026-09-12-IMP-005-VALUATION-SOURCE-AND-HISTORY.md`
+- isolated valuation runtimes remain functional when provenance is absent and report `provenanceAvailable: false`.
 
 Verification sequence:
 
 - code-bearing PR head `beaefdd2d3e9e2ed5d6b136b19f6d00b9faf3901` — Quality Gates #661 — **PASS**;
-- research-complete PR head `6fc5c4651232d85dff25deb545c98b1a0f52af7a` — Quality Gates #662 / run `34682629889` — **PASS**;
-- final PR head `56e95a7658e4c2ae3cbaac055f28e7add88e412e` — Quality Gates #664 / run `34682718156` — **PASS**;
-- squash-merged production commit `061e29ab129ec5ee8e09a240afb8018ae408c996`.
+- research-complete head `6fc5c4651232d85dff25deb545c98b1a0f52af7a` — Quality Gates #662 / run `34682629889` — **PASS**;
+- final PR #24 head `56e95a7658e4c2ae3cbaac055f28e7add88e412e` — Quality Gates #664 / run `34682718156` — **PASS**;
+- squash-merged implementation commit `061e29ab129ec5ee8e09a240afb8018ae408c996`;
+- production recovery closure PR #25 merged as `30b6a4cd55fc577d1218c112389244aeb06a9f15`.
 
 ---
 
 ## Production valuation foundation — PR #22
 
-The production baseline deliberately avoids the opaque-one-number market-value pattern. Authoritative treasure identity, ownership/provenance, market evidence and estimates remain separate.
+Verified production behavior includes append-only owner-scoped valuation evidence, sold-vs-asking separation, SHA-256 integrity, linked corrections, strict currency/condition/grade buckets, 180-day freshness, minimum three compatible recent sold comparables, median/range estimates, authenticated Vault API/UI, portable export, and explicit non-appraisal/non-mutation boundaries.
 
-Verified behavior:
+Production verification:
 
-- owner-scoped append-only SQLite valuation evidence;
-- distinct `sold-comparable` and `asking-listing` evidence types;
-- source name plus source URL/reference;
-- observed date, integer amount, currency, item state, condition and grading context;
-- SHA-256 evidence integrity checks;
-- append-only linked corrections rather than destructive edits/deletes;
-- raw, graded, sealed and other evidence buckets remain separate;
-- currencies are not silently combined;
-- graded evidence retains grading company and grade label;
-- asking listings remain visible but never drive the estimate;
-- only sold comparables observed within 180 days qualify for the current estimate;
-- fewer than three compatible recent sold comparables produces **no estimate**;
-- estimate method is the median of up to 20 recent sold comparables;
-- visible low/high range, sample count, named-source count, freshness context and evidence-strength warning;
-- collector-facing Royal Vault evidence/estimate panel;
-- authenticated owner-scoped valuation HTTP API;
-- valuation evidence included in portable Vault export;
-- no authoritative treasure value, grade, condition, authenticity, provenance or ownership mutation;
-- initial evidence class is `collector-recorded-comparable` and exposed as `independentlyVerified: false`.
-
-Production verification sequence:
-
-- PR #22 code-bearing head `6ff1eba5671efd5f86c2df6c694cca019e3b7a46` — Quality Gates #654 / run `34672838622` — PASS;
-- final PR #22 head `9e218849d657373cfe8a9564f3114defbfbd710a` — Quality Gates #657 / run `34672939698` — PASS;
-- squash-merged implementation head `5addf3d483e978c79028ff00812d8beca08b9661` — Quality Gates #658 / run `34672966858` — PASS;
+- PR #22 code head `6ff1eba5671efd5f86c2df6c694cca019e3b7a46` — Quality Gates #654 — PASS;
+- final PR #22 head `9e218849d657373cfe8a9564f3114defbfbd710a` — Quality Gates #657 — PASS;
+- merged implementation `5addf3d483e978c79028ff00812d8beca08b9661` — Quality Gates #658 — PASS;
 - documentation recovery checkpoint `42d0a8b8c047d9aee01c30fe6e7edeac87cb57d5`.
 
 ---
@@ -180,23 +206,23 @@ Production verification sequence:
 - Calibrated Physical Measurement + Capture Scale — PR #20 / #637 — PASS and merged.
 - Macro Corner/Edge Evidence Refinement — PR #21 — PASS and merged.
 - Evidence-Backed Valuation Foundation — PR #22 / #658 — PASS and merged.
-- Realized-Sale / Value-History Linkage — PR #24 / final #664 — PASS and merged.
+- Realized-Sale / Value-History Linkage — PR #24 / #664 — PASS and merged.
 
 ---
 
-## Exact next engineering target
+## Exact next engineering target after PR #26 integration
 
-**Provider-Neutral Valuation Observation Adapter + Collection-Level Evidence Rollups**
+**Provider-Neutral Valuation Observation Adapter + Evidence-Cited Keeper Explanations**
 
 Build next in this order:
 
-1. define a provider-neutral normalized observation contract with explicit provider ID, provider observation ID, observation type, source/reference, observed date, retrieved/build timestamp, amount, currency, item state, condition and grading context;
+1. define a normalized observation contract with explicit provider ID, provider observation ID, observation type, source/reference, observed date, retrieved/build timestamp, amount, currency, item state, condition and grading context;
 2. require an explicit provider policy/terms identifier before a network market adapter can be enabled;
 3. preserve collector-recorded evidence separately from provider-originated evidence and never replace permanent treasure UUIDs with provider IDs;
 4. fail closed when source, freshness, amount/currency, condition or grade context required by the observation is missing;
 5. research and integrate only officially permitted provider feeds by collectible category; do not scrape around access restrictions;
-6. derive collection-level valuation coverage and rollups only where currency/evidence compatibility is explicit;
-7. make Keeper valuation explanations cite exact valuation evidence and realized-sale source record IDs;
+6. make Keeper valuation explanations cite exact valuation evidence and realized-sale source record IDs;
+7. derive collection-value history snapshots only from immutable evidence/read models;
 8. keep automatic FX conversion disabled until a separately researched/verified FX policy exists;
 9. pass full Kingdom Quality Gates;
 10. update README and this ledger at the next verified checkpoint.
@@ -208,10 +234,9 @@ Build next in this order:
 Do not represent these as live until separately implemented and verified:
 
 - automatic licensed market-data provider adapters;
-- collection-level valuation history/coverage rollups;
+- Keeper evidence-cited valuation explanations across the value-history/portfolio model;
+- persistent collection-level valuation history over time;
 - automatic currency conversion/FX policy;
-- Keeper evidence-cited valuation explanations across the new history model;
-- collector-facing value-history visualization beyond the API/read-model data now exposed;
 - review-aware overall grading advisory estimate;
 - reliable manufacturing-vs-handling defect classification;
 - alternate-light/UV/spectral analysis;
@@ -231,6 +256,6 @@ Do not represent these as live until separately implemented and verified:
 
 ### Permanent truthfulness boundary
 
-A catalog result, AI pre-grade, photograph, autograph similarity result, barcode, title match, grading label, cert number, collector statement, sold comparable, asking listing or realized owner sale is not silently promoted into an authoritative independent claim.
+A catalog result, AI pre-grade, photograph, autograph similarity result, barcode, title match, grading label, cert number, collector statement, sold comparable, asking listing, portfolio estimate or realized owner sale is not silently promoted into an authoritative independent claim.
 
-AI grading is estimated condition evidence; professional grading and authentication remain separate authorities. Valuation estimates are evidence-derived advisory read models, not appraisals or guaranteed sale prices. Realized sales are lifecycle evidence and remain separate from current market-comparable estimation. Permanent Kingdom treasure UUIDs remain provider-independent physical-item identities. Collector ownership/provenance records remain distinct from valuation evidence.
+AI grading is estimated condition evidence; professional grading and authentication remain separate authorities. Valuation/portfolio estimates are evidence-derived advisory read models, not appraisals or guaranteed sale prices. Realized sales are lifecycle evidence and remain separate from current market-comparable estimation. Permanent Kingdom treasure UUIDs remain provider-independent physical-item identities. Collector ownership/provenance records remain distinct from valuation evidence.
