@@ -1,0 +1,87 @@
+.vault-provider-observations {
+  border: 1px solid rgba(59, 46, 25, 0.18);
+  border-radius: 16px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.provider-observation-policy {
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  background: rgba(177, 138, 48, 0.08);
+  border: 1px solid rgba(177, 138, 48, 0.18);
+}
+
+.provider-observation-policy > strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.provider-observation-status {
+  min-height: 1.3rem;
+}
+
+.provider-observation-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.provider-observation-card {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.85rem;
+  border-radius: 14px;
+  border: 1px solid rgba(59, 46, 25, 0.14);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.provider-observation-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.provider-observation-copy {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.provider-observation-copy small,
+.provider-observation-note {
+  color: var(--muted, #6b655b);
+}
+
+.provider-observation-money {
+  white-space: nowrap;
+  font-size: 1.05rem;
+}
+
+.provider-observation-trust {
+  margin: 0;
+  font-weight: 700;
+  color: #5d4d27;
+}
+
+.provider-observation-ids {
+  overflow-wrap: anywhere;
+  font-size: 0.75rem;
+  color: #564728;
+}
+
+.provider-observation-note {
+  margin: 0;
+}
+
+.provider-observation-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+@media (max-width: 720px) {
+  .provider-observation-head {
+    flex-direction: column;
+  }
+}
