@@ -11,10 +11,11 @@ function requireIdentity(identityService, request) {
   return identity;
 }
 
-function sendJson(response, statusCode, payload, method, securityHeaders) {
+function sendJson(response, statusCode, payload, method, securityHeaders, headers = {}) {
   const body = JSON.stringify(payload);
   response.writeHead(statusCode, {
     ...securityHeaders,
+    ...headers,
     "Content-Type": "application/json; charset=utf-8",
     "Content-Length": Buffer.byteLength(body),
     "Cache-Control": "private, no-store, max-age=0"
@@ -48,7 +49,7 @@ async function readJson(request) {
 }
 
 function valuationRoute(pathname) {
-  const match = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/valuation(?:\/(evidence))?$/);
+  const match = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/valuation(?:\/(evidence|observations))?$/);
   if (!match) return null;
   try {
     return { treasureId: decodeURIComponent(match[1]), action: match[2] ?? null };
@@ -66,18 +67,58 @@ export async function handleVaultValuationRoute({
   securityHeaders
 } = {}) {
   const route = valuationRoute(requestUrl.pathname);
-  if (!route) return null;
+  const ownerObservationExport = requestUrl.pathname === "/api/vault/valuation/observations";
+  if (!route && !ownerObservationExport) return null;
   if (!vaultValuationService) throw new VaultError("vault_valuation_unavailable", "The Vault valuation evidence service is unavailable.", 503);
 
   const method = request.method ?? "GET";
   const identity = requireIdentity(identityService, request);
 
+  if (ownerObservationExport && (method === "GET" || method === "HEAD")) {
+    return sendJson(response, 200, {
+      schemaVersion: 1,
+      generatedAt: new Date().toISOString(),
+      providerObservations: vaultValuationService.exportProviderObservations(identity),
+      policy: vaultValuationService.providerObservationStats(identity)
+    }, method, securityHeaders, {
+      "Content-Disposition": `attachment; filename="kings-vault-provider-observations-${new Date().toISOString().slice(0, 10)}.json"`
+    });
+  }
+
   if (!route.action && (method === "GET" || method === "HEAD")) {
     return sendJson(response, 200, {
       snapshot: vaultValuationService.snapshot(identity, route.treasureId),
       evidence: vaultValuationService.list(identity, route.treasureId),
+      providerObservations: vaultValuationService.listProviderObservations(identity, route.treasureId),
       evidenceTypes: vaultValuationService.evidenceTypes,
-      itemStates: vaultValuationService.itemStates
+      itemStates: vaultValuationService.itemStates,
+      providerObservationTypes: vaultValuationService.providerObservationTypes,
+      providerObservationItemStates: vaultValuationService.providerObservationItemStates,
+      providerObservationPolicy: {
+        collectorWriteAvailable: false,
+        providerOriginRequired: true,
+        physicalTreasureMatchVerified: false,
+        providerIdentityIsTreasureIdentity: false,
+        influencesCurrentEstimate: false
+      }
+    }, method, securityHeaders);
+  }
+
+  if (route.action === "observations" && (method === "GET" || method === "HEAD")) {
+    const limit = requestUrl.searchParams.get("limit");
+    return sendJson(response, 200, {
+      observations: vaultValuationService.listProviderObservations(identity, route.treasureId, {
+        limit: limit === null ? 250 : Number(limit)
+      }),
+      observationTypes: vaultValuationService.providerObservationTypes,
+      itemStates: vaultValuationService.providerObservationItemStates,
+      policy: {
+        collectorWriteAvailable: false,
+        providerOriginRequired: true,
+        physicalTreasureMatchVerified: false,
+        providerIdentityIsTreasureIdentity: false,
+        influencesCurrentEstimate: false
+      }
     }, method, securityHeaders);
   }
 
