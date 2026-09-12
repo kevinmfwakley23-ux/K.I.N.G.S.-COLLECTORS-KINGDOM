@@ -5,37 +5,38 @@ This file is the durable engineering recovery ledger. Read it before substantial
 ## Permanent execution rules
 
 - The locked K.I.N.G.S. Collectibles construction documents are the primary product/construction guide.
-- Research current competitors, official provider APIs and data-use terms before meaningful build work.
+- Research current competitors, official provider APIs, open-source patterns and data-use terms before meaningful build work.
 - Adopt improvements only when they strengthen rather than silently replace product intent.
-- Do not call functionality complete until it is real, wired and verified through the strongest relevant gates.
+- Do not call functionality complete until it is real, wired and verified through the strongest relevant repository gates.
 - Preserve permanent Kingdom treasure identity across organization, provenance, grading, Marketplace, insurance, valuation and legacy expansion.
 - Never manufacture market values, identification certainty, grading certainty, physical authenticity, provenance verification or successful mutations.
+- Collector data ownership, exportability and authoritative human control remain first-class.
 
 ---
 
 ## Current checkpoint
 
-**Date:** 2026-09-06  
+**Date:** 2026-09-11 (America/Denver)  
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Latest verified branch checkpoint:** **Calibrated Physical Measurement + Capture Scale**, integrated with **Explainable AI Card Grading Report + Dimension Evidence** and the **Official Kingdom Brand + Installable PWA Surface**  
-**Latest verified implementation gate:** **Kingdom Quality Gates #637** — run `34017972903` — **PASS**  
-**Verified implementation head:** `a89f4b6eeddb7c6b168cae9c580bbac4d696d42f`  
-**Working branch:** `imp-005-calibrated-physical-measurement`  
-**Pull request:** `#20` — `IMP-005: calibrated physical measurement scale`
+**Current integration candidate:** **Evidence-Backed Valuation Foundation**  
+**Working branch:** `imp-005-evidence-backed-valuation-foundation`  
+**Pull request:** **#22 — `IMP-005: evidence-backed valuation foundation`**
 
-#637 verified the PR #20 merge candidate against current `main`: lint, type contracts, **249/249 tests**, production build/artifact verification, and production dependency audit with **0 vulnerabilities**.
+The code-bearing PR #22 head `6ff1eba5671efd5f86c2df6c694cca019e3b7a46` passed **Kingdom Quality Gates #654** — run `34672838622` — including the canonical `npm run verify` path and production dependency audit.
 
-This branch is verified by automation and ready for review/merge consideration. It is not the `main` production baseline until PR #20 merges.
+README/recovery-document updates were added after that code-bearing gate. Therefore the final exact PR head must pass again before merge. Do not treat the branch as integrated into `main` until that final gate is green and PR #22 is merged.
 
-### Exact recovery point
+### Main-branch truth before PR #22
 
-Do **not** rebuild the following verified IMP-005 slices:
+Already merged to `main` and **must not be rebuilt**:
 
+- PR #20 — calibrated physical measurement + capture scale;
+- PR #21 — macro corner/edge evidence refinement;
 - permanent owner-scoped treasure UUIDs and SQLite persistence;
 - treasure create/read/update/archive;
-- collections and arbitrary-depth physical storage;
+- collections and arbitrary-depth physical storage locations;
 - secure private media and SHA-256 integrity linkage;
-- voice command/talk-to-text;
+- voice navigation/talk-to-text where browser speech APIs exist;
 - transactional JSON/CSV migration;
 - Royal Intake Queue and progressive native barcode scanning;
 - review-only Open Library ISBN evidence;
@@ -51,190 +52,96 @@ Do **not** rebuild the following verified IMP-005 slices:
 - deterministic front/back centering math and manual anchor correction;
 - browser capture-quality analysis;
 - whole-card geometry/crop/perspective detection;
-- contour-based corner/edge anomaly review signals;
+- contour plus macro corner/edge anomaly review signals;
 - paired raking-light surface anomaly analysis;
 - same-printing color/fade comparison;
 - web-backed autograph visual-similarity comparison through authenticated Wikimedia Commons reference search/proxy;
 - append-only hashed pre-grade analysis persistence;
 - detector-completion coverage evidence;
-- server-computed read-only advisory grade range with fail-closed minimum evidence and conservative uncertainty widening;
-- deterministic grading-finding SHA-256 identities bound to immutable source-analysis hashes;
-- normalized defect extent metrics without fabricated physical millimeters;
-- eight explainable front/back grading dimensions: centering, corners, edges and surface;
-- per-dimension availability/range/confidence/completeness/missing-evidence guidance;
-- append-only collector finding reviews: `accepted`, `rejected`, `uncertain`;
-- review-aware dimension interpretation that never deletes or rewrites raw detector evidence;
+- server-computed read-only advisory grade range with fail-closed evidence floors;
+- deterministic grading-finding SHA-256 identities;
+- eight explainable front/back grading dimensions;
+- append-only collector finding reviews;
 - private authenticated/no-store explainable-report and finding-review HTTP routes;
-- responsive report UI with full append-only collector review history;
-- official owner-approved Collector's Kingdom crest wired into landing/Royal Gate and shared Great Hall/Vault/room/Marketplace branding;
-- installable PWA manifest using the approved Kingdom crest;
-- progressive install prompt and static-only service worker with explicit API/document exclusions;
-- versioned physical calibration evidence accepted through the grading service and HTTP boundary;
-- same-plane known-size reference/fiducial validation with fail-closed cropped/ambiguous/distorted/skewed/out-of-tolerance behavior;
-- pixel-to-millimeter conversion derived only from the independent calibration reference;
-- perspective-aware card width/height estimates with uncertainty and confidence;
-- measured card dimension comparison against selected card-size profiles as advisory evidence only;
-- calibrated approximate defect bounding-box millimeter spans only when valid calibration exists for that source media;
-- normalized-only measurement output when calibration is absent or invalid;
-- report and browser UI physical-measurement summaries that keep authentication, grade, condition and value mutation flags false.
+- official owner-approved Collector's Kingdom crest throughout core Kingdom surfaces;
+- installable PWA manifest and static-only service worker with explicit API/document exclusions;
+- same-plane known-size calibration/fiducial evidence and pixel-to-millimeter conversion only when validation succeeds;
+- perspective-aware physical card measurements with uncertainty/confidence;
+- macro corner/edge capture and detector evidence linked to exact private media.
 
 ---
 
-## Latest calibrated physical measurement slice
+## Current PR #22 — Evidence-Backed Valuation Foundation
+
+### Competitive research completed
+
+Current public products and repositories reviewed for patterns, not copied code:
+
+- CollX — fast photo identification, market-price presentation, collection value and marketplace flow;
+- Ludex — scanner-first collection workflow, value range/portfolio patterns and fast marketplace listing;
+- PriceCharting — historic collection values, condition/grade-aware tracking, sold-item history and profit tracking;
+- HomeBox — portable SQLite, rich inventory organization, custom fields, images/documents and user-controlled backups;
+- OmniCard — bulk card identification, OCR/perceptual hashing, storage locations, set completion, CSV interoperability and web companion architecture.
+
+Research record: `docs/research/2026-09-11-IMP-005-EVIDENCE-BACKED-VALUATION.md`.
+
+### Design adopted and improved
+
+The Kingdom does **not** copy the common opaque-one-number pricing pattern. PR #22 separates authoritative treasure identity, ownership/provenance, market evidence and derived estimates.
+
+Implemented valuation behavior:
+
+- owner-scoped append-only SQLite valuation evidence;
+- `sold-comparable` and `asking-listing` records remain distinct;
+- source name plus source URL/reference for auditability;
+- observed date, integer cents, currency, item state, condition and grading context;
+- SHA-256 integrity verification on stored evidence;
+- linked append-only corrections rather than destructive edits/deletes;
+- raw, graded, sealed and other states remain distinct estimate buckets;
+- currencies are never silently combined;
+- graded evidence requires grading company and grade label;
+- asking listings remain visible but never drive the estimate;
+- only sold comparables observed within 180 days qualify for the current estimate;
+- fewer than three compatible recent sold comparables returns **no estimate**;
+- first estimate method is the median of up to 20 recent sold comparables;
+- visible low/high range, sample count, named-source count, freshness context and evidence-strength warning;
+- collector-facing Royal Vault evidence panel;
+- authenticated owner-scoped valuation HTTP API;
+- valuation evidence included in portable Vault export;
+- no authoritative treasure value/grade/condition/authenticity/provenance/ownership mutation;
+- initial evidence class is `collector-recorded-comparable` and is exposed as `independentlyVerified: false`.
 
 Primary implementation files:
 
-- `packages/grading/src/calibration.mjs`
-- `packages/grading/src/measurement.mjs`
-- `packages/grading/src/evidence.mjs`
-- `packages/grading/src/dimensions.mjs`
-- `packages/grading/src/report-service.mjs`
-- `packages/grading/src/service.mjs`
-- `apps/web/grading-analysis-http.mjs`
-- `apps/web/public/vault-grading-calibration-core.js`
-- `apps/web/public/vault-grading-persistence-ui.js`
-- `apps/web/public/vault-grading-report-ui.js`
-- `apps/web/public/vault-grading.css`
+- `packages/vault/src/valuation-repository.mjs`
+- `packages/vault/src/valuation-service.mjs`
+- `apps/web/vault-valuation-http.mjs`
+- `apps/web/public/vault-valuation-core.js`
+- `apps/web/public/vault-valuation-ui.js`
+- `apps/web/public/vault-valuation.css`
+- `apps/web/server.mjs`
+- `apps/web/public/vault-extras.js`
+- `tests/vault-valuation.test.mjs`
+- `tests/vault-valuation-server.test.mjs`
+- `tests/vault-valuation-ui.test.mjs`
 - `tools/typecheck.mjs`
-- `tests/grading-calibration.test.mjs`
-- `tests/grading-explainability.test.mjs`
-- `tests/grading-persistence-ui-artifact.test.mjs`
-- `docs/research/2026-09-05-IMP-005-CALIBRATED-PHYSICAL-MEASUREMENT.md`
+- `tools/verify-build.mjs`
+- `docs/IMP-005-VALUATION-IMPLEMENTATION.md`
+- `docs/research/2026-09-11-IMP-005-EVIDENCE-BACKED-VALUATION.md`
 
-Verified behavior:
+### Verification already achieved on code-bearing head
 
-- calibration evidence supports `kingdom-square-fiducial-v1`, `kingdom-rectangle-fiducial-v1`, and `known-size-reference-v1`;
-- every stored calibration entry remains advisory and tied to a source media identifier;
-- physical millimeter measurement is unavailable unless the reference is same-plane, visible, unambiguous, inside tolerance and confidence-qualified;
-- card-size profile dimensions can be used only for advisory comparison, never as the scale source;
-- failed calibration returns reasons and no pixel-to-millimeter conversion;
-- valid calibration produces an independent pixel-to-millimeter ratio, measured card dimensions, uncertainty and confidence;
-- measured card dimensions are compared to the selected profile without becoming authenticity proof;
-- normalized defect extent remains available without calibration;
-- approximate millimeter spans are added only when a valid calibration exists for the finding source media;
-- the explainable report version is advanced to `kingdom-explainable-grading-report-v2` while preserving the previous v1 boundary;
-- report output includes physical measurement availability, source media, measured card dimensions, failure reasons and truthfulness limitations;
-- the browser UI exposes independent calibration guidance and preview before persistence;
-- calibration evidence is persisted only through the same SHA-linked private Vault media path used by other browser-computed grading evidence;
-- all official-grade, physical-authentication, condition, value, provenance and ownership mutation flags remain false.
+**Kingdom Quality Gates #654** — run `34672838622` — **PASS** on `6ff1eba5671efd5f86c2df6c694cca019e3b7a46`:
 
-### Verification sequence
+- exact dependency installation — PASS;
+- canonical `npm run verify` — PASS;
+- production dependency audit — PASS.
 
-- **Quality Gates #634** — run `33996563755` — failed with 247/249 tests after two contract mismatches: a calibration test passed normalized evidence into the raw ingestion path, and a UI artifact test retained stale copy expectations.
-- The calibration ingestion test was corrected to send raw evidence through the same path used by browser/server persistence.
-- The UI artifact test was corrected to assert calibrated measurement history and estimate display instead of stale detector-only copy.
-- **Quality Gates #637** — run `34017972903` — **PASS** on `a89f4b6eeddb7c6b168cae9c580bbac4d696d42f`: lint, type contracts, **249/249 tests**, production build/artifact verification, and production dependency audit with **0 vulnerabilities**.
+The final docs-bearing head still requires exact-head revalidation before merge.
 
 ---
 
-## Previous verified explainable grading slice
-
-Primary implementation files:
-
-- `packages/grading/src/findings.mjs`
-- `packages/grading/src/measurement.mjs`
-- `packages/grading/src/dimensions.mjs`
-- `packages/grading/src/review-repository.mjs`
-- `packages/grading/src/report-service.mjs`
-- updated `packages/grading/src/service.mjs`
-- updated `apps/web/grading-analysis-http.mjs`
-- `apps/web/public/vault-grading-report-ui.js`
-- updated `apps/web/public/vault-extras.js`
-- updated `apps/web/public/vault-grading.css`
-- `tests/grading-explainability.test.mjs`
-- `tests/grading-finding-review.test.mjs`
-- `tests/grading-report-server.test.mjs`
-- `tests/grading-report-ui-artifact.test.mjs`
-- updated type/build contracts
-- `docs/research/2026-09-05-IMP-005-GRADING-EXPLAINABILITY.md`
-
-Verified behavior:
-
-- each detector finding receives a deterministic SHA-256 identity tied to source analysis SHA-256, defect index and canonical raw evidence;
-- normalized bounding-box area/span can be reported without inventing physical millimeters;
-- eight dimension summaries are emitted for front/back centering, corners, edges and surface;
-- a dimension fails closed as `available:false` when its evidence floor is missing;
-- dimension output includes confidence, completeness, source analysis/media, raw finding IDs, review states, missing evidence and limitations;
-- collector finding reviews are append-only SQLite records and expose no ordinary update/delete repository methods;
-- latest review can change current interpretation while every earlier review remains in history;
-- raw detector evidence remains immutable regardless of `accepted`, `rejected` or `uncertain` review decision;
-- report routes require authentication, hide cross-owner treasure existence and return private/no-store responses;
-- finding-review routes support GET/HEAD/POST only; PATCH/DELETE fail with 405;
-- the overall range is explicitly labeled **raw stored-evidence advisory range**;
-- collector reviews affect dimension interpretation only and do not pretend to recalculate the raw overall range;
-- no official grade/subgrade, physical authentication or authoritative Vault mutation is produced.
-
-### Prior verification sequence
-
-- **Quality Gates #603** — run `33983272304` — PASS on initial domain slice `6c416ab69053ebb36531079a7e9fa0067325a263`.
-- **Quality Gates #612** — run `33983534538` — 238/239 tests passed; the only failure was a stale exact Vault-extra module-order expectation after the report module was correctly appended.
-- The stale bootstrap test was corrected; production bootstrap was not weakened.
-- The overall-range truthfulness boundary was strengthened to `overallEstimateReviewAware:false` while dimensions remain review-aware.
-- **Quality Gates #616** — run `33983709095` — PASS.
-- Append-only review-history display was then added.
-- **Quality Gates #619** — run `33983841225` — PASS on `9a5dee7e17dc1dd022a360c192415272f4ad6995`, all 239 tests and 0 production vulnerabilities.
-- Official brand/PWA baseline was later merged to `main`; PR #19 synchronized that production baseline into the grading branch without dropping the verified grading implementation.
-- **Quality Gates #630** — run `33995211864` — PASS on combined head `c0e670f82dee0e71ca1585b7da678a071ae1c116`, all 244 tests, production artifact verification and 0 vulnerabilities.
-
----
-
-## Official brand + install baseline retained
-
-Primary brand/install files:
-
-- `apps/web/public/assets/kingdom-official-logo.svg`
-- `apps/web/public/brand.css`
-- `apps/web/public/brand-runtime.js`
-- `apps/web/public/manifest.json`
-- `apps/web/public/pwa.js`
-- `apps/web/public/service-worker.js`
-- branded entry/Royal Gate surfaces and shared Keeper-loaded room bootstrap
-- `tests/branding-pwa.test.mjs`
-- `docs/research/2026-09-05-OFFICIAL-BRAND-AND-INSTALL-SURFACE.md`
-
-Verified behavior retained:
-
-- the product-owner supplied crest remains the canonical brand composition;
-- Great Hall, Royal Vault, castle rooms and Marketplace inherit the official crest through shared runtime wiring;
-- install metadata uses the approved crest and the white-marble/gold theme;
-- `/api/` and document navigations are excluded from service-worker caching;
-- the full crest is not falsely declared an Android `maskable` icon;
-- this is an installable PWA surface, not a false claim of a signed native APK.
-
----
-
-## Research/adaptation outcome
-
-Fresh grading research for this slice reviewed independent scale calibration and browser capture constraints rather than trying to infer millimeters from a known card size. The adopted Kingdom approach is a simple versioned same-plane known-size marker/fiducial contract that works across phone, Chromebook and desktop image capture, fails closed when the marker is unreliable, and keeps calibrated spans as approximate advisory evidence.
-
-Earlier 2026 grading review confirmed the strongest competitive direction is **explainability + measurable evidence**, not an opaque single score. Reviewed first-party/current material includes TAG, Beckett/BGS, PSA, CGC Cards and TCGplayer condition/imperfection guidance. Adapted Kingdom-owned ideas include front/back condition dimensions, detector evidence, normalized extent, collector review, missing-capture instructions and durable history. Proprietary grading formulas, private datasets and protected exemplar databases are not copied.
-
-Brand/install research additionally reviewed current Android adaptive-icon guidance plus current Ludex and CollX collection/marketplace workflows. Useful Marketplace ideas remain later targets, but Kingdom evidence/ownership safeguards stay stricter.
-
----
-
-## Exact next engineering target
-
-**Merge/review gate:** review PR #20 and merge only if the final PR head remains green.
-
-**Next implementation slice after merge:** **Macro Corner/Edge Capture Refinement**.
-
-Build next in this order:
-
-1. research current corner/edge condition capture guidance from grading providers and collector scanning workflows;
-2. define a versioned macro-capture evidence contract for corner and edge closeups;
-3. keep whole-card contour evidence separate from macro-detail evidence;
-4. fail closed when macro images lack focus, scale, edge/corner framing or enough resolution;
-5. add detector output for whitening, layering, bends, dings, corner rounding and edge roughness without claiming official grading or authentication;
-6. link macro findings to exact private Vault media by SHA-256 before persistence;
-7. expose macro evidence separately in the explainable report;
-8. add responsive capture guidance for phone, Chromebook and desktop;
-9. pass full Kingdom Quality Gates;
-10. update README and this recovery ledger before merge.
-
----
-
-## Verified IMP-005 milestone checkpoints
+## Historical verified IMP-005 checkpoints
 
 - Transactional migration — Quality Gates #328 — PASS.
 - Royal Intake Queue — #347 — PASS.
@@ -250,9 +157,32 @@ Build next in this order:
 - PSA Certification-Database Evidence — #490 — PASS.
 - Exact Sports-Card Catalog Evidence / The Card API — #495 — PASS.
 - AI Card Pre-Grading Foundation + SHA-Linked Evidence + Advisory Range Engine — #598 — PASS.
-- Explainable Grading Report + Dimension Evidence — #619 on original implementation head; #630 on combined production baseline — PASS.
+- Explainable Grading Report + Dimension Evidence — #619, then combined production baseline #630 — PASS.
 - Official Kingdom Brand + Installable PWA Surface — #624 — PASS and retained.
-- Calibrated Physical Measurement + Capture Scale — #637 — PASS on PR #20 branch.
+- Calibrated Physical Measurement + Capture Scale — #637 on PR #20 branch — PASS and later merged.
+- Macro Corner/Edge Evidence Refinement — PR #21 — merged to `main` before PR #22 work began.
+- Evidence-Backed Valuation Foundation — code-bearing PR #22 head — #654 — PASS; final documentation head pending exact-head gate.
+
+---
+
+## Exact next engineering target
+
+**Immediate merge gate:** PR #22 may merge only when the final exact PR head passes Kingdom Quality Gates.
+
+**Next implementation slice after merge:** **Valuation Source Adapter + Realized-Sale/Value-History Linkage**.
+
+Build next in this order:
+
+1. research lawful sold-comparable provider APIs, data-use terms, redistribution limits, rate limits and freshness guarantees;
+2. define a provider-neutral observation adapter that cannot mutate treasure identity or provenance;
+3. require source/provider/date/freshness/condition/grade/currency evidence on every imported observation;
+4. preserve collector-recorded evidence separately from provider-verified observations;
+5. link realized sale provenance events into historical valuation context without duplicating or rewriting the provenance ledger;
+6. derive value-history snapshots from immutable evidence rather than storing an unexplained mutable market-value field;
+7. build collection-level rollups only when currency/evidence compatibility is explicit;
+8. expose exact evidence IDs behind every Keeper valuation explanation;
+9. pass full Kingdom Quality Gates;
+10. update README and this recovery ledger before merge.
 
 ---
 
@@ -260,16 +190,16 @@ Build next in this order:
 
 Do not represent these as live until separately implemented and verified:
 
-- calibrated physical measurement on `main` until PR #20 merges;
-- review-aware overall advisory estimate;
+- automatic licensed market-data provider adapters;
+- realized-sale/value-history linkage and collection-level valuation history;
+- automatic currency conversion/FX policy;
+- review-aware overall grading advisory estimate;
 - reliable manufacturing-vs-handling defect classification;
-- macro corner/edge detector refinement;
 - alternate-light/UV/spectral analysis;
-- official grading-provider integrations beyond PSA certification database evidence;
+- official grading-provider integrations beyond current PSA certification database evidence;
 - physical slab/card authentication;
 - professional autograph authentication;
-- evidence-backed market valuation and value history;
-- image-based collectible identification;
+- broader image-based collectible identification;
 - multi-provider Pokémon reconciliation/fallback;
 - fuzzy card/set/parallel discovery;
 - comic/video-game/vinyl provider candidates;
@@ -282,6 +212,6 @@ Do not represent these as live until separately implemented and verified:
 
 ### Permanent truthfulness boundary
 
-A catalog result, AI pre-grade, photograph, autograph similarity result, barcode, title match, grading label, cert number or collector statement is not silently promoted into an authoritative independent claim. AI grading is estimated condition evidence; professional grading and autograph authentication remain separate authorities. Permanent Kingdom treasure UUIDs remain provider-independent physical-item identities.
+A catalog result, AI pre-grade, photograph, autograph similarity result, barcode, title match, grading label, cert number, collector statement, sold comparable or asking listing is not silently promoted into an authoritative independent claim.
 
-Calibrated physical measurement is a scale-aided advisory evidence layer. It estimates dimensions only when an independent same-capture known-size reference is valid; it does not authenticate a physical card, prove factory size, prove trimming, or replace hands-on inspection.
+AI grading is estimated condition evidence; professional grading and authentication remain separate authorities. Valuation estimates are evidence-derived advisory read models, not appraisals or guaranteed sale prices. Permanent Kingdom treasure UUIDs remain provider-independent physical-item identities. Collector ownership/provenance records remain distinct from valuation evidence.

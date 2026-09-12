@@ -30,6 +30,8 @@ import { createVaultReorganizationRepository } from "../../packages/vault/src/re
 import { createVaultReorganizationService } from "../../packages/vault/src/reorganization-service.mjs";
 import { createVaultService, VaultError } from "../../packages/vault/src/service.mjs";
 import { SqliteVaultStore } from "../../packages/vault/src/sqlite-store.mjs";
+import { createVaultValuationRepository } from "../../packages/vault/src/valuation-repository.mjs";
+import { createVaultValuationService } from "../../packages/vault/src/valuation-service.mjs";
 import { handleCatalogRoute } from "./catalog-http.mjs";
 import { handleGradingAnalysisRoute } from "./grading-analysis-http.mjs";
 import { handleGradingReferenceRoute } from "./grading-reference-http.mjs";
@@ -39,6 +41,7 @@ import { handleVaultMediaRoute } from "./vault-media-http.mjs";
 import { handleVaultProvenanceRoute } from "./vault-provenance-http.mjs";
 import { handleVaultQueryRoute } from "./vault-query-http.mjs";
 import { handleVaultReorganizationRoute } from "./vault-reorganization-http.mjs";
+import { handleVaultValuationRoute } from "./vault-valuation-http.mjs";
 
 const CONTENT_TYPES = Object.freeze({
   ".css": "text/css; charset=utf-8",
@@ -290,6 +293,7 @@ async function handleVaultRoute({
   vaultImportService,
   vaultIntakeService,
   vaultProvenanceService,
+  vaultValuationService,
   vaultReorganizationService,
   vaultQueryService
 }) {
@@ -338,6 +342,18 @@ async function handleVaultRoute({
         message: vaultProvenanceService
           ? "Treasure provenance is recorded as append-only collector evidence. Corrections append linked events; stored claims are not automatically independently verified."
           : "The provenance ledger is unavailable until its service is wired."
+      },
+      valuation: {
+        available: Boolean(vaultValuationService),
+        appendOnlyEvidence: Boolean(vaultValuationService),
+        ordinaryUpdateAvailable: false,
+        ordinaryDeleteAvailable: false,
+        evidenceClass: vaultValuationService ? "collector-recorded-comparable" : null,
+        askingListingsInfluenceEstimate: false,
+        crossCurrencyAggregation: false,
+        message: vaultValuationService
+          ? "Valuation uses append-only comparable evidence. Asking prices never drive the estimate, currencies and condition/grade buckets are kept separate, and the Kingdom refuses to calculate a fresh estimate without enough recent sold evidence."
+          : "Evidence-backed valuation is unavailable until its service is wired."
       },
       reorganization: {
         available: Boolean(vaultReorganizationService),
@@ -397,13 +413,17 @@ async function handleVaultRoute({
 
   if (pathname === "/api/vault/export" && method === "GET") {
     const baseExport = vaultService.exportData(identity);
-    const payload = vaultProvenanceService
-      ? {
-          ...baseExport,
-          schemaVersion: 2,
-          provenanceEvents: vaultProvenanceService.exportAll(identity)
-        }
-      : baseExport;
+    const payload = {
+      ...baseExport,
+      ...(vaultProvenanceService ? {
+        schemaVersion: 2,
+        provenanceEvents: vaultProvenanceService.exportAll(identity)
+      } : {}),
+      ...(vaultValuationService ? {
+        schemaVersion: 3,
+        valuationEvidence: vaultValuationService.exportAll(identity)
+      } : {})
+    };
     return sendJson(response, 200, payload, method, {
       "Content-Disposition": `attachment; filename="kings-vault-export-${new Date().toISOString().slice(0, 10)}.json"`
     });
@@ -453,6 +473,7 @@ export function createKingdomServer({
   vaultImportService = null,
   vaultIntakeService = null,
   vaultProvenanceService = null,
+  vaultValuationService = null,
   vaultReorganizationService = null,
   vaultQueryService = null
 } = {}) {
@@ -583,6 +604,19 @@ export function createKingdomServer({
           return sendJson(response, 405, { error: "method_not_allowed" }, method);
         }
 
+        const valuationHandled = await handleVaultValuationRoute({
+          request,
+          response,
+          requestUrl,
+          identityService,
+          vaultValuationService,
+          securityHeaders: SECURITY_HEADERS
+        });
+        if (valuationHandled !== null) {
+          if (valuationHandled !== false) return;
+          return sendJson(response, 405, { error: "method_not_allowed" }, method);
+        }
+
         const provenanceHandled = await handleVaultProvenanceRoute({
           request,
           response,
@@ -645,6 +679,7 @@ export function createKingdomServer({
           vaultImportService,
           vaultIntakeService,
           vaultProvenanceService,
+          vaultValuationService,
           vaultReorganizationService,
           vaultQueryService
         });
@@ -722,6 +757,11 @@ async function run() {
     vaultStore,
     provenanceRepository: vaultProvenanceRepository
   });
+  const vaultValuationRepository = createVaultValuationRepository({ vaultStore });
+  const vaultValuationService = createVaultValuationService({
+    vaultStore,
+    valuationRepository: vaultValuationRepository
+  });
   const vaultReorganizationRepository = createVaultReorganizationRepository({ vaultStore });
   const vaultReorganizationService = createVaultReorganizationService({
     vaultStore,
@@ -750,6 +790,7 @@ async function run() {
     vaultImportService,
     vaultIntakeService,
     vaultProvenanceService,
+    vaultValuationService,
     vaultReorganizationService,
     vaultQueryService
   });
