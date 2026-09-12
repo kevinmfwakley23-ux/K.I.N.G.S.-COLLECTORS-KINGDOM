@@ -1,3 +1,5 @@
+import { assertProviderValuationObservationIntegrity } from "./valuation-observation-contract.mjs";
+
 function freezeEntry(entry) {
   return Object.freeze({
     ...entry,
@@ -11,19 +13,19 @@ function compareHistoryEntries(left, right) {
     || left.sourceRecordId.localeCompare(right.sourceRecordId);
 }
 
-function provenanceTableExists(database) {
+function tableExists(database, name) {
   if (!database || typeof database.prepare !== "function") return false;
   const row = database.prepare(`
     SELECT name
     FROM sqlite_master
-    WHERE type = 'table' AND name = 'vault_provenance_events'
+    WHERE type = 'table' AND name = ?
     LIMIT 1
-  `).get();
+  `).get(name);
   return Boolean(row);
 }
 
 function listProvenanceEvents(database, ownerAccountId, treasureId) {
-  if (!provenanceTableExists(database)) {
+  if (!tableExists(database, "vault_provenance_events")) {
     return Object.freeze({ available: false, events: Object.freeze([]) });
   }
 
@@ -54,6 +56,49 @@ function listProvenanceEvents(database, ownerAccountId, treasureId) {
       createdAt: row.created_at
     })))
   });
+}
+
+function listProviderObservations(database, ownerAccountId, treasureId) {
+  if (!tableExists(database, "vault_valuation_provider_observations")) {
+    return Object.freeze({ available: false, observations: Object.freeze([]) });
+  }
+  const rows = database.prepare(`
+    SELECT *
+    FROM vault_valuation_provider_observations
+    WHERE owner_account_id = ? AND treasure_id = ?
+    ORDER BY observed_date ASC, created_at ASC, id ASC
+  `).all(ownerAccountId, treasureId);
+  const observations = rows.map((row) => ({
+    id: row.id,
+    ownerAccountId: row.owner_account_id,
+    treasureId: row.treasure_id,
+    providerId: row.provider_id,
+    providerName: row.provider_name,
+    providerPolicyId: row.provider_policy_id,
+    providerPolicyUrl: row.provider_policy_url,
+    providerObservationId: row.provider_observation_id,
+    providerItemReference: row.provider_item_reference,
+    observationType: row.observation_type,
+    sourceName: row.source_name,
+    sourceUrl: row.source_url,
+    sourceReference: row.source_reference,
+    observedDate: row.observed_date,
+    retrievedAt: row.retrieved_at,
+    providerBuildAt: row.provider_build_at,
+    amountCents: Number(row.amount_cents),
+    currency: row.currency,
+    itemState: row.item_state,
+    conditionLabel: row.condition_label,
+    gradingCompany: row.grading_company,
+    gradeLabel: row.grade_label,
+    marketVariant: row.market_variant,
+    notes: row.notes,
+    evidenceClass: row.evidence_class,
+    observationSha256: row.observation_sha256,
+    createdAt: row.created_at
+  }));
+  for (const observation of observations) assertProviderValuationObservationIntegrity(observation);
+  return Object.freeze({ available: true, observations: Object.freeze(observations.map(Object.freeze)) });
 }
 
 function descendantCorrectionIds(events, targetId) {
@@ -98,9 +143,49 @@ function valuationHistoryEntry(record, correctedEvidenceIds) {
     gradingCompany: record.gradingCompany,
     gradeLabel: record.gradeLabel,
     evidenceClass: record.evidenceClass,
-    independentlyVerified: false,
+    providerOriginVerified: false,
+    physicalTreasureMatchVerified: false,
+    influencesCurrentEstimate: record.evidenceType === "sold-comparable" && !corrected,
     corrected,
     active: !corrected,
+    correctionIds: []
+  });
+}
+
+function providerObservationHistoryEntry(observation) {
+  return freezeEntry({
+    kind: "provider-market-observation",
+    sourceRecordType: "provider-valuation-observation",
+    sourceRecordId: observation.id,
+    providerObservationId: observation.providerObservationId,
+    providerItemReference: observation.providerItemReference,
+    providerId: observation.providerId,
+    providerName: observation.providerName,
+    providerPolicyId: observation.providerPolicyId,
+    providerPolicyUrl: observation.providerPolicyUrl,
+    date: observation.observedDate,
+    recordedAt: observation.createdAt,
+    retrievedAt: observation.retrievedAt,
+    providerBuildAt: observation.providerBuildAt,
+    amountCents: observation.amountCents,
+    currency: observation.currency,
+    priced: true,
+    observationType: observation.observationType,
+    sourceName: observation.sourceName,
+    sourceUrl: observation.sourceUrl,
+    sourceReference: observation.sourceReference,
+    itemState: observation.itemState,
+    conditionLabel: observation.conditionLabel,
+    gradingCompany: observation.gradingCompany,
+    gradeLabel: observation.gradeLabel,
+    marketVariant: observation.marketVariant,
+    evidenceClass: observation.evidenceClass,
+    providerOriginVerified: true,
+    physicalTreasureMatchVerified: false,
+    providerIdentityIsTreasureIdentity: false,
+    influencesCurrentEstimate: false,
+    corrected: false,
+    active: true,
     correctionIds: []
   });
 }
@@ -122,7 +207,9 @@ function realizedSaleHistoryEntry(event, events) {
     sourceUrl: event.sourceUrl,
     sourceReference: event.reference,
     evidenceClass: event.evidenceClass,
-    independentlyVerified: false,
+    providerOriginVerified: false,
+    physicalTreasureMatchVerified: false,
+    influencesCurrentEstimate: false,
     corrected,
     active: !corrected,
     correctionIds
@@ -142,11 +229,13 @@ export function buildVaultValueHistory({
   if (!(correctedEvidenceIds instanceof Set)) throw new TypeError("Value history requires corrected evidence identifiers.");
 
   const provenance = listProvenanceEvents(vaultStore.database, ownerAccountId, treasureId);
-  const marketEntries = valuationRecords.map((record) => valuationHistoryEntry(record, correctedEvidenceIds));
+  const provider = listProviderObservations(vaultStore.database, ownerAccountId, treasureId);
+  const collectorMarketEntries = valuationRecords.map((record) => valuationHistoryEntry(record, correctedEvidenceIds));
+  const providerEntries = provider.observations.map(providerObservationHistoryEntry);
   const saleEntries = provenance.events
     .filter((event) => event.eventType === "sold")
     .map((event) => realizedSaleHistoryEntry(event, provenance.events));
-  const entries = [...marketEntries, ...saleEntries].sort(compareHistoryEntries);
+  const entries = [...collectorMarketEntries, ...providerEntries, ...saleEntries].sort(compareHistoryEntries);
   const currencies = [...new Set(entries
     .filter((entry) => entry.priced && entry.currency)
     .map((entry) => entry.currency))].sort();
@@ -155,14 +244,18 @@ export function buildVaultValueHistory({
     derived: true,
     persistedAsMutableValue: false,
     provenanceAvailable: provenance.available,
+    providerObservationsAvailable: provider.available,
     entryCount: entries.length,
-    marketObservationCount: marketEntries.length,
+    marketObservationCount: collectorMarketEntries.length + providerEntries.length,
+    collectorMarketObservationCount: collectorMarketEntries.length,
+    providerMarketObservationCount: providerEntries.length,
     realizedSaleCount: saleEntries.length,
     pricedRealizedSaleCount: saleEntries.filter((entry) => entry.priced).length,
     unpricedRealizedSaleCount: saleEntries.filter((entry) => !entry.priced).length,
     currencies: Object.freeze(currencies),
     crossCurrencyAggregation: false,
     realizedSalesInfluenceMarketEstimate: false,
+    providerObservationsInfluenceMarketEstimate: false,
     exactSourceRecordIds: true,
     entries: Object.freeze(entries)
   });
