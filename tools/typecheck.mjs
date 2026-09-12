@@ -47,6 +47,11 @@ const contractFiles = [
   "packages/vault/src/provenance-repository.mjs",
   "packages/vault/src/provenance-service.mjs",
   "packages/vault/src/valuation-repository.mjs",
+  "packages/vault/src/valuation-observation-contract.mjs",
+  "packages/vault/src/valuation-observation-repository.mjs",
+  "packages/vault/src/valuation-observation-service.mjs",
+  "packages/vault/src/mtgjson-price-adapter.mjs",
+  "packages/vault/src/value-history.mjs",
   "packages/vault/src/valuation-service.mjs",
   "packages/vault/src/query-repository.mjs",
   "packages/vault/src/query-service.mjs",
@@ -111,4 +116,4 @@ for (const relative of contractFiles) {
 const entries = await readdir(resolve(root, "packages"), { withFileTypes: true });
 if (!entries.some((entry) => entry.isDirectory())) throw new Error("No package boundaries found.");
 
-console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, provider-neutral catalog/cert evidence, AI card pre-grading profiles/centering/evidence/detector-coverage/advisory-range and macro-aware explainable front/back dimension contracts, deterministic finding identity, calibrated physical scale measurement, normalized extent measurement, append-only finding review/report services and responsive explainable report UI, append-only hashed pre-grade persistence and read-only estimate API/UI, browser capture-quality/card-geometry/contour/macro-corner-edge/paired-surface/color/autograph analysis UI, authenticated Commons autograph reference search/proxy, append-only provenance API/UI, append-only evidence-backed valuation API/UI, live Vault enhancement bootstrap, evidence-backed portfolio rollups with explicit coverage and separate currencies, saved Vault views and deterministic keyset retrieval API/UI, cycle-safe individual and previewed atomic bulk reorganization API/UI, Vault, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice boundaries.");
+console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, provider-neutral catalog/cert evidence, AI card pre-grading profiles/centering/evidence/detector-coverage/advisory-range and macro-aware explainable front/back dimension contracts, deterministic finding identity, calibrated physical scale measurement, normalized extent measurement, append-only finding review/report services and responsive explainable report UI, append-only hashed pre-grade persistence and read-only estimate API/UI, browser capture-quality/card-geometry/contour/macro-corner-edge/paired-surface/color/autograph analysis UI, authenticated Commons autograph reference search/proxy, append-only provenance API/UI, append-only evidence-backed valuation API/UI, governed append-only provider valuation observations with trusted authority/policy IDs and MTGJSON retail/buylist normalization, live Vault enhancement bootstrap, evidence-backed portfolio rollups with explicit coverage and separate currencies, saved Vault views and deterministic keyset retrieval API/UI, cycle-safe individual and previewed atomic bulk reorganization API/UI, Vault, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, and Kingdom voice boundaries.");
