@@ -1,237 +1,187 @@
 # K.I.N.G.S. Collector's Kingdom
 
-K.I.N.G.S. Collector's Kingdom is being built as a collector-first environment for cataloging, locating, documenting, researching, protecting, grading-prep, valuing, and eventually buying, selling, trading, insuring, and transferring collectible treasures through the wider K.I.N.G.S. ecosystem.
+K.I.N.G.S. Collector's Kingdom is a collector-first system for cataloging, locating, documenting, researching, protecting, grading-prep, valuing, and eventually buying, selling, trading, insuring, and transferring collectible treasures through the wider K.I.N.G.S. ecosystem.
 
 ## Engineering status
 
-Active milestone: **IMP-005 — Royal Vault, Phase 1**.
+**Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
+**Current production baseline:** `main` at `5addf3d483e978c79028ff00812d8beca08b9661`  
+**Latest verified gate:** **Kingdom Quality Gates #658** — run `34672966858` — **PASS**
 
-The canonical `main` branch has already integrated:
+The current `main` baseline includes:
 
 - PR #20 — calibrated physical measurement + capture scale;
-- PR #21 — macro corner/edge evidence refinement.
+- PR #21 — macro corner/edge evidence refinement;
+- PR #22 — evidence-backed valuation foundation.
 
-The current integration candidate is:
+Quality Gates #658 verified the exact merged PR #22 production head through the canonical `npm run verify` path and production dependency audit.
 
-- **Branch:** `imp-005-evidence-backed-valuation-foundation`
-- **Pull request:** **#22 — IMP-005: evidence-backed valuation foundation**
+The next engineering slice is **Valuation Source Adapter + Realized-Sale/Value-History Linkage**. Automatic market providers must prove licensing/terms compatibility, source freshness and auditable evidence before their observations can enter the Kingdom valuation ledger.
 
-The code-bearing PR #22 head `6ff1eba5671efd5f86c2df6c694cca019e3b7a46` passed Kingdom Quality Gates run **#654** (`34672838622`), including the repository's canonical `npm run verify` path and production dependency audit. Documentation follow-up commits must still pass the Quality Gates on the final exact PR head before merge.
+## Permanent truth boundary
 
-The official K.I.N.G.S. Collector's Kingdom crest remains wired into the landing page, Royal Gate, Great Hall/Vault/room topbars through the shared browser bootstrap, and the install manifest. The install service worker remains static-only: it excludes `/api/` requests and document navigations so authenticated collector records, Vault data, grading evidence, valuation evidence and other owner data are not silently cached.
+The Kingdom never silently upgrades evidence into authoritative truth.
 
-A Kingdom pre-grade remains **advisory evidence**. It is not an official PSA/BGS/CGC/SGC grade, does not authenticate a physical card or autograph, and cannot silently overwrite the treasure's condition, grade, authenticity, provenance, ownership or value.
+- A provider match does not become permanent physical-item identity.
+- An AI pre-grade is not an official PSA/BGS/CGC/SGC grade.
+- Autograph image similarity is not professional authentication.
+- Collector-entered provenance is not independently verified unless a separate authority verifies it.
+- A sold comparable or asking listing is not automatically authoritative market value.
+- A Kingdom valuation estimate is advisory evidence, not an appraisal or guaranteed sale price.
+- No grading, valuation, catalog, AI, provenance or marketplace subsystem may silently overwrite authoritative ownership or physical treasure identity.
 
-A Kingdom valuation estimate is also **advisory evidence**. It is not an appraisal or guaranteed sale price and does not mutate the authoritative treasure record.
+Permanent Kingdom treasure UUIDs remain provider-independent physical-item identities.
 
-## Official brand & install surface — verified
+## Official brand & install surface
 
-The product owner supplied and locked the official Collector's Kingdom crest. The repository uses that approved composition rather than a replacement crown/logo treatment.
+The product-owner supplied Collector's Kingdom crest is the canonical brand asset. It is wired into the landing page, Royal Gate, Great Hall, Royal Vault, castle rooms, Marketplace route and install metadata through the shared browser bootstrap.
 
-Verified capability includes:
+The current install surface is a real installable PWA. Its service worker is static-only and excludes `/api/` traffic and document navigations so authenticated collector records, Vault data, grading evidence and valuation evidence are not silently cached.
 
-- official crest asset under `apps/web/public/assets/kingdom-official-logo.svg`;
-- branded landing and Royal Gate experiences;
-- shared room bootstrap that applies the crest to the persistent topbar used by the Great Hall, Royal Vault, castle rooms and Marketplace route;
-- install manifest with white-marble background and Kingdom gold theme color;
-- progressive install prompt that does not block ordinary browser use;
-- service-worker registration only in secure/localhost contexts;
-- static-only same-origin caching with explicit `/api/` and document-navigation exclusions;
-- install/brand regression tests;
-- current Android adaptive-icon research documenting why the full crest is not falsely declared `maskable` before a real native adaptive icon package exists.
-
-This is a real **installable web-app surface**, not a claim that a signed native Android APK already exists. Native Android packaging remains a separate verified distribution milestone requiring adaptive launcher layers, signing/build configuration, secure runtime access and device testing.
+This is **not** a claim that a signed native Android APK is already complete. Native Android packaging, signing, adaptive launcher assets and device verification remain separate milestones.
 
 Research: `docs/research/2026-09-05-OFFICIAL-BRAND-AND-INSTALL-SURFACE.md`.
 
+## Royal Vault — verified capability
+
+Current production capability includes:
+
+- owner-scoped permanent treasure UUIDs and SQLite persistence;
+- treasure create/read/update/archive;
+- collections and arbitrary-depth physical storage locations;
+- collection/location editing with cycle protection;
+- previewed atomic bulk movement of up to 100 treasures;
+- private Saved Vault Views storing filter/sort/query definitions rather than frozen results;
+- deterministic keyset pagination with bounded pages and verified SQLite paging indexes;
+- secure private treasure media with SHA-256 integrity metadata;
+- structured condition, variant, quantity, acquisition, cost, identifier and custom attributes;
+- duplicate-review warnings and normalized search/filter/sort;
+- transactional review-first JSON/CSV import;
+- Royal Intake Queue with repeated-capture counts and preserved dismissed history;
+- progressive native camera barcode capture where the browser exposes `BarcodeDetector`;
+- portable versioned JSON export;
+- voice navigation, Keeper questions, Vault search and talk-to-text where browser speech recognition is available;
+- append-only provenance/ownership history;
+- append-only grading evidence and finding-review history;
+- calibrated physical-measurement evidence;
+- macro corner/edge evidence refinement;
+- append-only market-comparable evidence and transparent advisory valuation.
+
+## Evidence-backed valuation — verified on `main`
+
+PR #22 intentionally improves on the common collector-app pattern of showing one unexplained price.
+
+The production baseline now provides:
+
+- owner-scoped append-only valuation evidence tied to permanent treasure UUIDs;
+- separate `sold-comparable` and `asking-listing` evidence types;
+- source name plus source URL or reference;
+- observed date, integer amount, currency, raw/graded/sealed state, condition and grading context;
+- SHA-256 evidence integrity verification;
+- linked append-only corrections instead of destructive edit/delete history;
+- strict currency and condition/grade buckets;
+- a 180-day freshness window for current sold evidence;
+- a minimum of three compatible recent sold comparables before an estimate is calculated;
+- median-based advisory estimate with visible low/high range, sample count, named-source count and evidence-strength label;
+- asking listings displayed as context but excluded from the estimate;
+- authenticated valuation HTTP routes;
+- collector-facing Royal Vault evidence/estimate panel;
+- valuation evidence included in portable Vault export;
+- no mutation of authoritative treasure value, grade, condition, authenticity, provenance or ownership;
+- explicit `collector-recorded-comparable` and `independentlyVerified: false` truth labels for the initial evidence class.
+
+No commercial pricing dataset is copied into the repository. Automatic market feeds remain blocked until the relevant API/license/contract explicitly permits the Kingdom's intended use.
+
+Research: `docs/research/2026-09-11-IMP-005-EVIDENCE-BACKED-VALUATION.md`  
+Implementation record: `docs/IMP-005-VALUATION-IMPLEMENTATION.md`
+
 ## AI card pre-grading — verified capability
 
-The Kingdom includes a real AI-assisted card pre-grading/condition-analysis system rather than a fake official-grade generator.
+The Kingdom contains a real advisory card-condition analysis system rather than a fake official-grade generator.
 
-Verified capability includes:
+Current capability includes:
 
-- card-size/calibration profiles for standard western trading cards and Japanese-size TCG cards;
-- front/back border and centering measurement with left/right/top/bottom ratios;
-- grader-profile comparison for published PSA/BGS/CGC centering references without claiming affiliation or official grading;
-- browser image-quality analysis for resolution, sharpness/focus, glare/overexposure, underexposure and contrast;
-- automatic whole-card geometry detection on contrasting backgrounds;
-- crop-completeness, perspective/skew and profile-aspect checks;
-- contour-based possible corner and edge anomaly signals;
-- macro corner/edge evidence refinement for smaller whitening, layering, bend/ding and wear candidates;
-- paired raking-light surface comparison that suppresses stable artwork and surfaces possible scratch/scuff/print-line/dent/gloss anomalies;
-- same-printing reference color comparison for possible fading/chroma loss/color drift after brightness/channel normalization;
-- autograph scan isolation and visual similarity comparison across multiple sourced references;
-- authenticated Wikimedia Commons reference discovery/proxy with source/license metadata preserved;
-- append-only pre-grade records linked to permanent treasure UUIDs;
-- SHA-256 matching that allows pixel-derived evidence to persist only when the exact analyzed file matches private media on that treasure;
-- detector-completion coverage that distinguishes `ran and found zero candidates` from `never ran`;
-- deterministic server-side advisory grade range that fails closed on insufficient evidence and deliberately widens when front/back/surface coverage is incomplete;
-- explicit non-mutation flags for official grade, condition, authenticity and value.
-
-The rubric does **not** reverse-engineer any third-party grader's proprietary overall score. Published grader material is used only as reference evidence. The Kingdom range is its own versioned advisory condition rubric.
+- standard-western and Japanese-size card profiles;
+- front/back centering measurement;
+- published grader centering references used as evidence, not proprietary-score reverse engineering;
+- resolution/focus/glare/exposure/contrast checks;
+- whole-card geometry, crop and perspective analysis;
+- contour plus macro corner/edge review signals;
+- paired raking-light surface anomaly comparison;
+- same-printing color/fade comparison;
+- authenticated Wikimedia Commons autograph reference discovery/proxy with license/source metadata;
+- append-only SHA-linked pre-grade records;
+- detector-completion evidence;
+- fail-closed server-generated advisory range;
+- explicit no-mutation flags for official grade, condition, authenticity and value.
 
 Research: `docs/research/2026-09-05-IMP-005-AI-CARD-PREGRADING.md`.
 
-## Explainable grading report — verified capability
+## Explainable grading report
 
-The report makes grading evidence inspectable instead of hiding it behind a single number.
-
-It includes:
-
-- eight explicit condition dimensions: front/back centering, corners, edges and surface;
-- per-dimension availability, advisory range, confidence and completeness;
-- explicit `needs more evidence` guidance when a dimension is not sufficiently captured;
-- deterministic SHA-256 finding identities bound to the immutable source analysis;
-- normalized defect bounding-area and span metrics without fabricating physical millimeters;
-- append-only collector review decisions: `accepted`, `rejected`, `uncertain`;
-- review decisions change interpretation only; raw detector findings are never deleted or rewritten;
-- full visible append-only review history with timestamps, source analysis and notes;
-- review-aware dimension interpretation;
-- separately labeled overall raw-evidence advisory range;
-- authenticated, owner-scoped, private/no-store report and finding-review HTTP routes;
-- no ordinary PATCH/DELETE path for finding reviews;
-- no authoritative grade, condition, authenticity or value mutation.
+The grading report exposes evidence instead of hiding the result behind one number. It includes eight front/back dimensions, availability/range/confidence/completeness, missing-evidence guidance, deterministic finding hashes, normalized defect extent, append-only collector reviews, review history, authenticated private/no-store report routes, and explicit non-mutation of authoritative grade/condition/authenticity/value.
 
 Research: `docs/research/2026-09-05-IMP-005-GRADING-EXPLAINABILITY.md`.
 
-## Calibrated physical measurement — verified capability
+## Calibrated physical measurement
 
-PR #20 established the physical-scale layer and is now integrated into `main`.
-
-Verified capability includes:
-
-- versioned physical-scale calibration evidence inside append-only pre-grade records;
-- accepted calibration reference types: `kingdom-square-fiducial-v1`, `kingdom-rectangle-fiducial-v1`, and `known-size-reference-v1`;
-- same-plane known-size marker evidence as the only source for pixel-to-millimeter conversion;
-- fail-closed validation when the reference is cropped, ambiguous, distorted, skewed, below confidence tolerance, or not in the same plane;
-- perspective-aware card width/height estimates with uncertainty and confidence;
-- measured-dimension comparison against selected card-size profiles as advisory evidence only, never authenticity proof;
-- calibrated approximate defect bounding-box millimeter spans only when the source media has valid calibration;
-- normalized-only metrics when calibration is absent or invalid;
-- physical measurement summary in the explainable grading report response and UI;
-- browser calibration input/preview guidance connected to the SHA-linked private Vault media persistence path;
-- regression tests that prevent card-size profiles from becoming fake scale sources;
-- all official-grade, authentication, condition, value and ownership mutation flags remain false.
+PR #20 is integrated on `main`. Physical millimeter estimates exist only when an independent same-capture known-size reference/fiducial validates successfully. Card-size profiles are comparison references, never scale sources. Failed calibration produces no pixel-to-millimeter conversion. Valid evidence remains advisory and cannot authenticate a card or prove trimming/factory dimensions.
 
 Research: `docs/research/2026-09-05-IMP-005-CALIBRATED-PHYSICAL-MEASUREMENT.md`.
 
-## Evidence-backed valuation — verified PR #22 capability
+## Review-only external evidence
 
-The current valuation increment deliberately improves on the common collector-app pattern of showing one unexplained price.
+Provider-neutral review evidence currently supports:
 
-PR #22 adds:
+- **Open Library** — ISBN/book candidates;
+- **UPCitemdb** — UPC/EAN/GTIN retail candidates;
+- **Pokémon TCG API** — exact card or set/card-number candidates;
+- **Scryfall** — exact Magic printing UUID or set/collector-number candidates;
+- **The Card API** — eligible exact sports-card catalog evidence;
+- **PSA Public API** — exact certification-number database evidence when configured;
+- **Wikimedia Commons / MediaWiki API** — autograph reference-image candidates with source/license metadata.
 
-- owner-scoped, append-only valuation evidence tied to permanent treasure UUIDs;
-- distinct `sold-comparable` and `asking-listing` evidence types;
-- source name plus source URL or reference so records remain auditable;
-- observed date, integer amount, currency, raw/graded/sealed state, condition and grading context;
-- SHA-256 evidence integrity verification;
-- linked append-only corrections rather than silent edit/delete of historical evidence;
-- strict currency, condition and grade buckets;
-- a 180-day freshness window for current sold evidence;
-- a minimum of three compatible recent sold comparables before an estimate is produced;
-- median-based advisory estimate with visible low/high range, sample count, distinct named-source count and evidence-strength label;
-- asking listings visible as context but explicitly excluded from computed estimates;
-- authenticated valuation HTTP routes and a collector-facing Royal Vault evidence panel;
-- valuation evidence included in portable Vault export;
-- no mutation of authoritative treasure value, grade, condition, authenticity, provenance or ownership;
-- explicit `collector-recorded-comparable` / `independentlyVerified: false` truth labels until a source is independently verified by an authorized provider boundary.
-
-No commercial pricing dataset is copied into the repository. Automatic market feeds remain blocked until a provider's API/license/contract explicitly permits the intended Kingdom use.
-
-Research: `docs/research/2026-09-11-IMP-005-EVIDENCE-BACKED-VALUATION.md`.
-
-Implementation contract: `docs/IMP-005-VALUATION-IMPLEMENTATION.md`.
-
-## Durable engineering records
-
-- [`docs/MISSION-STATEMENT.md`](docs/MISSION-STATEMENT.md) — permanent mission and authority order.
-- [`docs/MISSION-PROGRESS.md`](docs/MISSION-PROGRESS.md) — recoverable build state, verified checkpoints, blockers and exact next target.
-- [`docs/research/`](docs/research/) — dated provider, competitor, standards and technical research.
-
-After each substantial verified code batch, `docs/MISSION-PROGRESS.md` must be updated so work can resume from the repository rather than relying on chat history.
-
-## Permanent engineering rules
-
-- The locked K.I.N.G.S. construction documents remain the primary product guide.
-- Research current competitors, open-source patterns, official APIs and provider terms before meaningful integration work.
-- Build real executable functionality; never present simulated integrations, mock totals, fake market data, decorative-only interfaces, or unverified AI analysis as complete.
-- Never commit secrets or expose provider credentials in browser code.
-- Preserve collector authority over destructive, ownership-changing, grading, authentication and authoritative record actions.
-- External catalog results, AI analysis, image similarity and market evidence must surface uncertainty instead of silently inventing identity, physical variant, condition, grade, authenticity, provenance or value.
-- Permanent Kingdom treasure UUIDs remain provider-independent physical-item identities.
-- Mobile, Android, Chromebook, tablet and desktop workflows are first-class.
+Provider IDs remain supporting evidence rather than permanent Kingdom physical identity. Price/commerce material from identification providers does not silently become Kingdom valuation.
 
 ## Shared K.I.N.G.S. AI core
 
 K.I.N.G.S. AI is the shared intelligence/router core for the K.I.N.G.S. application family. Collector's Kingdom owns collector identity, authorization, Vault records, Marketplace rules, ownership state and product actions. Model/provider routing stays behind the governed server-to-server K.I.N.G.S. AI boundary.
 
-The Keeper can advise through K.I.N.G.S. AI, including grading/vision and future valuation-explanation workflows, but Collector's Kingdom and the collector remain the authority for record mutation.
+The Keeper may advise through K.I.N.G.S. AI, but Collector's Kingdom and the collector remain the authority for record mutation.
 
-## Royal Vault — current capability
+## Durable engineering records
 
-Current Vault capability includes:
+- [`docs/MISSION-STATEMENT.md`](docs/MISSION-STATEMENT.md) — permanent mission and authority order.
+- [`docs/MISSION-PROGRESS.md`](docs/MISSION-PROGRESS.md) — recoverable build state, verified checkpoints, blockers and exact next target.
+- [`docs/research/`](docs/research/) — dated competitor, provider, standards and technical research.
 
-- permanent owner-scoped treasure UUIDs and SQLite persistence;
-- treasure create/read/update/archive;
-- collections and arbitrary-depth physical storage locations;
-- responsive collection/location editing with cycle protection;
-- previewed atomic bulk movement of up to 100 treasures;
-- private Saved Vault Views storing query/filter/sort definitions rather than frozen results;
-- deterministic keyset pagination with bounded pages and verified paging indexes;
-- secure private treasure media with SHA-256 integrity metadata for new uploads;
-- structured condition/variant/quantity/acquisition/cost/identifier/custom attributes;
-- duplicate-review warnings and normalized search/filter/sort;
-- append-only audit/provenance history;
-- append-only market-comparable evidence and source-backed advisory valuation on PR #22;
-- append-only hashed pre-grade analysis and finding-review history;
-- calibrated physical measurement and macro corner/edge evidence;
-- real statistics and currency-separated purchase totals;
-- portable versioned JSON export including provenance and, on PR #22, valuation evidence;
-- transactional review-first JSON/CSV migration;
-- Royal Intake Queue with repeated-capture counts and preserved dismissed history;
-- progressive native camera barcode scanning where the browser supports `BarcodeDetector`;
-- voice navigation, Keeper questions, Vault search and talk-to-text where browser speech recognition is available.
+Documentation is part of implementation. After substantial verified build batches, update the README and mission/progress ledger before moving to the next slice.
 
-## Review-only external evidence
+## Permanent engineering rules
 
-The provider-neutral evidence boundary currently supports:
-
-- **Open Library** — checksum-valid ISBN/book candidates;
-- **UPCitemdb** — checksum-valid UPC/EAN/GTIN retail identification candidates;
-- **Pokémon TCG API** — exact card ID or explicit set-ID/card-number candidates;
-- **Scryfall** — exact Magic printing UUID or set-code/collector-number candidates;
-- **The Card API** — exact sports-card UCID or set-USID/printed-card-number candidates when eligible server-side Catalog access is configured;
-- **PSA Public API** — exact certification-number database evidence when a server-side token is configured;
-- **Wikimedia Commons / MediaWiki API** — review-only autograph reference-image candidates with source/license metadata, fetched through the authenticated Kingdom proxy.
-
-All provider paths are authenticated or server-governed, bounded and review-only. Provider IDs remain supporting evidence rather than permanent Kingdom physical identity. Identification-provider price/commerce material, The Card API Market/Sales data and PSA estimate/sales data do not become Kingdom valuation through those identification routes.
-
-## Truthfulness boundary
-
-The Kingdom now has a real **collector-recorded comparable evidence** foundation for valuation on PR #22, but it still refuses to call an unsupported provider number "market truth."
-
-A barcode, image, title match, provider result, AI suggestion, cert number, grading label, autograph similarity result, catalog ID, collector-entered provenance statement, sold comparable or asking listing is not automatically authoritative.
-
-Valuation rules in the current increment are explicit:
-
-- asking listings do not drive the estimate;
-- incompatible currencies are not combined;
-- raw and graded evidence is not combined;
-- grade/condition context remains visible;
-- stale sold evidence remains visible but cannot silently create a fresh estimate;
-- fewer than three compatible recent sold comparables results in **no estimate**;
-- computed values are advisory and are not appraisals or guaranteed sale prices;
-- no automatic third-party market-price feed is treated as licensed until that authority is actually established.
-
-Likewise, a Kingdom AI pre-grade is an **estimated condition analysis** based on captured evidence. It remains distinct from an official PSA/BGS/CGC/SGC grade, from professional autograph authentication, and from physical-card authentication.
-
-Calibrated physical measurement is a scale-aided advisory evidence layer. It estimates dimensions only when an independent same-capture known-size reference is valid; it does not authenticate a physical card, prove factory size, prove trimming, or replace hands-on inspection.
+- The locked K.I.N.G.S. construction documents remain the primary product guide.
+- Research current competitors, open-source patterns, official APIs and provider terms before meaningful integration work.
+- Build executable functionality; never present simulated integrations, mock totals, fake market data or decorative-only interfaces as complete.
+- Never commit secrets or expose provider credentials in browser code.
+- Preserve collector authority over destructive, ownership-changing, grading, authentication and authoritative record actions.
+- External evidence must surface uncertainty instead of silently inventing identity, variant, condition, grade, authenticity, provenance or value.
+- Mobile, Android, Chromebook, tablet and desktop workflows are first-class.
 
 ## Current next target
 
-**Merge/review gate:** PR #22 may merge only if the final exact PR head remains green in `Kingdom Quality Gates`.
+**Valuation Source Adapter + Realized-Sale/Value-History Linkage**
 
-**Next valuation slice after merge:** build the source-provider adapter contract and realized-sale/value-history linkage. Automatic providers must prove licensing/terms compatibility, source freshness, and auditable evidence before their observations can enter the valuation ledger. Realized sale facts remain provenance; valuation history will reference them without conflating the two ledgers.
+Build order:
 
-Later separate milestones remain: collection-level value/history rollups with explicit currency policy, reliable manufacturing-vs-handling origin assessment, broader image-based collectible identification, alternate-light/UV/spectral analysis, additional official grader integrations, insurance/reporting expansion, native Android APK packaging with adaptive launcher assets, Marketplace ownership transfer/settlement, and destructive bulk archive/delete flows.
+1. research lawful sold-comparable provider APIs and redistribution/data-use terms;
+2. define a provider-neutral observation adapter;
+3. require provider/source/date/freshness/condition/grade/currency evidence on imported observations;
+4. preserve collector-recorded evidence separately from provider-verified observations;
+5. link realized sale provenance events into valuation history without rewriting either ledger;
+6. derive immutable evidence-backed value-history snapshots;
+7. build collection-level rollups only with explicit currency/evidence compatibility;
+8. make Keeper valuation explanations cite exact evidence records;
+9. pass full Kingdom Quality Gates;
+10. update README and `docs/MISSION-PROGRESS.md` before merge.
+
+Later milestones include broader image identification, alternate-light/UV/spectral analysis, additional official grader integrations, insurance/reporting expansion, native Android APK packaging, Marketplace ownership transfer/settlement and destructive bulk archive/delete flows.
