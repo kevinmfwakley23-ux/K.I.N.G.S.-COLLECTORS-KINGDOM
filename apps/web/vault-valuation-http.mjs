@@ -1,6 +1,7 @@
 import { parseCookies } from "../../packages/identity/src/tokens.mjs";
 import { IdentityError } from "../../packages/identity/src/service.mjs";
 import { VaultError } from "../../packages/vault/src/service.mjs";
+import { listValuationSources } from "../../packages/vault/src/valuation-source-registry.mjs";
 
 const MAX_VALUATION_JSON_BYTES = 16 * 1024;
 
@@ -48,6 +49,7 @@ async function readJson(request) {
 }
 
 function valuationRoute(pathname) {
+  if (pathname === "/api/vault/valuation/sources") return { treasureId: null, action: "sources" };
   const match = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/valuation(?:\/(evidence))?$/);
   if (!match) return null;
   try {
@@ -67,10 +69,23 @@ export async function handleVaultValuationRoute({
 } = {}) {
   const route = valuationRoute(requestUrl.pathname);
   if (!route) return null;
-  if (!vaultValuationService) throw new VaultError("vault_valuation_unavailable", "The Vault valuation evidence service is unavailable.", 503);
 
   const method = request.method ?? "GET";
   const identity = requireIdentity(identityService, request);
+
+  if (route.action === "sources" && (method === "GET" || method === "HEAD")) {
+    return sendJson(response, 200, {
+      sources: listValuationSources(),
+      policy: {
+        providerAccessIsNotAssumed: true,
+        activeListingsAreNotSoldComparables: true,
+        commercialPriceDataRequiresUsageAuthority: true,
+        unavailableProvidersAreNeverSimulated: true
+      }
+    }, method, securityHeaders);
+  }
+
+  if (!vaultValuationService) throw new VaultError("vault_valuation_unavailable", "The Vault valuation evidence service is unavailable.", 503);
 
   if (!route.action && (method === "GET" || method === "HEAD")) {
     return sendJson(response, 200, {
@@ -83,6 +98,9 @@ export async function handleVaultValuationRoute({
 
   if (route.action === "evidence" && method === "POST") {
     const body = await readJson(request);
+    if (!Number.isSafeInteger(Number(body.amountCents)) || Number(body.amountCents) <= 0) {
+      throw new VaultError("invalid_valuation_amount", "amountCents must be a positive safe integer.");
+    }
     const evidence = vaultValuationService.append(identity, route.treasureId, {
       evidenceType: body.evidenceType,
       sourceName: body.sourceName,
