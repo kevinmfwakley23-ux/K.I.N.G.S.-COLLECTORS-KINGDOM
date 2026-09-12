@@ -18,20 +18,17 @@ This file is the durable engineering recovery ledger. Read it before substantial
 
 **Date:** 2026-09-11 (America/Denver)  
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Current integration candidate:** **Evidence-Backed Valuation Foundation**  
-**Working branch:** `imp-005-evidence-backed-valuation-foundation`  
-**Pull request:** **#22 — `IMP-005: evidence-backed valuation foundation`**
+**Latest integrated slice:** **Evidence-Backed Valuation Foundation**  
+**Production commit:** `5addf3d483e978c79028ff00812d8beca08b9661`  
+**Merged pull request:** **#22 — `IMP-005: evidence-backed valuation foundation`**  
+**Latest production verification:** **Kingdom Quality Gates #658** — run `34672966858` — **PASS**
 
-The code-bearing PR #22 head `6ff1eba5671efd5f86c2df6c694cca019e3b7a46` passed **Kingdom Quality Gates #654** — run `34672838622` — including the canonical `npm run verify` path and production dependency audit.
+Quality Gates #658 passed on the exact merged `main` head and included the canonical `npm run verify` path plus the production dependency audit.
 
-README/recovery-document updates were added after that code-bearing gate. Therefore the final exact PR head must pass again before merge. Do not treat the branch as integrated into `main` until that final gate is green and PR #22 is merged.
+### Exact recovery point
 
-### Main-branch truth before PR #22
+Do **not** rebuild these verified IMP-005 slices:
 
-Already merged to `main` and **must not be rebuilt**:
-
-- PR #20 — calibrated physical measurement + capture scale;
-- PR #21 — macro corner/edge evidence refinement;
 - permanent owner-scoped treasure UUIDs and SQLite persistence;
 - treasure create/read/update/archive;
 - collections and arbitrary-depth physical storage locations;
@@ -43,73 +40,70 @@ Already merged to `main` and **must not be rebuilt**:
 - review-only UPCitemdb UPC/EAN/GTIN evidence;
 - append-only Provenance & Ownership Ledger;
 - cycle-safe individual and previewed atomic bulk reorganization;
-- private Saved Vault Views and deterministic keyset pagination with verified SQLite paging indexes;
+- private Saved Vault Views and deterministic keyset pagination;
 - review-only Pokémon exact-card evidence;
 - review-only Magic exact-printing evidence via Scryfall;
 - review-only PSA certification-number database evidence;
 - review-only exact sports-card catalog evidence via The Card API;
-- AI pre-grading card-size/grader reference profiles;
-- deterministic front/back centering math and manual anchor correction;
-- browser capture-quality analysis;
+- AI pre-grading profiles, centering and capture-quality analysis;
 - whole-card geometry/crop/perspective detection;
-- contour plus macro corner/edge anomaly review signals;
+- contour and macro corner/edge anomaly review signals;
 - paired raking-light surface anomaly analysis;
 - same-printing color/fade comparison;
-- web-backed autograph visual-similarity comparison through authenticated Wikimedia Commons reference search/proxy;
+- authenticated Wikimedia Commons autograph reference discovery/proxy;
 - append-only hashed pre-grade analysis persistence;
 - detector-completion coverage evidence;
-- server-computed read-only advisory grade range with fail-closed evidence floors;
+- fail-closed server-computed advisory grade range;
 - deterministic grading-finding SHA-256 identities;
-- eight explainable front/back grading dimensions;
-- append-only collector finding reviews;
-- private authenticated/no-store explainable-report and finding-review HTTP routes;
-- official owner-approved Collector's Kingdom crest throughout core Kingdom surfaces;
-- installable PWA manifest and static-only service worker with explicit API/document exclusions;
-- same-plane known-size calibration/fiducial evidence and pixel-to-millimeter conversion only when validation succeeds;
-- perspective-aware physical card measurements with uncertainty/confidence;
-- macro corner/edge capture and detector evidence linked to exact private media.
+- explainable front/back grading dimensions and append-only collector finding reviews;
+- private authenticated/no-store grading report/review routes;
+- official owner-approved Collector's Kingdom crest throughout core surfaces;
+- installable PWA manifest and static-only service worker with API/document exclusions;
+- calibrated same-plane physical-scale evidence and perspective-aware measurements;
+- macro corner/edge refinement linked to exact private media;
+- append-only evidence-backed market valuation with transparent estimate rules.
 
 ---
 
-## Current PR #22 — Evidence-Backed Valuation Foundation
+## Latest integrated slice — Evidence-Backed Valuation Foundation
 
-### Competitive research completed
+### Competitive research used
 
-Current public products and repositories reviewed for patterns, not copied code:
+The build reviewed current collector products and open-source collection managers for interaction and architecture patterns:
 
-- CollX — fast photo identification, market-price presentation, collection value and marketplace flow;
-- Ludex — scanner-first collection workflow, value range/portfolio patterns and fast marketplace listing;
-- PriceCharting — historic collection values, condition/grade-aware tracking, sold-item history and profit tracking;
-- HomeBox — portable SQLite, rich inventory organization, custom fields, images/documents and user-controlled backups;
-- OmniCard — bulk card identification, OCR/perceptual hashing, storage locations, set completion, CSV interoperability and web companion architecture.
+- CollX — fast photo identification, market-price presentation, portfolio tracking and marketplace flow;
+- Ludex — scanner-first collection workflow, price ranges, binders and fast seller workflow;
+- PriceCharting — historic collection values, grade/condition tracking, sold history and realized profit tracking;
+- HomeBox — portable SQLite, locations/categories/custom fields, images/documents and data ownership;
+- OmniCard — bulk identification, OCR/perceptual hashing, storage locations, set completion, CSV interoperability and a web companion.
 
 Research record: `docs/research/2026-09-11-IMP-005-EVIDENCE-BACKED-VALUATION.md`.
 
-### Design adopted and improved
+### What was adopted and improved
 
-The Kingdom does **not** copy the common opaque-one-number pricing pattern. PR #22 separates authoritative treasure identity, ownership/provenance, market evidence and derived estimates.
+The Kingdom deliberately avoids the opaque-one-number market-value pattern. Authoritative treasure identity, ownership/provenance, market evidence and estimates remain separate.
 
-Implemented valuation behavior:
+Verified production behavior:
 
 - owner-scoped append-only SQLite valuation evidence;
-- `sold-comparable` and `asking-listing` records remain distinct;
-- source name plus source URL/reference for auditability;
-- observed date, integer cents, currency, item state, condition and grading context;
-- SHA-256 integrity verification on stored evidence;
-- linked append-only corrections rather than destructive edits/deletes;
-- raw, graded, sealed and other states remain distinct estimate buckets;
-- currencies are never silently combined;
-- graded evidence requires grading company and grade label;
+- distinct `sold-comparable` and `asking-listing` evidence types;
+- source name plus source URL/reference;
+- observed date, integer amount, currency, item state, condition and grading context;
+- SHA-256 evidence integrity checks;
+- append-only linked corrections rather than destructive edits/deletes;
+- raw, graded, sealed and other evidence buckets remain separate;
+- currencies are not silently combined;
+- graded evidence retains grading company and grade label;
 - asking listings remain visible but never drive the estimate;
 - only sold comparables observed within 180 days qualify for the current estimate;
-- fewer than three compatible recent sold comparables returns **no estimate**;
-- first estimate method is the median of up to 20 recent sold comparables;
+- fewer than three compatible recent sold comparables produces **no estimate**;
+- estimate method is the median of up to 20 recent sold comparables;
 - visible low/high range, sample count, named-source count, freshness context and evidence-strength warning;
-- collector-facing Royal Vault evidence panel;
+- collector-facing Royal Vault evidence/estimate panel;
 - authenticated owner-scoped valuation HTTP API;
 - valuation evidence included in portable Vault export;
-- no authoritative treasure value/grade/condition/authenticity/provenance/ownership mutation;
-- initial evidence class is `collector-recorded-comparable` and is exposed as `independentlyVerified: false`.
+- no authoritative treasure value, grade, condition, authenticity, provenance or ownership mutation;
+- initial evidence class is `collector-recorded-comparable` and exposed as `independentlyVerified: false`.
 
 Primary implementation files:
 
@@ -126,18 +120,12 @@ Primary implementation files:
 - `tests/vault-valuation-ui.test.mjs`
 - `tools/typecheck.mjs`
 - `tools/verify-build.mjs`
-- `docs/IMP-005-VALUATION-IMPLEMENTATION.md`
-- `docs/research/2026-09-11-IMP-005-EVIDENCE-BACKED-VALUATION.md`
 
-### Verification already achieved on code-bearing head
+Verification sequence:
 
-**Kingdom Quality Gates #654** — run `34672838622` — **PASS** on `6ff1eba5671efd5f86c2df6c694cca019e3b7a46`:
-
-- exact dependency installation — PASS;
-- canonical `npm run verify` — PASS;
-- production dependency audit — PASS.
-
-The final docs-bearing head still requires exact-head revalidation before merge.
+- PR #22 code-bearing head `6ff1eba5671efd5f86c2df6c694cca019e3b7a46` — Quality Gates #654 / run `34672838622` — PASS.
+- Final PR head `9e218849d657373cfe8a9564f3114defbfbd710a` — Quality Gates #657 / run `34672939698` — PASS.
+- Squash-merged `main` head `5addf3d483e978c79028ff00812d8beca08b9661` — Quality Gates #658 / run `34672966858` — PASS.
 
 ---
 
@@ -157,19 +145,17 @@ The final docs-bearing head still requires exact-head revalidation before merge.
 - PSA Certification-Database Evidence — #490 — PASS.
 - Exact Sports-Card Catalog Evidence / The Card API — #495 — PASS.
 - AI Card Pre-Grading Foundation + SHA-Linked Evidence + Advisory Range Engine — #598 — PASS.
-- Explainable Grading Report + Dimension Evidence — #619, then combined production baseline #630 — PASS.
-- Official Kingdom Brand + Installable PWA Surface — #624 — PASS and retained.
-- Calibrated Physical Measurement + Capture Scale — #637 on PR #20 branch — PASS and later merged.
-- Macro Corner/Edge Evidence Refinement — PR #21 — merged to `main` before PR #22 work began.
-- Evidence-Backed Valuation Foundation — code-bearing PR #22 head — #654 — PASS; final documentation head pending exact-head gate.
+- Explainable Grading Report + Dimension Evidence — #619 and combined baseline #630 — PASS.
+- Official Kingdom Brand + Installable PWA Surface — #624 — PASS.
+- Calibrated Physical Measurement + Capture Scale — PR #20 / #637 — PASS and merged.
+- Macro Corner/Edge Evidence Refinement — PR #21 — PASS and merged.
+- Evidence-Backed Valuation Foundation — PR #22 / #658 on merged `main` — PASS.
 
 ---
 
 ## Exact next engineering target
 
-**Immediate merge gate:** PR #22 may merge only when the final exact PR head passes Kingdom Quality Gates.
-
-**Next implementation slice after merge:** **Valuation Source Adapter + Realized-Sale/Value-History Linkage**.
+**Valuation Source Adapter + Realized-Sale/Value-History Linkage**
 
 Build next in this order:
 
@@ -177,9 +163,9 @@ Build next in this order:
 2. define a provider-neutral observation adapter that cannot mutate treasure identity or provenance;
 3. require source/provider/date/freshness/condition/grade/currency evidence on every imported observation;
 4. preserve collector-recorded evidence separately from provider-verified observations;
-5. link realized sale provenance events into historical valuation context without duplicating or rewriting the provenance ledger;
+5. link realized sale provenance events into historical valuation context without rewriting the provenance ledger;
 6. derive value-history snapshots from immutable evidence rather than storing an unexplained mutable market-value field;
-7. build collection-level rollups only when currency/evidence compatibility is explicit;
+7. build collection-level rollups only when currency and evidence compatibility are explicit;
 8. expose exact evidence IDs behind every Keeper valuation explanation;
 9. pass full Kingdom Quality Gates;
 10. update README and this recovery ledger before merge.
