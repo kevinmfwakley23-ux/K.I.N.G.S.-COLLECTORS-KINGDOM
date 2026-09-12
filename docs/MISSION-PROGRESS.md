@@ -18,17 +18,16 @@ This file is the durable engineering recovery ledger. Read it before substantial
 
 **Date:** 2026-09-12 (America/Denver)  
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Current production checkpoint:** `main` at `42d0a8b8c047d9aee01c30fe6e7edeac87cb57d5`  
-**Production valuation implementation:** PR #22 / `5addf3d483e978c79028ff00812d8beca08b9661`  
-**Active verified candidate:** **PR #24 — Realized-Sale / Value-History Linkage**  
-**Verified candidate head:** `6fc5c4651232d85dff25deb545c98b1a0f52af7a`  
-**Latest candidate verification:** **Kingdom Quality Gates #662** — run `34682629889` — **PASS**
+**Latest integrated slice:** **Realized-Sale / Value-History Linkage**  
+**Production commit:** `061e29ab129ec5ee8e09a240afb8018ae408c996`  
+**Merged pull request:** **#24 — `IMP-005: realized-sale value-history linkage`**  
+**Latest pre-merge verification:** **Kingdom Quality Gates #664** — run `34682718156` — **PASS**
 
-`main` remains the production authority until PR #24 is merged. The PR #24 code-bearing head `beaefdd2d3e9e2ed5d6b136b19f6d00b9faf3901` passed Quality Gates #661, and the research-complete head `6fc5c4651232d85dff25deb545c98b1a0f52af7a` passed Quality Gates #662.
+PR #24 was squash-merged after its exact final head `56e95a7658e4c2ae3cbaac055f28e7add88e412e` passed the canonical Kingdom Quality Gates.
 
 ### Exact recovery point
 
-Do **not** rebuild these verified `main` IMP-005 slices:
+Do **not** rebuild these verified IMP-005 slices:
 
 - permanent owner-scoped treasure UUIDs and SQLite persistence;
 - treasure create/read/update/archive;
@@ -62,13 +61,12 @@ Do **not** rebuild these verified `main` IMP-005 slices:
 - installable PWA manifest and static-only service worker with API/document exclusions;
 - calibrated same-plane physical-scale evidence and perspective-aware measurements;
 - macro corner/edge refinement linked to exact private media;
-- append-only evidence-backed market valuation with transparent estimate rules.
-
-If PR #24 is still open, do not represent its value-history linkage as production. Its implementation is nevertheless verified and should be reviewed/merged rather than rebuilt from scratch.
+- append-only evidence-backed market valuation with transparent estimate rules;
+- realized-sale/value-history linkage derived from immutable valuation and provenance records.
 
 ---
 
-## Latest verified candidate — Realized-Sale / Value-History Linkage
+## Latest integrated slice — Realized-Sale / Value-History Linkage
 
 ### Research used
 
@@ -95,36 +93,34 @@ Provider feasibility research found:
 
 Research record: `docs/research/2026-09-12-IMP-005-VALUATION-SOURCE-AND-HISTORY.md`.
 
-### What PR #24 implements
+### Integrated production behavior
 
-- new `packages/vault/src/value-history.mjs` derived read model;
-- valuation evidence projected as `market-observation` history with exact valuation evidence IDs;
-- provenance events of type `sold` projected as `realized-sale` entries with exact provenance event IDs;
-- priced/unpriced realized-sale distinction;
-- unpriced sales remain visible without manufactured amount/currency;
-- provenance correction descendants mark a realized sale corrected and expose correction IDs rather than rewriting the sale;
+- `packages/vault/src/value-history.mjs` provides the derived value-history read model;
+- valuation evidence is projected as `market-observation` history with exact valuation evidence IDs;
+- provenance events of type `sold` are projected as `realized-sale` entries with exact provenance event IDs;
+- priced/unpriced realized sales remain distinguishable;
+- unpriced sales remain visible without a manufactured amount/currency;
+- provenance correction descendants mark a realized sale corrected and expose correction IDs instead of rewriting the sale;
 - realized owner sales remain separate from the current sold-comparable estimate;
 - asking listings remain excluded from the estimate;
-- currency aggregation remains explicit and disabled across currencies;
+- currencies remain separate and cross-currency aggregation remains disabled;
 - history declares `derived: true` and `persistedAsMutableValue: false`;
-- isolated valuation runtimes continue to function when the provenance table is absent and report `provenanceAvailable: false`;
-- new dedicated regression coverage in `tests/vault-valuation-history.test.mjs`.
+- isolated valuation runtimes remain functional when the provenance table is absent and report `provenanceAvailable: false`;
+- dedicated regression coverage exists in `tests/vault-valuation-history.test.mjs`.
 
-Primary changed files:
+Primary implementation files:
 
 - `packages/vault/src/value-history.mjs`
 - `packages/vault/src/valuation-service.mjs`
 - `tests/vault-valuation-history.test.mjs`
 - `docs/research/2026-09-12-IMP-005-VALUATION-SOURCE-AND-HISTORY.md`
-- `README.md`
-- `docs/MISSION-PROGRESS.md`
 
-Verification sequence so far:
+Verification sequence:
 
 - code-bearing PR head `beaefdd2d3e9e2ed5d6b136b19f6d00b9faf3901` — Quality Gates #661 — **PASS**;
-- research-complete PR head `6fc5c4651232d85dff25deb545c98b1a0f52af7a` — Quality Gates #662 / run `34682629889` — **PASS**.
-
-The final documentation head must also pass the canonical gate before merge.
+- research-complete PR head `6fc5c4651232d85dff25deb545c98b1a0f52af7a` — Quality Gates #662 / run `34682629889` — **PASS**;
+- final PR head `56e95a7658e4c2ae3cbaac055f28e7add88e412e` — Quality Gates #664 / run `34682718156` — **PASS**;
+- squash-merged production commit `061e29ab129ec5ee8e09a240afb8018ae408c996`.
 
 ---
 
@@ -132,7 +128,7 @@ The final documentation head must also pass the canonical gate before merge.
 
 The production baseline deliberately avoids the opaque-one-number market-value pattern. Authoritative treasure identity, ownership/provenance, market evidence and estimates remain separate.
 
-Verified production behavior:
+Verified behavior:
 
 - owner-scoped append-only SQLite valuation evidence;
 - distinct `sold-comparable` and `asking-listing` evidence types;
@@ -159,7 +155,7 @@ Production verification sequence:
 - PR #22 code-bearing head `6ff1eba5671efd5f86c2df6c694cca019e3b7a46` — Quality Gates #654 / run `34672838622` — PASS;
 - final PR #22 head `9e218849d657373cfe8a9564f3114defbfbd710a` — Quality Gates #657 / run `34672939698` — PASS;
 - squash-merged implementation head `5addf3d483e978c79028ff00812d8beca08b9661` — Quality Gates #658 / run `34672966858` — PASS;
-- documentation recovery checkpoint on `main`: `42d0a8b8c047d9aee01c30fe6e7edeac87cb57d5`.
+- documentation recovery checkpoint `42d0a8b8c047d9aee01c30fe6e7edeac87cb57d5`.
 
 ---
 
@@ -183,12 +179,12 @@ Production verification sequence:
 - Official Kingdom Brand + Installable PWA Surface — #624 — PASS.
 - Calibrated Physical Measurement + Capture Scale — PR #20 / #637 — PASS and merged.
 - Macro Corner/Edge Evidence Refinement — PR #21 — PASS and merged.
-- Evidence-Backed Valuation Foundation — PR #22 / #658 on implementation `main` — PASS.
-- Realized-Sale / Value-History candidate — PR #24 / #661 and #662 — PASS; merge still required at this checkpoint.
+- Evidence-Backed Valuation Foundation — PR #22 / #658 — PASS and merged.
+- Realized-Sale / Value-History Linkage — PR #24 / final #664 — PASS and merged.
 
 ---
 
-## Exact next engineering target after PR #24
+## Exact next engineering target
 
 **Provider-Neutral Valuation Observation Adapter + Collection-Level Evidence Rollups**
 
@@ -215,6 +211,7 @@ Do not represent these as live until separately implemented and verified:
 - collection-level valuation history/coverage rollups;
 - automatic currency conversion/FX policy;
 - Keeper evidence-cited valuation explanations across the new history model;
+- collector-facing value-history visualization beyond the API/read-model data now exposed;
 - review-aware overall grading advisory estimate;
 - reliable manufacturing-vs-handling defect classification;
 - alternate-light/UV/spectral analysis;
