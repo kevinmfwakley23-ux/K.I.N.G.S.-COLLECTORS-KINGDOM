@@ -25,6 +25,7 @@ const required = [
   "dist/apps/web/public/voice.js",
   "dist/apps/web/public/vault.html",
   "dist/apps/web/public/vault.js",
+  "dist/apps/web/public/vault-bootstrap.js",
   "dist/apps/web/public/vault.css",
   "dist/apps/web/public/vault-import-core.js",
   "dist/apps/web/public/vault-catalog-core.js",
@@ -40,6 +41,9 @@ const required = [
   "dist/apps/web/public/vault-valuation-core.js",
   "dist/apps/web/public/vault-valuation-ui.js",
   "dist/apps/web/public/vault-valuation.css",
+  "dist/apps/web/public/vault-portfolio-core.js",
+  "dist/apps/web/public/vault-portfolio-ui.js",
+  "dist/apps/web/public/vault-portfolio.css",
   "dist/apps/web/public/vault-reorganization-core.js",
   "dist/apps/web/public/vault-reorganization-ui.js",
   "dist/apps/web/public/vault-reorganization.css",
@@ -125,4 +129,4 @@ const required = [
 for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
 if (manifest.phase !== "IMP-005-ROYAL-VAULT-PHASE-1") throw new Error("Unexpected build phase in manifest.");
-console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 including AI card pre-grading profiles, centering, capture-quality/card-geometry/contour/macro-corner-edge/paired-raking-light surface/color analysis, macro-aware explainable dimension completeness, web-backed autograph visual similarity with authenticated Commons search/proxy, SHA-linked detector coverage, append-only hashed pre-grade persistence, read-only server-derived Kingdom advisory range, deterministic finding identity, normalized defect extent, explainable front/back dimension summaries, append-only finding-review/report service and responsive report/review UI, catalog/cert evidence, provenance, evidence-backed valuation, saved views, bulk reorganization, transactional import, Royal Intake, scanner, secure media and Kingdom voice output.");
+console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 including AI card pre-grading profiles, centering, capture-quality/card-geometry/contour/macro-corner-edge/paired-raking-light surface/color analysis, macro-aware explainable dimension completeness, web-backed autograph visual similarity with authenticated Commons search/proxy, SHA-linked detector coverage, append-only hashed pre-grade persistence, read-only server-derived Kingdom advisory range, deterministic finding identity, normalized defect extent, explainable front/back dimension summaries, append-only finding-review/report service and responsive report/review UI, catalog/cert evidence, provenance, evidence-backed valuation, live advanced-Vault bootstrap, evidence-backed collection portfolio rollups with coverage and separate currencies, saved views, bulk reorganization, transactional import, Royal Intake, scanner, secure media and Kingdom voice output.");
