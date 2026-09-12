@@ -1,6 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
 import { VaultError } from "./service.mjs";
 import { buildVaultValueHistory } from "./value-history.mjs";
+import { createVaultValuationObservationRepository } from "./valuation-observation-repository.mjs";
+import { createVaultValuationObservationService } from "./valuation-observation-service.mjs";
 
 const EVIDENCE_TYPES = Object.freeze(["sold-comparable", "asking-listing"]);
 const ITEM_STATES = Object.freeze(["raw", "graded", "sealed", "other"]);
@@ -256,7 +258,13 @@ function buildBucketSnapshot(records, now) {
   });
 }
 
-export function createVaultValuationService({ vaultStore, valuationRepository, now = () => new Date() } = {}) {
+export function createVaultValuationService({
+  vaultStore,
+  valuationRepository,
+  observationRepository = null,
+  observationService = null,
+  now = () => new Date()
+} = {}) {
   if (!vaultStore || typeof vaultStore.findTreasureById !== "function" || typeof vaultStore.writeEvent !== "function") {
     throw new TypeError("Vault valuation service requires the Vault store boundary.");
   }
@@ -264,6 +272,13 @@ export function createVaultValuationService({ vaultStore, valuationRepository, n
     throw new TypeError("Vault valuation service requires a valuation repository.");
   }
   if (typeof now !== "function") throw new TypeError("Vault valuation service now must be a function.");
+
+  const providerObservationRepository = observationRepository ?? createVaultValuationObservationRepository({ vaultStore });
+  const providerObservationService = observationService ?? createVaultValuationObservationService({
+    vaultStore,
+    observationRepository: providerObservationRepository,
+    now
+  });
 
   function requireTreasure(ownerAccountId, treasureId) {
     const treasure = vaultStore.findTreasureById(ownerAccountId, treasureId, { includeArchived: true });
@@ -401,17 +416,21 @@ export function createVaultValuationService({ vaultStore, valuationRepository, n
       evidenceCount: records.length,
       activeEvidenceCount: active.length,
       correctedEvidenceCount: correctedIds.size,
+      providerObservationCount: history.providerMarketObservationCount,
       bucketCount: buckets.length,
       buckets: Object.freeze(buckets),
       history,
       policy: Object.freeze({
         evidenceClass: "collector-recorded-comparable",
+        providerObservationEvidenceClass: "provider-originated-market-observation",
         appendOnly: true,
         ordinaryUpdateAvailable: false,
         ordinaryDeleteAvailable: false,
         independentlyVerified: false,
         askingListingsInfluenceEstimate: false,
         realizedSalesInfluenceEstimate: false,
+        providerObservationsInfluenceEstimate: false,
+        providerObservationCollectorWriteAvailable: false,
         crossCurrencyAggregation: false,
         minimumRecentSoldComparables: MINIMUM_RECENT_SOLD_COMPARABLES,
         freshnessWindowDays: FRESHNESS_WINDOW_DAYS,
@@ -436,6 +455,12 @@ export function createVaultValuationService({ vaultStore, valuationRepository, n
     append,
     list,
     snapshot,
-    exportAll
+    exportAll,
+    ingestProviderObservation: providerObservationService.ingest,
+    listProviderObservations: providerObservationService.list,
+    exportProviderObservations: providerObservationService.exportAll,
+    providerObservationStats: providerObservationService.stats,
+    providerObservationTypes: providerObservationService.observationTypes,
+    providerObservationItemStates: providerObservationService.itemStates
   });
 }
