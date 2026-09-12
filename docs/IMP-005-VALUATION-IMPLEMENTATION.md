@@ -2,18 +2,12 @@
 
 ## Status
 
-**Verified on PR #22 branch head `6ff1eba5671efd5f86c2df6c694cca019e3b7a46`.**
+**Integrated and verified on `main`.**
 
-Kingdom Quality Gates run **#654** (`34672838622`) passed:
+- PR #22 final head `9e218849d657373cfe8a9564f3114defbfbd710a` — Kingdom Quality Gates **#657** / run `34672939698` — PASS.
+- Squash merge commit `5addf3d483e978c79028ff00812d8beca08b9661` — Kingdom Quality Gates **#658** / run `34672966858` — PASS on exact `main` head.
 
-- exact dependency installation;
-- `npm run verify`;
-- lint and module-contract checks included by the canonical verification command;
-- automated regression/integration tests;
-- production build and artifact verification;
-- production dependency audit.
-
-The implementation remains a PR branch until merged. After any change to the branch, the new exact head must pass again before merge.
+The verification chain covers exact dependency installation, canonical `npm run verify`, automated regression/integration tests, production build/artifact verification, and the production dependency audit.
 
 ## What this increment adds
 
@@ -46,4 +40,4 @@ The repository authority remains:
 npm run verify
 ```
 
-The GitHub `Kingdom Quality Gates` workflow must pass on the exact PR head before this increment is considered merge-ready.
+Every future valuation change must pass Kingdom Quality Gates on the exact integration head before it is treated as production truth.
