@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { VaultError } from "./service.mjs";
+import { buildVaultValueHistory } from "./value-history.mjs";
 
 const EVIDENCE_TYPES = Object.freeze(["sold-comparable", "asking-listing"]);
 const ITEM_STATES = Object.freeze(["raw", "graded", "sealed", "other"]);
@@ -386,6 +387,13 @@ export function createVaultValuationService({ vaultStore, valuationRepository, n
         if (a.estimateAvailable !== b.estimateAvailable) return a.estimateAvailable ? -1 : 1;
         return b.recentSoldComparableCount - a.recentSoldComparableCount || a.key.localeCompare(b.key);
       });
+    const history = buildVaultValueHistory({
+      vaultStore,
+      ownerAccountId: collector.id,
+      treasureId,
+      valuationRecords: records,
+      correctedEvidenceIds: correctedIds
+    });
 
     return Object.freeze({
       treasureId,
@@ -395,6 +403,7 @@ export function createVaultValuationService({ vaultStore, valuationRepository, n
       correctedEvidenceCount: correctedIds.size,
       bucketCount: buckets.length,
       buckets: Object.freeze(buckets),
+      history,
       policy: Object.freeze({
         evidenceClass: "collector-recorded-comparable",
         appendOnly: true,
@@ -402,11 +411,13 @@ export function createVaultValuationService({ vaultStore, valuationRepository, n
         ordinaryDeleteAvailable: false,
         independentlyVerified: false,
         askingListingsInfluenceEstimate: false,
+        realizedSalesInfluenceEstimate: false,
         crossCurrencyAggregation: false,
         minimumRecentSoldComparables: MINIMUM_RECENT_SOLD_COMPARABLES,
         freshnessWindowDays: FRESHNESS_WINDOW_DAYS,
         estimateIsAppraisal: false,
-        marketValueFieldMutated: false
+        marketValueFieldMutated: false,
+        valueHistoryDerivedFromImmutableRecords: true
       })
     });
   }
