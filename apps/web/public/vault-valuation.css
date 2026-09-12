@@ -1,0 +1,221 @@
+.vault-valuation-section {
+  margin: 6px 0 0;
+  padding: 18px;
+  border: 1px solid rgba(162, 123, 39, .24);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(255,255,255,.96), rgba(246,243,235,.9));
+}
+
+.vault-valuation-section > legend {
+  padding: 0 8px;
+  font-size: 1rem;
+  font-weight: 850;
+  color: #29251f;
+}
+
+.valuation-policy {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(162,123,39,.22);
+  background: rgba(181,143,53,.08);
+}
+
+.valuation-policy strong { color: #6e531d; }
+.valuation-policy p { margin: 0; }
+
+.valuation-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 12px;
+  margin: 18px 0 10px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(30,29,27,.1);
+}
+
+.valuation-section-heading h3 { margin: 0; }
+.valuation-section-heading small { color: #756f64; }
+
+.valuation-estimates,
+.valuation-ledger {
+  display: grid;
+  gap: 10px;
+}
+
+.valuation-estimate-card,
+.valuation-evidence-card {
+  position: relative;
+  padding: 14px;
+  border: 1px solid rgba(29,28,26,.11);
+  border-radius: 13px;
+  background: rgba(255,255,255,.92);
+  overflow: hidden;
+}
+
+.valuation-estimate-card::before,
+.valuation-evidence-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: rgba(163,122,37,.7);
+}
+
+.valuation-estimate-card.is-pending::before { background: rgba(83,80,72,.45); }
+.valuation-evidence-card.is-corrected::before { background: rgba(93,88,80,.38); }
+
+.valuation-estimate-head,
+.valuation-evidence-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 14px;
+}
+
+.valuation-estimate-head > div:first-child,
+.valuation-evidence-head > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.valuation-estimate-head small,
+.valuation-evidence-head small { color: #746d61; }
+
+.valuation-estimate-value,
+.valuation-evidence-money {
+  flex: 0 0 auto;
+  color: #6d5118;
+  font-weight: 900;
+  font-size: 1.08rem;
+  text-align: right;
+}
+
+.valuation-estimate-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.valuation-estimate-facts span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(34,32,29,.06);
+  color: #625d54;
+  font-size: .72rem;
+  font-weight: 750;
+}
+
+.valuation-warning,
+.valuation-method,
+.valuation-evidence-context,
+.valuation-evidence-trust,
+.valuation-evidence-note,
+.valuation-correction-note {
+  margin: 9px 0 0;
+  color: #625d54;
+  line-height: 1.45;
+  font-size: .82rem;
+}
+
+.valuation-warning {
+  color: #745817;
+  font-weight: 700;
+}
+
+.valuation-method { color: #6b665e; }
+.valuation-evidence-trust { font-weight: 700; }
+.valuation-evidence-trust.is-corrected { color: #736b60; }
+
+.valuation-correction-note {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
+.valuation-evidence-card.is-corrected {
+  opacity: .72;
+}
+
+.valuation-evidence-card .text-link {
+  display: inline-block;
+  margin-top: 9px;
+}
+
+.valuation-entry-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.valuation-entry-grid label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.valuation-field-label {
+  color: #6d6657;
+  font-size: .7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+
+.valuation-entry-grid input,
+.valuation-entry-grid select,
+.valuation-entry-grid textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(30,29,27,.16);
+  border-radius: 10px;
+  background: rgba(255,255,255,.96);
+  color: #191817;
+  padding: 10px 11px;
+  font: inherit;
+}
+
+.valuation-entry-grid textarea { resize: vertical; }
+
+.valuation-entry-grid input:focus,
+.valuation-entry-grid select:focus,
+.valuation-entry-grid textarea:focus {
+  outline: 2px solid rgba(184,145,48,.42);
+  outline-offset: 2px;
+  border-color: #a37a25;
+}
+
+.valuation-entry-grid input:disabled {
+  opacity: .58;
+  background: rgba(241,239,233,.85);
+}
+
+.valuation-entry-grid .field-span-2 { grid-column: 1 / -1; }
+
+.valuation-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.valuation-status {
+  min-height: 1.3em;
+  flex: 1 1 280px;
+}
+
+.valuation-ledger-heading { margin-top: 22px; }
+
+@media (max-width: 720px) {
+  .vault-valuation-section { padding: 14px; }
+  .valuation-entry-grid { grid-template-columns: 1fr; }
+  .valuation-entry-grid .field-span-2 { grid-column: auto; }
+  .valuation-section-heading,
+  .valuation-estimate-head,
+  .valuation-evidence-head { display: grid; }
+  .valuation-estimate-value,
+  .valuation-evidence-money { text-align: left; }
+}
