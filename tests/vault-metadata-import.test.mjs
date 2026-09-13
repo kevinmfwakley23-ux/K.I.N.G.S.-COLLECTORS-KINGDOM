@@ -60,8 +60,12 @@ test("transactional import previews and commits year and tags without losing met
 
     const storedTreasure = store.findTreasureById(owner.id, treasureId);
     assert.equal(storedTreasure.title, "Imported Rookie Card");
-    assert.ok(storedTreasure.searchText.includes("1993"));
-    assert.ok(storedTreasure.searchText.includes("rookie"));
+    const storedSearch = store.database.prepare(`
+      SELECT search_text FROM vault_treasures
+      WHERE owner_account_id = ? AND id = ?
+    `).get(owner.id, treasureId);
+    assert.ok(storedSearch.search_text.includes("1993"));
+    assert.ok(storedSearch.search_text.includes("rookie"));
 
     const replay = importService.commit(owner, preview.id, { idempotencyKey: "metadata-import-001" });
     assert.equal(replay.idempotentReplay, true);
