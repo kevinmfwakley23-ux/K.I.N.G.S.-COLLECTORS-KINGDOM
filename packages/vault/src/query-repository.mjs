@@ -33,8 +33,9 @@ CREATE INDEX IF NOT EXISTS vault_treasures_owner_location_updated_page_idx
 `;
 
 function parseJson(value, fallback) {
+  if (value === null || value === undefined || value === "") return fallback;
   try {
-    return JSON.parse(value);
+    return JSON.parse(value) ?? fallback;
   } catch {
     return fallback;
   }
@@ -51,6 +52,7 @@ function normalizeSearchText(value) {
 
 function mapTreasure(row) {
   if (!row) return null;
+  const parsedTags = parseJson(row.metadata_tags_json, []);
   return {
     id: row.id,
     ownerAccountId: row.owner_account_id,
@@ -62,8 +64,8 @@ function mapTreasure(row) {
     manufacturer: row.manufacturer,
     series: row.series,
     variant: row.variant,
-    year: row.metadata_year === null ? null : Number(row.metadata_year),
-    tags: Object.freeze(parseJson(row.metadata_tags_json, []).filter((item) => typeof item === "string")),
+    year: row.metadata_year === null || row.metadata_year === undefined ? null : Number(row.metadata_year),
+    tags: Object.freeze(Array.isArray(parsedTags) ? parsedTags.filter((item) => typeof item === "string") : []),
     condition: row.condition_label,
     conditionNotes: row.condition_notes,
     quantity: Number(row.quantity),
@@ -104,7 +106,7 @@ const SORT_EXPRESSIONS = Object.freeze({
 function cursorSortValue(row, sort) {
   if (sort === "title") return row.title;
   if (sort === "category") return row.category;
-  if (sort === "year") return row.metadata_year === null ? -1 : Number(row.metadata_year);
+  if (sort === "year") return row.metadata_year === null || row.metadata_year === undefined ? -1 : Number(row.metadata_year);
   if (sort === "createdAt") return row.created_at;
   if (sort === "acquisitionDate") return row.acquisition_date ?? "";
   if (sort === "purchasePrice") return row.purchase_price_cents === null ? -1 : Number(row.purchase_price_cents);
