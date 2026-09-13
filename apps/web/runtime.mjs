@@ -10,7 +10,9 @@ import { createIdentityService } from "../../packages/identity/src/service.mjs";
 import { SqliteIdentityStore } from "../../packages/identity/src/sqlite-store.mjs";
 import { createKingsAiClient } from "../../packages/kings-ai/src/client.mjs";
 import { createMarketplaceGreatHallAdapter } from "../../packages/marketplace/src/great-hall-adapter.mjs";
+import { createMarketplaceQueryService } from "../../packages/marketplace/src/query-service.mjs";
 import { createMarketplaceRepository } from "../../packages/marketplace/src/repository.mjs";
+import { createMarketplaceSavedSearchRepository } from "../../packages/marketplace/src/saved-search-repository.mjs";
 import { createMarketplaceService } from "../../packages/marketplace/src/service.mjs";
 import { createLogger } from "../../packages/observability/src/logger.mjs";
 import { createEbayBrowseValuationProvider } from "../../packages/vault/src/ebay-browse-valuation-provider.mjs";
@@ -48,7 +50,18 @@ export async function runKingdomRuntime() {
   });
   const vaultService = createVaultService({ store: vaultStore });
   const marketplaceRepository = createMarketplaceRepository({ vaultStore });
-  const marketplaceService = createMarketplaceService({ vaultStore, marketplaceRepository });
+  const marketplaceCoreService = createMarketplaceService({ vaultStore, marketplaceRepository });
+  const marketplaceSavedSearchRepository = createMarketplaceSavedSearchRepository({ vaultStore });
+  const marketplaceQueryService = createMarketplaceQueryService({
+    vaultStore,
+    marketplaceRepository,
+    marketplaceService: marketplaceCoreService,
+    savedSearchRepository: marketplaceSavedSearchRepository
+  });
+  const marketplaceService = Object.freeze({
+    ...marketplaceCoreService,
+    ...marketplaceQueryService
+  });
   const vaultQueryRepository = createVaultQueryRepository({ vaultStore });
   const vaultQueryService = createVaultQueryService({
     vaultStore,
@@ -172,6 +185,8 @@ export async function runKingdomRuntime() {
       valuationObservationProviders: observationProviders.map((provider) => provider.id),
       collectionEvidenceReporting: true,
       marketplaceListingPublicationAvailable: true,
+      marketplaceSavedSearchesAvailable: true,
+      marketplaceSavedSearchNotificationsAvailable: false,
       marketplaceCheckoutAvailable: false
     });
   });

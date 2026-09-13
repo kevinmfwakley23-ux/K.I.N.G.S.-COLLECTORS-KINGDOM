@@ -202,6 +202,36 @@ function activeOrder(sort) {
   }
 }
 
+function appendCursor(where, values, sort, key) {
+  if (!key) return;
+  if (sort === "price-asc" || sort === "price-desc") {
+    const operator = sort === "price-asc" ? ">" : "<";
+    where.push(`(
+      l.amount_cents ${operator} ? OR
+      (l.amount_cents = ? AND (l.published_at < ? OR (l.published_at = ? AND l.id > ?)))
+    )`);
+    values.push(key.amountCents, key.amountCents, key.publishedAt, key.publishedAt, key.id);
+    return;
+  }
+  if (sort === "title") {
+    where.push(`(
+      l.title_snapshot COLLATE NOCASE > ? COLLATE NOCASE OR
+      (l.title_snapshot = ? COLLATE NOCASE AND (l.published_at < ? OR (l.published_at = ? AND l.id > ?)))
+    )`);
+    values.push(key.title, key.title, key.publishedAt, key.publishedAt, key.id);
+    return;
+  }
+  where.push("(l.published_at < ? OR (l.published_at = ? AND l.id > ?))");
+  values.push(key.publishedAt, key.publishedAt, key.id);
+}
+
+function cursorKeyForRow(row, sort) {
+  const base = { publishedAt: row.published_at, id: row.id };
+  if (sort === "price-asc" || sort === "price-desc") return Object.freeze({ ...base, amountCents: Number(row.amount_cents) });
+  if (sort === "title") return Object.freeze({ ...base, title: row.title_snapshot });
+  return Object.freeze(base);
+}
+
 export function createMarketplaceRepository({ vaultStore } = {}) {
   if (!vaultStore?.database || typeof vaultStore.database.prepare !== "function") {
     throw new TypeError("Marketplace repository requires the Vault SQLite database boundary.");
@@ -354,16 +384,29 @@ export function createMarketplaceRepository({ vaultStore } = {}) {
     `).all(sellerAccountId, Math.min(Math.max(Number(limit) || 100, 1), 250)).map(mapListing);
   }
 
-  function listActive(filters = {}) {
+  function listActivePage(filters = {}, { pageSize = 50, cursorKey = null } = {}) {
     const { where, values } = activeWhere(filters);
-    const limit = Math.min(Math.max(Number(filters.limit) || 50, 1), 100);
-    return database.prepare(`
+    appendCursor(where, values, filters.sort, cursorKey);
+    const limit = Math.min(Math.max(Number(pageSize) || 50, 1), 100);
+    const rows = database.prepare(`
       SELECT l.*
       ${ACTIVE_VAULT_JOIN}
       WHERE ${where.join(" AND ")}
       ORDER BY ${activeOrder(filters.sort)}
       LIMIT ?
-    `).all(...values, limit).map(mapListing);
+    `).all(...values, limit + 1);
+    const hasNext = rows.length > limit;
+    const pageRows = hasNext ? rows.slice(0, limit) : rows;
+    const last = hasNext ? pageRows.at(-1) : null;
+    return Object.freeze({
+      listings: Object.freeze(pageRows.map(mapListing)),
+      hasNext,
+      nextKey: last ? cursorKeyForRow(last, filters.sort) : null
+    });
+  }
+
+  function listActive(filters = {}) {
+    return listActivePage(filters, { pageSize: filters.limit }).listings;
   }
 
   function activeFacets() {
@@ -427,6 +470,7 @@ export function createMarketplaceRepository({ vaultStore } = {}) {
     findActiveById,
     listForSeller,
     listActive,
+    listActivePage,
     activeFacets,
     listEvents
   });

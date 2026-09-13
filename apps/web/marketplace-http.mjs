@@ -47,20 +47,43 @@ async function readJson(request) {
   }
 }
 
+function decodePathPart(value, code, message) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    throw new MarketplaceError(code, message);
+  }
+}
+
 function routeFor(pathname) {
   if (pathname === "/api/marketplace/listings") return { kind: "listings" };
   if (pathname === "/api/marketplace/my-listings") return { kind: "mine" };
-  const match = pathname.match(/^\/api\/marketplace\/(listings|my-listings)\/([^/]+)(?:\/(publish|withdraw))?$/);
-  if (!match) return null;
-  try {
+  if (pathname === "/api/marketplace/saved-searches") return { kind: "saved-searches" };
+
+  const savedSearchMatch = pathname.match(/^\/api\/marketplace\/saved-searches\/([^/]+)(?:\/(run))?$/);
+  if (savedSearchMatch) {
     return {
-      kind: match[1] === "listings" ? "listing" : "mine-listing",
-      listingId: decodeURIComponent(match[2]),
-      action: match[3] ?? null
+      kind: "saved-search",
+      savedSearchId: decodePathPart(
+        savedSearchMatch[1],
+        "invalid_marketplace_saved_search_id",
+        "The saved Marketplace search identifier is invalid."
+      ),
+      action: savedSearchMatch[2] ?? null
     };
-  } catch {
-    throw new MarketplaceError("invalid_marketplace_listing_id", "The Marketplace listing identifier is invalid.");
   }
+
+  const listingMatch = pathname.match(/^\/api\/marketplace\/(listings|my-listings)\/([^/]+)(?:\/(publish|withdraw))?$/);
+  if (!listingMatch) return null;
+  return {
+    kind: listingMatch[1] === "listings" ? "listing" : "mine-listing",
+    listingId: decodePathPart(
+      listingMatch[2],
+      "invalid_marketplace_listing_id",
+      "The Marketplace listing identifier is invalid."
+    ),
+    action: listingMatch[3] ?? null
+  };
 }
 
 function limitFrom(requestUrl, fallback = 50) {
@@ -83,8 +106,25 @@ function discoveryFilters(requestUrl) {
     minAmountCents: parameters.get("minAmountCents") ?? undefined,
     maxAmountCents: parameters.get("maxAmountCents") ?? undefined,
     sort: parameters.get("sort") ?? undefined,
-    limit: parameters.get("limit") ?? undefined
+    pageSize: parameters.get("pageSize") ?? parameters.get("limit") ?? undefined,
+    cursor: parameters.get("cursor") ?? undefined
   };
+}
+
+function savedSearchRunOptions(requestUrl) {
+  return {
+    pageSize: requestUrl.searchParams.get("pageSize") ?? requestUrl.searchParams.get("limit") ?? undefined,
+    cursor: requestUrl.searchParams.get("cursor") ?? undefined
+  };
+}
+
+function savedSearchCapabilities(marketplaceService) {
+  return Object.freeze({
+    available: typeof marketplaceService.listSavedSearches === "function",
+    maxSavedSearches: marketplaceService.maxSavedSearches ?? null,
+    notificationsAvailable: marketplaceService.notificationsAvailable === true,
+    resultsAreSnapshots: false
+  });
 }
 
 export async function handleMarketplaceRoute({
@@ -97,13 +137,18 @@ export async function handleMarketplaceRoute({
 } = {}) {
   const route = routeFor(requestUrl.pathname);
   if (!route) return null;
-  if (!marketplaceService) throw new MarketplaceError("marketplace_unavailable", "The Kingdom Street Market service is unavailable.", 503);
+  if (!marketplaceService) {
+    throw new MarketplaceError("marketplace_unavailable", "The Kingdom Street Market service is unavailable.", 503);
+  }
   const method = request.method ?? "GET";
 
   if (route.kind === "listings" && (method === "GET" || method === "HEAD")) {
-    const discovery = marketplaceService.discovery(discoveryFilters(requestUrl));
+    const discovery = typeof marketplaceService.browsePage === "function"
+      ? marketplaceService.browsePage(discoveryFilters(requestUrl))
+      : marketplaceService.discovery(discoveryFilters(requestUrl));
     return sendJson(response, 200, {
       ...discovery,
+      savedSearches: savedSearchCapabilities(marketplaceService),
       commerce: {
         listingPublicationAvailable: true,
         fixedPriceAvailable: true,
@@ -121,6 +166,58 @@ export async function handleMarketplaceRoute({
   }
 
   const identity = requireIdentity(identityService, request);
+
+  if (route.kind === "saved-searches") {
+    if (typeof marketplaceService.listSavedSearches !== "function") {
+      throw new MarketplaceError("marketplace_saved_searches_unavailable", "Marketplace saved searches are unavailable.", 503);
+    }
+    if (method === "GET" || method === "HEAD") {
+      return sendJson(response, 200, {
+        savedSearches: marketplaceService.listSavedSearches(identity),
+        capabilities: savedSearchCapabilities(marketplaceService)
+      }, method, securityHeaders);
+    }
+    if (method === "POST") {
+      const body = await readJson(request);
+      return sendJson(response, 201, {
+        savedSearch: marketplaceService.createSavedSearch(identity, {
+          name: body.name,
+          filters: body.filters
+        }),
+        capabilities: savedSearchCapabilities(marketplaceService)
+      }, method, securityHeaders);
+    }
+  }
+
+  if (route.kind === "saved-search") {
+    if (typeof marketplaceService.getSavedSearch !== "function") {
+      throw new MarketplaceError("marketplace_saved_searches_unavailable", "Marketplace saved searches are unavailable.", 503);
+    }
+    if (!route.action && (method === "GET" || method === "HEAD")) {
+      return sendJson(response, 200, {
+        savedSearch: marketplaceService.getSavedSearch(identity, route.savedSearchId),
+        capabilities: savedSearchCapabilities(marketplaceService)
+      }, method, securityHeaders);
+    }
+    if (!route.action && method === "PATCH") {
+      const body = await readJson(request);
+      return sendJson(response, 200, {
+        savedSearch: marketplaceService.updateSavedSearch(identity, route.savedSearchId, body),
+        capabilities: savedSearchCapabilities(marketplaceService)
+      }, method, securityHeaders);
+    }
+    if (!route.action && method === "DELETE") {
+      return sendJson(response, 200, {
+        result: marketplaceService.deleteSavedSearch(identity, route.savedSearchId)
+      }, method, securityHeaders);
+    }
+    if (route.action === "run" && (method === "GET" || method === "HEAD")) {
+      return sendJson(response, 200, {
+        ...marketplaceService.runSavedSearch(identity, route.savedSearchId, savedSearchRunOptions(requestUrl)),
+        capabilities: savedSearchCapabilities(marketplaceService)
+      }, method, securityHeaders);
+    }
+  }
 
   if (route.kind === "listings" && method === "POST") {
     const body = await readJson(request);
@@ -149,23 +246,26 @@ export async function handleMarketplaceRoute({
 
   if (route.kind === "listing" && !route.action && method === "PATCH") {
     const body = await readJson(request);
-    const listing = marketplaceService.updateDraft(identity, route.listingId, body);
-    return sendJson(response, 200, { listing }, method, securityHeaders);
+    return sendJson(response, 200, {
+      listing: marketplaceService.updateDraft(identity, route.listingId, body)
+    }, method, securityHeaders);
   }
 
   if (route.kind === "listing" && route.action === "publish" && method === "POST") {
     const body = await readJson(request);
-    const listing = marketplaceService.publish(identity, route.listingId, {
-      attestPossession: body.attestPossession,
-      attestRightToSell: body.attestRightToSell,
-      confirmAccuracy: body.confirmAccuracy
-    });
-    return sendJson(response, 200, { listing }, method, securityHeaders);
+    return sendJson(response, 200, {
+      listing: marketplaceService.publish(identity, route.listingId, {
+        attestPossession: body.attestPossession,
+        attestRightToSell: body.attestRightToSell,
+        confirmAccuracy: body.confirmAccuracy
+      })
+    }, method, securityHeaders);
   }
 
   if (route.kind === "listing" && route.action === "withdraw" && method === "POST") {
-    const listing = marketplaceService.withdraw(identity, route.listingId);
-    return sendJson(response, 200, { listing }, method, securityHeaders);
+    return sendJson(response, 200, {
+      listing: marketplaceService.withdraw(identity, route.listingId)
+    }, method, securityHeaders);
   }
 
   return false;
