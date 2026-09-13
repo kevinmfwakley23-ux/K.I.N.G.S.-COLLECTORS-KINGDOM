@@ -9,6 +9,9 @@ import { createGreatHallService } from "../../packages/great-hall/src/service.mj
 import { createIdentityService } from "../../packages/identity/src/service.mjs";
 import { SqliteIdentityStore } from "../../packages/identity/src/sqlite-store.mjs";
 import { createKingsAiClient } from "../../packages/kings-ai/src/client.mjs";
+import { createMarketplaceGreatHallAdapter } from "../../packages/marketplace/src/great-hall-adapter.mjs";
+import { createMarketplaceRepository } from "../../packages/marketplace/src/repository.mjs";
+import { createMarketplaceService } from "../../packages/marketplace/src/service.mjs";
 import { createLogger } from "../../packages/observability/src/logger.mjs";
 import { createEbayBrowseValuationProvider } from "../../packages/vault/src/ebay-browse-valuation-provider.mjs";
 import { createVaultImportRepository } from "../../packages/vault/src/import-repository.mjs";
@@ -32,7 +35,7 @@ import { createVaultService } from "../../packages/vault/src/service.mjs";
 import { SqliteVaultStore } from "../../packages/vault/src/sqlite-store.mjs";
 import { createVaultValuationRepository } from "../../packages/vault/src/valuation-repository.mjs";
 import { createVaultValuationService } from "../../packages/vault/src/valuation-service.mjs";
-import { createKingdomServer } from "./server.mjs";
+import { createMarketplaceAwareKingdomServer } from "./marketplace-server.mjs";
 
 export async function runKingdomRuntime() {
   const config = loadRuntimeConfig();
@@ -44,6 +47,8 @@ export async function runKingdomRuntime() {
     sessionTtlMs: config.sessionTtlHours * 60 * 60 * 1000
   });
   const vaultService = createVaultService({ store: vaultStore });
+  const marketplaceRepository = createMarketplaceRepository({ vaultStore });
+  const marketplaceService = createMarketplaceService({ vaultStore, marketplaceRepository });
   const vaultQueryRepository = createVaultQueryRepository({ vaultStore });
   const vaultQueryService = createVaultQueryService({
     vaultStore,
@@ -124,13 +129,17 @@ export async function runKingdomRuntime() {
   const catalogRuntime = createCatalogRuntime({ config });
   const catalogService = catalogRuntime.service;
   const autographReferenceProvider = createCommonsAutographProvider({ version: config.version });
-  const greatHallService = createGreatHallService({ identityService, vaultService });
+  const greatHallCoreService = createGreatHallService({ identityService, vaultService });
+  const greatHallService = createMarketplaceGreatHallAdapter({
+    greatHallService: greatHallCoreService,
+    marketplaceService
+  });
   const kingsAiClient = createKingsAiClient({
     baseUrl: config.kingsAiBaseUrl,
     accessToken: config.kingsAiToken,
     timeoutMs: config.kingsAiTimeoutMs
   });
-  const server = createKingdomServer({
+  const server = createMarketplaceAwareKingdomServer({
     config,
     logger,
     identityService,
@@ -146,7 +155,8 @@ export async function runKingdomRuntime() {
     vaultProvenanceService,
     vaultValuationService,
     vaultReorganizationService,
-    vaultQueryService
+    vaultQueryService,
+    marketplaceService
   });
 
   server.on("error", (error) => {
@@ -160,7 +170,9 @@ export async function runKingdomRuntime() {
       port: config.port,
       version: config.version,
       valuationObservationProviders: observationProviders.map((provider) => provider.id),
-      collectionEvidenceReporting: true
+      collectionEvidenceReporting: true,
+      marketplaceListingPublicationAvailable: true,
+      marketplaceCheckoutAvailable: false
     });
   });
 
