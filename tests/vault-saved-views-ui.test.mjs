@@ -9,12 +9,16 @@ test("Vault browser pagination builds bounded query state without the legacy 500
     category: "Cards",
     collectionId: "collection-1",
     locationId: "safe-1",
+    year: 1986,
+    tag: "rookie",
     sort: "title",
     order: "asc"
   }, { pageSize: 50, cursor: "cursor-1" });
   const params = new URLSearchParams(query);
   assert.equal(params.get("q"), "Jordan rookie");
   assert.equal(params.get("category"), "Cards");
+  assert.equal(params.get("year"), "1986");
+  assert.equal(params.get("tag"), "rookie");
   assert.equal(params.get("pageSize"), "50");
   assert.equal(params.get("cursor"), "cursor-1");
   assert.equal(params.has("limit"), false);
@@ -38,6 +42,8 @@ test("saved view browser state stores filters and sort intent rather than render
     category: "Comics",
     collectionId: "collection-1",
     locationId: "cabinet-2",
+    year: "1994",
+    tag: "Key Issue",
     sort: "category"
   });
   assert.deepEqual(filters, {
@@ -46,6 +52,8 @@ test("saved view browser state stores filters and sort intent rather than render
     collectionId: "collection-1",
     locationId: "cabinet-2",
     condition: null,
+    year: 1994,
+    tag: "Key Issue",
     sort: "category",
     order: "asc",
     includeArchived: false
@@ -59,6 +67,8 @@ test("saved view summaries and duplicate-name suggestions remain deterministic",
       category: "Cards",
       collectionId: "collection-1",
       locationId: "safe-1",
+      year: 1986,
+      tag: "Rookie",
       sort: "updatedAt",
       order: "desc"
     }
@@ -69,5 +79,7 @@ test("saved view summaries and duplicate-name suggestions remain deterministic",
   assert.match(summary, /Category: Cards/);
   assert.match(summary, /Collection: Rookies/);
   assert.match(summary, /Location: Office → Safe/);
+  assert.match(summary, /Year: 1986/);
+  assert.match(summary, /Tag: Rookie/);
   assert.equal(nextViewName("Favorites", ["favorites", "Favorites 2"]), "Favorites 3");
 });

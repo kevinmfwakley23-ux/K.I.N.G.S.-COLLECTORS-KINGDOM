@@ -4,6 +4,7 @@ import { loadVaultExtras, VAULT_EXTRA_MODULES } from "../apps/web/public/vault-e
 
 test("Vault enhancement modules load in dependency-safe order", async () => {
   assert.deepEqual(VAULT_EXTRA_MODULES, [
+    "./vault-metadata-ui.js",
     "./vault-import-ui.js",
     "./vault-intake-ui.js",
     "./vault-scanner-ui.js",
@@ -42,5 +43,5 @@ test("Vault enhancement bootstrap stops on the first failed module instead of pr
     /intake bootstrap failed/
   );
 
-  assert.deepEqual(calls, ["./vault-import-ui.js", "./vault-intake-ui.js"]);
+  assert.deepEqual(calls, ["./vault-metadata-ui.js", "./vault-import-ui.js", "./vault-intake-ui.js"]);
 });
