@@ -124,9 +124,9 @@ function renderPublicListings(listings, hasFilters = false) {
   `).join("");
 }
 
-function replaceFacetOptions(select, placeholder, facets, selectedValue) {
+function replaceFacetOptions(select, facetLabel, facets, selectedValue) {
   const selected = selectedValue ?? select.value;
-  select.innerHTML = `<option value="">${escapeHtml(placeholder)}</option>${facets.map((facet) => `
+  select.innerHTML = `<option value="">${escapeHtml(facetLabel)}</option>${facets.map((facet) => `
     <option value="${escapeHtml(facet.value)}">${escapeHtml(facet.value)} (${Number(facet.count)})</option>
   `).join("")}`;
   if ([...select.options].some((option) => option.value === selected)) select.value = selected;
