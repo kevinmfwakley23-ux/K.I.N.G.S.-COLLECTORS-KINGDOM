@@ -8,10 +8,12 @@ async function readPublic(path) {
   return readFile(new URL(path, publicRoot), "utf8");
 }
 
-test("portfolio UI derives collection totals from authenticated Vault export and surfaces evidence coverage", async () => {
+test("portfolio UI uses authenticated persistent snapshots as the collection value authority", async () => {
   const source = await readPublic("vault-portfolio-ui.js");
-  assert.match(source, /api\("\/api\/vault\/export"\)/);
-  assert.match(source, /buildVaultPortfolioRollup/);
+  assert.match(source, /\/api\/vault\/portfolio-history\/snapshots/);
+  assert.match(source, /method: "POST"/);
+  assert.match(source, /captured\.snapshot\.portfolio/);
+  assert.doesNotMatch(source, /buildVaultPortfolioRollup/);
   assert.match(source, /Evidence coverage/);
   assert.match(source, /currencies never mixed/);
   assert.match(source, /Evidence:/);
@@ -27,10 +29,29 @@ test("portfolio UI keeps unsupported estimates and exclusion reasons visible", a
   assert.match(source, /insufficient-compatible-recent-sold-evidence/);
 });
 
-test("portfolio stylesheet provides responsive collection intelligence layout", async () => {
+test("portfolio UI exposes time ranges, accessible gap-aware charts, and Keeper evidence explanations", async () => {
+  const source = await readPublic("vault-portfolio-ui.js");
+  assert.match(source, /\/api\/vault\/portfolio-history\?days=/);
+  assert.match(source, /\/api\/vault\/portfolio-history\/explanation/);
+  assert.match(source, /30D/);
+  assert.match(source, /90D/);
+  assert.match(source, /1Y/);
+  assert.match(source, /Ask the Keeper why it changed/);
+  assert.match(source, /role: "img"/);
+  assert.match(source, /Missing evidence support is shown as a gap, never as zero/);
+  assert.match(source, /Portfolio snapshot/);
+  assert.match(source, /Valuation evidence IDs/);
+  assert.match(source, /Realized-sale provenance IDs/);
+});
+
+test("portfolio stylesheet provides responsive accessible collection intelligence layout", async () => {
   const css = await readPublic("vault-portfolio.css");
   assert.match(css, /\.portfolio-summary-grid/);
   assert.match(css, /\.portfolio-rollup-columns/);
   assert.match(css, /\.portfolio-contribution-row/);
+  assert.match(css, /\.portfolio-history-grid/);
+  assert.match(css, /\.portfolio-history-line/);
+  assert.match(css, /\.portfolio-range-button\[aria-pressed="true"\]/);
   assert.match(css, /@media \(max-width: 820px\)/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
