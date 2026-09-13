@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/marketplace.css">
   <link rel="stylesheet" href="/marketplace-discovery.css">
+  <link rel="stylesheet" href="/marketplace-engagement.css">
 </head>
 <body class="marketplace-page">
   <header class="marketplace-header">
@@ -18,6 +19,7 @@
     <nav aria-label="Marketplace navigation">
       <a href="/great-hall.html">Great Hall</a>
       <a href="/vault.html">Royal Vault</a>
+      <a href="#market-watchlist">My Watchlist</a>
       <a href="#seller-stall">My Stall</a>
     </nav>
   </header>
@@ -31,7 +33,7 @@
       </div>
       <aside class="marketplace-trust-card" aria-label="Current commerce status">
         <strong>Listing market now open</strong>
-        <p>Fixed-price publication and discovery are live. Checkout, payment, settlement, shipping protection, disputes, and ownership transfer are intentionally not enabled in this foundation.</p>
+        <p>Fixed-price publication, discovery, private watchlists, and seller storefronts are live. Checkout, payment, settlement, shipping protection, disputes, ownership transfer, and verified-purchase ratings are intentionally not enabled yet.</p>
       </aside>
     </section>
 
@@ -107,6 +109,18 @@
         <p class="marketplace-form-note">Saved searches store private search definitions, not old result snapshots. Running one always checks the current supported market. Automatic search alerts are not enabled yet.</p>
       </aside>
 
+      <aside id="market-watchlist" class="marketplace-watchlist" aria-labelledby="market-watchlist-title">
+        <div class="marketplace-saved-search-heading">
+          <div>
+            <p class="marketplace-kicker">Private buyer tools</p>
+            <h3 id="market-watchlist-title">My watched listings</h3>
+          </div>
+          <p id="market-watchlist-status" class="marketplace-form-note" role="status" aria-live="polite">Checking your private watchlist…</p>
+        </div>
+        <div id="market-watchlist-list" class="marketplace-watchlist-list"></div>
+        <p class="marketplace-form-note">Your watchlist is private to your Kingdom account. If a seller withdraws an offer, the bookmark remains only as an unavailable tombstone. Watchlist alerts are not enabled yet.</p>
+      </aside>
+
       <div id="market-active-filters" class="marketplace-active-filters" aria-label="Active market filters"></div>
       <p id="market-status" class="marketplace-status" role="status" aria-live="polite">Loading active offers…</p>
       <div id="market-listings" class="marketplace-grid" aria-live="polite"></div>
@@ -123,6 +137,27 @@
         </div>
       </div>
       <div id="seller-auth-state" class="marketplace-status" role="status" aria-live="polite">Checking your Kingdom session…</div>
+
+      <aside class="marketplace-storefront-editor" aria-labelledby="seller-profile-title">
+        <div class="marketplace-saved-search-heading">
+          <div>
+            <p class="marketplace-kicker">Public seller identity</p>
+            <h3 id="seller-profile-title">Storefront profile</h3>
+          </div>
+          <a id="seller-public-link" class="marketplace-secondary-link" href="/marketplace.html" hidden>View public storefront</a>
+        </div>
+        <p id="seller-profile-status" class="marketplace-form-note" role="status" aria-live="polite">Checking your public storefront profile…</p>
+        <form id="seller-profile-form" class="marketplace-profile-form" hidden>
+          <label>Storefront name
+            <input id="seller-shop-name" name="shopName" minlength="2" maxlength="80" required autocomplete="organization">
+          </label>
+          <label>Storefront bio
+            <textarea id="seller-bio" name="bio" maxlength="1000" rows="3" placeholder="Describe what you collect and sell. Do not include private contact or payment details."></textarea>
+          </label>
+          <button type="submit">Save storefront profile</button>
+        </form>
+        <p class="marketplace-form-note">A storefront profile is seller-controlled public information, not identity verification. Star ratings and verified-purchase feedback will remain unavailable until the Kingdom has real completed transaction and delivery evidence.</p>
+      </aside>
 
       <form id="listing-form" class="marketplace-form" hidden>
         <fieldset>
@@ -166,5 +201,6 @@
   <script src="/marketplace-discovery-boot.js"></script>
   <script type="module" src="/marketplace.js"></script>
   <script type="module" src="/marketplace-saved-searches-ui.js"></script>
+  <script type="module" src="/marketplace-engagement-ui.js"></script>
 </body>
 </html>
