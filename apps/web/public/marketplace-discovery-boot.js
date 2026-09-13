@@ -1,17 +1,26 @@
 (() => {
   const parameters = new URL(window.location.href).searchParams;
 
+  function optionFor(value) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    return option;
+  }
+
   function ensureValue(selectId, value) {
     if (!value) return;
     const select = document.getElementById(selectId);
     if (!select) return;
-    if (![...select.options].some((option) => option.value === value)) {
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = value;
-      select.append(option);
-    }
+    if (![...select.options].some((option) => option.value === value)) select.append(optionFor(value));
     select.value = value;
+
+    const observer = new MutationObserver(() => {
+      if (![...select.options].some((option) => option.value === value)) select.append(optionFor(value));
+      select.value = value;
+      observer.disconnect();
+    });
+    observer.observe(select, { childList: true });
   }
 
   function fractionDigits(currency) {
