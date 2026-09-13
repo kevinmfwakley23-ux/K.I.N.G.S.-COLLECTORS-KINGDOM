@@ -59,6 +59,8 @@ function queryFilters(searchParams) {
     ["locationId", "locationId"],
     ["category", "category"],
     ["condition", "condition"],
+    ["year", "year"],
+    ["tag", "tag"],
     ["sort", "sort"],
     ["order", "order"]
   ];
