@@ -18,16 +18,27 @@ This file is the durable engineering recovery ledger. Read it before substantial
 
 **Date:** 2026-09-12 (America/Denver)  
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Latest integrated production slice:** **Live Vault Bootstrap + Evidence-Backed Portfolio Intelligence**  
-**Production commit:** `82624118f88d367c687ba2aee5499287bf19a5a6`  
-**Merged pull request:** **#26 — `IMP-005: live Vault bootstrap and evidence-backed portfolio intelligence`**  
-**Latest pre-merge verification:** **Kingdom Quality Gates #670** — run `34718684431` — **PASS**
+**Active implementation slice:** **Provider-Neutral Valuation Observations + Evidence-Cited Keeper**  
+**Active pull request:** **#28 — `IMP-005: licensed valuation observations + evidence-cited Keeper`**  
+**Implementation branch:** `imp-005-provider-observations-keeper-evidence`  
+**First complete implementation head:** `d6ef4b62907f9bd9c54cfba8d9f2070602c1c1ce`  
+**Verified implementation gate:** **Kingdom Quality Gates #674** — run `34731699236` — **PASS**  
+**Current branch state:** acceptance-gap correction + research/documentation commits are layered after #674 and require the final PR-head gate before merge.
 
-PR #26 was squash-merged after exact final head `88487686375d6a0648fd96616a69ecf1c43a7c0f` passed the canonical quality gates and production dependency audit.
+### What #674 proved
+
+The canonical workflow completed successfully with:
+
+- Node.js 22;
+- exact dependency installation via `npm ci --ignore-scripts`;
+- lint/type-contract verification;
+- the full repository Node test suite;
+- production build + artifact verification;
+- production dependency audit at high severity.
 
 ### Exact recovery point
 
-Do **not** rebuild these verified production IMP-005 slices:
+Do **not** rebuild these already verified production IMP-005 slices:
 
 - permanent owner-scoped treasure UUIDs and SQLite persistence;
 - treasure create/read/update/archive;
@@ -68,74 +79,143 @@ Do **not** rebuild these verified production IMP-005 slices:
 
 ---
 
-## Latest integrated slice — Live Vault Bootstrap + Portfolio Intelligence
+## Active slice — Provider-Neutral Valuation Observations + Evidence-Cited Keeper
 
 ### Why this slice was prioritized
 
-A repository audit found that advanced Vault UI modules already existed behind `apps/web/public/vault-extras.js`, and the loader itself had unit coverage, but the production `vault.html` entry point loaded only `/vault.js`. This allowed source files and artifact tests to succeed without proving that intake/provenance/valuation/reorganization/grading enhancements were actually mounted in a real Vault browser session.
+The valuation foundation already kept sold comparables, asking listings, currencies and condition/grade buckets separate, but automatic network observations had no production provider boundary. The durable mission explicitly required any future market adapter to prove provider identity, source-record identity, retrieval time and an approved policy/terms basis before observations could enter the immutable ledger.
 
-PR #26 closes that runtime-proof gap before additional advanced features are layered on top.
+The same target required Keeper explanations to expose the exact records behind advisory value guidance instead of repeating a black-box number.
 
-### Fresh competitive/provider research
+### Fresh research
 
-Current research reviewed:
+The implementation reviewed current behavior and access constraints for:
 
-- Ludex — collection totals by category plus per-card recent sales and selectable price reports;
-- Card Ladder — deep vetted public-sales history and day-by-day collection values;
-- hobbyDB — collection value/gain-loss plus separation between verifiable completed-sale price points and unverified owner-entered prices;
-- TCGplayer developer documentation — currently not granting new API access;
-- eBay Browse — useful active-listing search surface, not a public general-purpose completed-sales-history feed.
+- **eBay Buy/Browse API** — official authenticated active-listing search, useful for asking-price context but not treated as a general completed-sales-history feed;
+- **TCGplayer developer access** — current documentation says new API access is not being granted;
+- **PriceCharting API** — useful current catalog/value surface but not treated as a substitute for exact completed-sale evidence history;
+- **Card Ladder** — deep historical sales/analytics and collection-value experience;
+- **Ludex** — fast collection-value visibility and mobile collector UX;
+- **hobbyDB** — completed-sale evidence methodology and collection value context;
+- **hendt/ebay-api** — active open-source Node/eBay implementation pattern reviewed only as a reference; no third-party source code was copied.
 
-Research record: `docs/research/2026-09-12-IMP-005-LIVE-VAULT-PORTFOLIO.md`.
+Research record: `docs/research/2026-09-12-IMP-005-PROVIDER-OBSERVATIONS-KEEPER-EVIDENCE.md`.
 
-### Integrated runtime behavior
+### Implemented provider-observation boundary
 
-- `apps/web/public/vault-bootstrap.js` is now the real Royal Vault browser entry point;
-- base `vault.js` loads before the ordered advanced enhancement stack;
-- enhancement bootstrap failure produces explicit browser-visible failure messaging instead of silent success;
-- regression coverage pins `vault.html` to the enhancement bootstrap;
-- portfolio UI is mounted through the same live `vault-extras.js` chain;
-- type-contract and production-artifact gates include the bootstrap/portfolio modules.
+The branch adds a normalized observation contract requiring:
 
-### Integrated portfolio behavior
+- provider ID;
+- provider observation/source-record ID;
+- explicit provider policy/terms identifier;
+- observation type;
+- source name + auditable URL/reference;
+- observed date + retrieval timestamp;
+- non-negative integer minor-unit amount;
+- three-letter currency;
+- raw/graded/sealed/other item state;
+- explicit condition context where required;
+- grading company + grade label for graded observations.
 
-The portfolio read model:
+Provider-originated evidence is a separate `provider-originated-observation` evidence class. Provider identifiers never replace permanent Kingdom treasure UUIDs.
 
-- considers active, non-archived treasures only;
-- requires at least three compatible sold comparables inside the existing 180-day freshness window;
-- uses the same median/up-to-20 sold-comparable policy as the per-treasure valuation foundation;
-- excludes asking listings from estimates;
-- excludes corrected evidence;
-- excludes a treasure if more than one independently-supported condition/grade bucket exists instead of guessing which bucket represents the physical item;
-- multiplies a supported per-item estimate by quantity only when safe-integer math remains valid;
-- keeps currencies completely separate and performs no automatic FX conversion;
-- exposes evidence coverage percentage;
-- exposes category and collection-group rollups inside each currency;
-- exposes exact sold-evidence IDs behind every included treasure contribution;
-- exposes explicit reasons for unsupported/excluded records;
-- states that portfolio estimates are advisory and not appraisals;
-- never mutates an authoritative market-value field.
+### eBay Browse adapter behavior
 
-Primary implementation files:
+The first official network adapter:
 
-- `apps/web/public/vault-bootstrap.js`
-- `apps/web/public/vault-extras.js`
-- `apps/web/public/vault-portfolio-core.js`
-- `apps/web/public/vault-portfolio-ui.js`
-- `apps/web/public/vault-portfolio.css`
-- `apps/web/public/vault.html`
-- `tests/vault-runtime-bootstrap.test.mjs`
-- `tests/vault-portfolio.test.mjs`
-- `tests/vault-portfolio-ui.test.mjs`
-- `tools/typecheck.mjs`
-- `tools/verify-build.mjs`
+- uses application OAuth client credentials server-side;
+- searches the official eBay Browse API;
+- preserves eBay item IDs as provider observation IDs;
+- preserves retrieval time, marketplace identity and the explicitly reviewed provider-policy ID;
+- treats every Browse result as **`asking-listing` only**;
+- rejects incomplete provider rows;
+- fails closed on OAuth/API errors and request timeouts;
+- caches a still-valid application token;
+- never turns an active asking listing into a sold comparable;
+- therefore cannot raise/lower the Kingdom sold-comparable median by itself.
 
-Verification sequence:
+Runtime configuration is all-or-none: `KINGDOM_EBAY_CLIENT_ID`, `KINGDOM_EBAY_CLIENT_SECRET`, and `KINGDOM_EBAY_PROVIDER_POLICY_ID` must all exist before the adapter is enabled.
 
-- implementation/research head `e11866cac0fd44c349b60f5b4800bc2a332e104d` — Kingdom Quality Gates #668 / run `34718610662` — **PASS**;
-- README checkpoint `fd7ce54e553e7cd3d4b450293d479f545dfbcf94` — Kingdom Quality Gates #669 / run `34718659669` — **PASS**;
-- final PR #26 head `88487686375d6a0648fd96616a69ecf1c43a7c0f` — Kingdom Quality Gates #670 / run `34718684431` — **PASS**;
-- squash-merged production commit `82624118f88d367c687ba2aee5499287bf19a5a6`.
+### Immutable evidence behavior
+
+Provider observations:
+
+- are append-only;
+- are deduplicated by owner + treasure + provider + provider observation ID;
+- hash provider ID, provider record ID, policy ID and retrieval timestamp into the evidence-integrity payload;
+- cannot be silently edited/deleted;
+- cannot be rewritten through the collector correction path;
+- remain explicitly not independently verified unless a later authority verifies them.
+
+Collector-recorded valuation evidence keeps its existing append-only/correction behavior.
+
+### Keeper evidence explanations
+
+The Keeper explanation route now exposes:
+
+- exact valuation evidence UUIDs used by the selected estimate bucket;
+- source record/reference IDs where they actually exist;
+- source URLs;
+- provider identity/policy fields for provider-originated observations;
+- exact realized-sale provenance event IDs from immutable value history;
+- realized-sale correction IDs/history;
+- explicit language that asking listings and realized owner sales do **not** influence the current sold-comparable estimate;
+- explicit no-appraisal/no-guaranteed-price/no-cross-currency language.
+
+The Keeper does not invent missing source record IDs.
+
+### Royal Vault UX
+
+The valuation panel adds:
+
+- an Official Market Observations section;
+- provider selection and explicit refresh action;
+- disabled/fail-clear UI when no licensed provider is configured;
+- provider/policy/retrieval/source-record metadata in the evidence ledger;
+- a Keeper “explain with evidence IDs” action per estimate bucket;
+- responsive evidence citation display while preserving the Kingdom's white-marble/black/gold visual language.
+
+### Production composition
+
+A real `apps/web/runtime.mjs` composition root now creates the optional eBay observation provider from runtime configuration and passes it into `createVaultValuationService`.
+
+`npm start`, `npm run dev`, the production build manifest and `start:prod` now point at the wired runtime rather than relying on test-only injection.
+
+### Verification coverage added
+
+Tests cover:
+
+- eBay OAuth/token caching;
+- Browse request authorization and marketplace headers;
+- raw/graded observation normalization;
+- exact decimal-to-cents mapping;
+- incomplete provider-row rejection;
+- provider OAuth/Browse failures;
+- provider-policy identity;
+- provider observation deduplication;
+- provider metadata tamper detection;
+- collector-correction rejection for provider-originated evidence;
+- regression proof that asking observations never influence sold estimates;
+- exact valuation evidence/source record citations;
+- exact realized-sale provenance record citations and correction visibility;
+- fail-closed all-or-none runtime configuration;
+- production artifact inclusion of provider modules + wired runtime.
+
+First complete implementation verification:
+
+- head `d6ef4b62907f9bd9c54cfba8d9f2070602c1c1ce` — Kingdom Quality Gates #674 / run `34731699236` — **PASS**.
+
+Final PR-head gate is still required after the acceptance-gap/documentation commits before merge.
+
+---
+
+## Previous integrated slice — Live Vault Bootstrap + Portfolio Intelligence
+
+PR #26 closed a runtime-proof gap by making `/vault-bootstrap.js` the real Royal Vault browser entry point and explicitly loading the advanced Vault module stack. It also added evidence-backed collection valuation coverage, separate per-currency portfolio totals, category/collection rollups, exact supporting sold-evidence IDs, quantity-aware safe-integer totals, explicit exclusions and non-appraisal language.
+
+Final PR #26 head `88487686375d6a0648fd96616a69ecf1c43a7c0f` passed Kingdom Quality Gates #670 / run `34718684431`; squash-merged production commit `82624118f88d367c687ba2aee5499287bf19a5a6`.
+
+Research: `docs/research/2026-09-12-IMP-005-LIVE-VAULT-PORTFOLIO.md`.
 
 ---
 
@@ -145,20 +225,15 @@ PR #24 provides the derived value-history read model. Valuation evidence is proj
 
 Final PR #24 head `56e95a7658e4c2ae3cbaac055f28e7add88e412e` passed Quality Gates #664 / run `34682718156`; implementation commit `061e29ab129ec5ee8e09a240afb8018ae408c996`; production recovery closure PR #25 merged as `30b6a4cd55fc577d1218c112389244aeb06a9f15`.
 
-Research record: `docs/research/2026-09-12-IMP-005-VALUATION-SOURCE-AND-HISTORY.md`.
+Research: `docs/research/2026-09-12-IMP-005-VALUATION-SOURCE-AND-HISTORY.md`.
 
 ---
 
 ## Production valuation foundation — PR #22
 
-Verified production behavior includes append-only owner-scoped valuation evidence, sold-vs-asking separation, SHA-256 integrity, linked corrections, strict currency/condition/grade buckets, 180-day freshness, minimum three compatible recent sold comparables, median/range estimates, authenticated Vault API/UI, portable export, and explicit non-appraisal/non-mutation boundaries.
+Verified production behavior includes append-only owner-scoped valuation evidence, sold-vs-asking separation, SHA-256 integrity, linked corrections, strict currency/condition/grade buckets, 180-day freshness, minimum three compatible recent sold comparables, median/range estimates, authenticated Vault API/UI, portable export and explicit non-appraisal/non-mutation boundaries.
 
-Production verification:
-
-- PR #22 code head `6ff1eba5671efd5f86c2df6c694cca019e3b7a46` — Quality Gates #654 — PASS;
-- final PR #22 head `9e218849d657373cfe8a9564f3114defbfbd710a` — Quality Gates #657 — PASS;
-- merged implementation `5addf3d483e978c79028ff00812d8beca08b9661` — Quality Gates #658 — PASS;
-- documentation recovery checkpoint `42d0a8b8c047d9aee01c30fe6e7edeac87cb57d5`.
+Merged implementation `5addf3d483e978c79028ff00812d8beca08b9661`; merged baseline gate #658 passed.
 
 ---
 
@@ -185,25 +260,26 @@ Production verification:
 - Evidence-Backed Valuation Foundation — PR #22 / #658 — PASS and merged.
 - Realized-Sale / Value-History Linkage — PR #24 / #664 — PASS and merged.
 - Live Vault Bootstrap + Evidence-Backed Portfolio Intelligence — PR #26 / #670 — PASS and merged.
+- Provider-Neutral Valuation Observations + Evidence-Cited Keeper — PR #28 first complete implementation / #674 — PASS; final PR-head gate pending.
 
 ---
 
-## Exact next engineering target
+## Exact next engineering target after PR #28 merges
 
-**Provider-Neutral Valuation Observation Adapter + Evidence-Cited Keeper Explanations**
+**Persistent Collection Value History + Portfolio/History Keeper Intelligence**
 
-Build next in this order:
+Build in this order:
 
-1. define a normalized observation contract with explicit provider ID, provider observation ID, observation type, source/reference, observed date, retrieved/build timestamp, amount, currency, item state, condition and grading context;
-2. require an explicit provider policy/terms identifier before a network market adapter can be enabled;
-3. preserve collector-recorded evidence separately from provider-originated evidence and never replace permanent treasure UUIDs with provider IDs;
-4. fail closed when source, freshness, amount/currency, condition or grade context required by the observation is missing;
-5. research and integrate only officially permitted provider feeds by collectible category; do not scrape around access restrictions;
-6. make Keeper valuation explanations cite exact valuation evidence and realized-sale source record IDs;
-7. derive collection-value history snapshots only from immutable evidence/read models;
-8. keep automatic FX conversion disabled until a separately researched/verified FX policy exists;
-9. pass full Kingdom Quality Gates;
-10. update README and this ledger at the next verified checkpoint.
+1. define immutable collection-valuation snapshot records derived only from supported per-treasure estimate buckets;
+2. persist snapshot generation time, covered/excluded treasure counts, exact contribution evidence IDs and separate totals by currency;
+3. never store or expose a cross-currency grand total without a separately governed FX policy;
+4. preserve historical snapshots when underlying evidence later receives an append-only correction, while showing the new current calculation separately;
+5. add collection/time-range history queries suitable for responsive mobile charts without hidden client-side recomputation;
+6. make Keeper portfolio/history explanations cite exact snapshot IDs, treasure IDs, valuation evidence IDs and realized-sale provenance IDs where relevant;
+7. add change explanations (new evidence, correction, collection movement, quantity change, archive state) instead of implying every value movement was caused by the market;
+8. research lawful licensed **sold-comparable** feeds category by category; do not promote eBay Browse asking observations into sold evidence;
+9. keep automatic FX conversion disabled;
+10. pass full Kingdom Quality Gates and update README/this ledger.
 
 ---
 
@@ -211,9 +287,10 @@ Build next in this order:
 
 Do not represent these as live until separately implemented and verified:
 
-- automatic licensed market-data provider adapters;
-- Keeper evidence-cited valuation explanations across the value-history/portfolio model;
 - persistent collection-level valuation history over time;
+- Keeper evidence-cited portfolio/time-history explanations;
+- licensed automatic **sold-comparable** provider adapters;
+- additional market observation providers beyond the first eBay Browse asking-listing adapter;
 - automatic currency conversion/FX policy;
 - review-aware overall grading advisory estimate;
 - reliable manufacturing-vs-handling defect classification;
@@ -234,6 +311,6 @@ Do not represent these as live until separately implemented and verified:
 
 ### Permanent truthfulness boundary
 
-A catalog result, AI pre-grade, photograph, autograph similarity result, barcode, title match, grading label, cert number, collector statement, sold comparable, asking listing, portfolio estimate or realized owner sale is not silently promoted into an authoritative independent claim.
+A catalog result, AI pre-grade, photograph, autograph similarity result, barcode, title match, grading label, cert number, collector statement, sold comparable, asking listing, provider observation, portfolio estimate or realized owner sale is not silently promoted into an authoritative independent claim.
 
 AI grading is estimated condition evidence; professional grading and authentication remain separate authorities. Valuation/portfolio estimates are evidence-derived advisory read models, not appraisals or guaranteed sale prices. Realized sales are lifecycle evidence and remain separate from current market-comparable estimation. Permanent Kingdom treasure UUIDs remain provider-independent physical-item identities. Collector ownership/provenance records remain distinct from valuation evidence.
