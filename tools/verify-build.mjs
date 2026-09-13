@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 const root = resolve(new URL("..", import.meta.url).pathname);
 const required = [
   "dist/apps/web/server.mjs",
+  "dist/apps/web/runtime.mjs",
   "dist/apps/web/catalog-http.mjs",
   "dist/apps/web/grading-analysis-http.mjs",
   "dist/apps/web/grading-reference-http.mjs",
@@ -117,6 +118,8 @@ const required = [
   "dist/packages/vault/src/media-service.mjs",
   "dist/packages/vault/src/provenance-repository.mjs",
   "dist/packages/vault/src/provenance-service.mjs",
+  "dist/packages/vault/src/valuation-observation.mjs",
+  "dist/packages/vault/src/ebay-browse-valuation-provider.mjs",
   "dist/packages/vault/src/valuation-repository.mjs",
   "dist/packages/vault/src/valuation-service.mjs",
   "dist/packages/vault/src/query-repository.mjs",
@@ -129,4 +132,5 @@ const required = [
 for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
 if (manifest.phase !== "IMP-005-ROYAL-VAULT-PHASE-1") throw new Error("Unexpected build phase in manifest.");
-console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 including AI card pre-grading profiles, centering, capture-quality/card-geometry/contour/macro-corner-edge/paired-raking-light surface/color analysis, macro-aware explainable dimension completeness, web-backed autograph visual similarity with authenticated Commons search/proxy, SHA-linked detector coverage, append-only hashed pre-grade persistence, read-only server-derived Kingdom advisory range, deterministic finding identity, normalized defect extent, explainable front/back dimension summaries, append-only finding-review/report service and responsive report/review UI, catalog/cert evidence, provenance, evidence-backed valuation, live advanced-Vault bootstrap, evidence-backed collection portfolio rollups with coverage and separate currencies, saved views, bulk reorganization, transactional import, Royal Intake, scanner, secure media and Kingdom voice output.");
+if (manifest.entrypoint !== "apps/web/runtime.mjs") throw new Error("Production build must use the wired runtime composition entrypoint.");
+console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 including official provider valuation-observation contracts with explicit policy identity, provider evidence integrity/deduplication, evidence-cited Keeper valuation explanations, AI card pre-grading profiles, centering, capture-quality/card-geometry/contour/macro-corner-edge/paired-raking-light surface/color analysis, macro-aware explainable dimension completeness, web-backed autograph visual similarity with authenticated Commons search/proxy, SHA-linked detector coverage, append-only hashed pre-grade persistence, read-only server-derived Kingdom advisory range, deterministic finding identity, normalized defect extent, explainable front/back dimension summaries, append-only finding-review/report service and responsive report/review UI, catalog/cert evidence, provenance, evidence-backed valuation, live advanced-Vault bootstrap, evidence-backed collection portfolio rollups with coverage and separate currencies, saved views, bulk reorganization, transactional import, Royal Intake, scanner, secure media and Kingdom voice output.");
