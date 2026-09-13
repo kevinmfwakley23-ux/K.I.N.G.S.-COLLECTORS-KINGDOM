@@ -1,6 +1,7 @@
 const marketStatus = document.querySelector("#market-status");
 const marketListings = document.querySelector("#market-listings");
 const refreshMarketButton = document.querySelector("#refresh-market");
+const loadMoreMarketButton = document.querySelector("#load-more-market");
 const discoveryForm = document.querySelector("#market-discovery-form");
 const marketQuery = document.querySelector("#market-query");
 const marketCategory = document.querySelector("#market-category");
@@ -16,6 +17,10 @@ const sellerAuthState = document.querySelector("#seller-auth-state");
 const listingForm = document.querySelector("#listing-form");
 const treasureSelect = document.querySelector("#listing-treasure");
 const sellerListings = document.querySelector("#seller-listings");
+
+const MARKET_PAGE_SIZE = 24;
+let marketNextCursor = null;
+let marketShownCount = 0;
 
 function text(value) {
   return String(value ?? "");
@@ -76,7 +81,9 @@ function parseMoneyToMinorUnits(value, currency, { allowZero = false } = {}) {
   const whole = Number(match[1]);
   const fraction = digits === 0 ? 0 : Number((match[2] ?? "").padEnd(digits, "0") || 0);
   const units = whole * (10 ** digits) + fraction;
-  if (!Number.isSafeInteger(units) || units < (allowZero ? 0 : 1)) throw new Error(allowZero ? "Enter a non-negative price." : "Enter a positive price.");
+  if (!Number.isSafeInteger(units) || units < (allowZero ? 0 : 1)) {
+    throw new Error(allowZero ? "Enter a non-negative price." : "Enter a positive price.");
+  }
   return units;
 }
 
@@ -97,14 +104,8 @@ function listingFacts(listing) {
   ].filter(Boolean).map((value) => `<span>${escapeHtml(value)}</span>`).join("");
 }
 
-function renderPublicListings(listings, hasFilters = false) {
-  if (!listings.length) {
-    marketListings.innerHTML = hasFilters
-      ? `<article class="marketplace-empty"><h3>No matching offers</h3><p>No currently supported active listing matches these filters. Clear or broaden the search to inspect the rest of the Street Market.</p></article>`
-      : `<article class="marketplace-empty"><h3>No active offers yet</h3><p>The Street Market is open, but no collector has published an offer.</p></article>`;
-    return;
-  }
-  marketListings.innerHTML = listings.map((listing) => `
+function listingCards(listings) {
+  return listings.map((listing) => `
     <article class="marketplace-card">
       <div class="marketplace-card-topline">
         <span class="marketplace-badge">${escapeHtml(listing.saleFormat)}</span>
@@ -122,6 +123,19 @@ function renderPublicListings(listings, hasFilters = false) {
       </details>
     </article>
   `).join("");
+}
+
+function renderPublicListings(listings, hasFilters = false, { append = false } = {}) {
+  if (!listings.length) {
+    if (append) return;
+    marketListings.innerHTML = hasFilters
+      ? `<article class="marketplace-empty"><h3>No matching offers</h3><p>No currently supported active listing matches these filters. Clear or broaden the search to inspect the rest of the Street Market.</p></article>`
+      : `<article class="marketplace-empty"><h3>No active offers yet</h3><p>The Street Market is open, but no collector has published an offer.</p></article>`;
+    return;
+  }
+  const cards = listingCards(listings);
+  if (append) marketListings.insertAdjacentHTML("beforeend", cards);
+  else marketListings.innerHTML = cards;
 }
 
 function replaceFacetOptions(select, facetLabel, facets, selectedValue) {
@@ -175,12 +189,16 @@ function filtersFromControls() {
     minAmountCents: null,
     maxAmountCents: null
   };
-  if (filters.currency && marketMinPrice.value.trim()) filters.minAmountCents = parseMoneyToMinorUnits(marketMinPrice.value, filters.currency, { allowZero: true });
-  if (filters.currency && marketMaxPrice.value.trim()) filters.maxAmountCents = parseMoneyToMinorUnits(marketMaxPrice.value, filters.currency, { allowZero: true });
+  if (filters.currency && marketMinPrice.value.trim()) {
+    filters.minAmountCents = parseMoneyToMinorUnits(marketMinPrice.value, filters.currency, { allowZero: true });
+  }
+  if (filters.currency && marketMaxPrice.value.trim()) {
+    filters.maxAmountCents = parseMoneyToMinorUnits(marketMaxPrice.value, filters.currency, { allowZero: true });
+  }
   return filters;
 }
 
-function queryStringForFilters(filters) {
+function queryStringForFilters(filters, { cursor = null } = {}) {
   const parameters = new URLSearchParams();
   if (filters.query) parameters.set("q", filters.query);
   if (filters.category) parameters.set("category", filters.category);
@@ -189,7 +207,8 @@ function queryStringForFilters(filters) {
   if (filters.minAmountCents !== null) parameters.set("minAmountCents", String(filters.minAmountCents));
   if (filters.maxAmountCents !== null) parameters.set("maxAmountCents", String(filters.maxAmountCents));
   if (filters.sort && filters.sort !== "newest") parameters.set("sort", filters.sort);
-  parameters.set("limit", "100");
+  parameters.set("pageSize", String(MARKET_PAGE_SIZE));
+  if (cursor) parameters.set("cursor", cursor);
   return parameters;
 }
 
@@ -214,9 +233,11 @@ function renderActiveFilters(filters) {
 
 function updateShareableUrl(filters) {
   const url = new URL(window.location.href);
-  for (const key of ["q", "category", "currency", "fulfillment", "minAmountCents", "maxAmountCents", "sort"]) url.searchParams.delete(key);
+  for (const key of ["q", "category", "currency", "fulfillment", "minAmountCents", "maxAmountCents", "sort", "pageSize", "cursor"]) {
+    url.searchParams.delete(key);
+  }
   const parameters = queryStringForFilters(filters);
-  parameters.delete("limit");
+  parameters.delete("pageSize");
   for (const [key, value] of parameters) url.searchParams.set(key, value);
   window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
 }
@@ -253,32 +274,44 @@ function applyInitialFacetValues(payload) {
   delete marketMaxPrice.dataset.initialMinor;
 }
 
-async function loadMarket({ preserveUrl = false } = {}) {
-  marketStatus.textContent = "Refreshing active offers…";
+function syncLoadMore(payload) {
+  marketNextCursor = payload.pageInfo?.nextCursor ?? null;
+  if (loadMoreMarketButton) {
+    loadMoreMarketButton.hidden = !marketNextCursor;
+    loadMoreMarketButton.disabled = false;
+  }
+}
+
+async function loadMarket({ preserveUrl = false, cursor = null, append = false } = {}) {
+  marketStatus.textContent = append ? "Loading more active offers…" : "Refreshing active offers…";
+  if (append && loadMoreMarketButton) loadMoreMarketButton.disabled = true;
   try {
     const filters = filtersFromControls();
-    const parameters = queryStringForFilters(filters);
+    const parameters = queryStringForFilters(filters, { cursor });
     const payload = await requestJson(`/api/marketplace/listings?${parameters.toString()}`);
     const firstFacetLoad = marketCategory.dataset.initialValue !== undefined || marketCurrency.dataset.initialValue !== undefined;
     if (firstFacetLoad) applyInitialFacetValues(payload);
-    else {
+    else if (!append) {
       replaceFacetOptions(marketCategory, "All categories", payload.facets?.categories ?? [], filters.category);
       replaceFacetOptions(marketCurrency, "All currencies", payload.facets?.currencies ?? [], filters.currency);
       replaceFulfillmentFacetOptions(payload.facets?.fulfillmentMethods ?? [], filters.fulfillmentMethod);
       syncPriceControls();
     }
     const currentFilters = filtersFromControls();
-    renderPublicListings(payload.listings ?? [], hasMeaningfulFilters(currentFilters));
+    const pageListings = payload.listings ?? [];
+    renderPublicListings(pageListings, hasMeaningfulFilters(currentFilters), { append });
     renderActiveFilters(currentFilters);
-    const total = Number(payload.facets?.totalActiveListings ?? payload.listings?.length ?? 0);
-    const shown = payload.listings?.length ?? 0;
+    marketShownCount = append ? marketShownCount + pageListings.length : pageListings.length;
+    syncLoadMore(payload);
+    const more = payload.pageInfo?.hasNext ? " More matching offers are available." : "";
     marketStatus.textContent = hasMeaningfulFilters(currentFilters)
-      ? `${shown} matching offer${shown === 1 ? "" : "s"} shown from ${total} currently supported active listing${total === 1 ? "" : "s"}. Checkout remains disabled.`
-      : `${shown} active offer${shown === 1 ? "" : "s"} shown. Checkout remains disabled until safeguarded transaction services are built.`;
-    if (!preserveUrl) updateShareableUrl(currentFilters);
+      ? `${marketShownCount} matching offer${marketShownCount === 1 ? "" : "s"} loaded.${more} Checkout remains disabled.`
+      : `${marketShownCount} active offer${marketShownCount === 1 ? "" : "s"} loaded.${more} Checkout remains disabled until safeguarded transaction services are built.`;
+    if (!preserveUrl && !append) updateShareableUrl(currentFilters);
   } catch (error) {
     marketStatus.textContent = `The market could not be loaded: ${error.message}`;
-    marketListings.replaceChildren();
+    if (!append) marketListings.replaceChildren();
+    if (loadMoreMarketButton) loadMoreMarketButton.disabled = false;
   }
 }
 
@@ -442,6 +475,13 @@ sellerListings.addEventListener("click", async (event) => {
     button.disabled = false;
   }
 });
+
+if (loadMoreMarketButton) {
+  loadMoreMarketButton.addEventListener("click", () => {
+    if (!marketNextCursor) return;
+    loadMarket({ preserveUrl: true, cursor: marketNextCursor, append: true });
+  });
+}
 
 refreshMarketButton.addEventListener("click", () => loadMarket({ preserveUrl: true }));
 
