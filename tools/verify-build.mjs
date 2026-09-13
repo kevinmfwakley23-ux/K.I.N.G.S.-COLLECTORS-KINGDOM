@@ -33,6 +33,7 @@ const required = [
   "dist/apps/web/public/vault.js",
   "dist/apps/web/public/vault-bootstrap.js",
   "dist/apps/web/public/vault.css",
+  "dist/apps/web/public/vault-metadata-ui.js",
   "dist/apps/web/public/vault-import-core.js",
   "dist/apps/web/public/vault-catalog-core.js",
   "dist/apps/web/public/vault-intake-core.js",
@@ -117,6 +118,8 @@ const required = [
   "dist/packages/grading/src/service.mjs",
   "dist/packages/vault/src/sqlite-store.mjs",
   "dist/packages/vault/src/service.mjs",
+  "dist/packages/vault/src/metadata-repository.mjs",
+  "dist/packages/vault/src/metadata-service.mjs",
   "dist/packages/vault/src/import-repository.mjs",
   "dist/packages/vault/src/import-service.mjs",
   "dist/packages/vault/src/intake-repository.mjs",
@@ -141,4 +144,4 @@ for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
 if (manifest.phase !== "IMP-005-ROYAL-VAULT-PHASE-1") throw new Error("Unexpected build phase in manifest.");
 if (manifest.entrypoint !== "apps/web/runtime.mjs") throw new Error("Production build must use the wired runtime composition entrypoint.");
-console.log("Production artifact verification passed for the existing IMP-005 Royal Vault baseline plus the production-wired Kingdom Street Market fixed-price listing foundation: Vault-linked seller drafts, explicit publication attestations, immutable offer representation hashes, sanitized public discovery, seller withdrawal without ownership transfer, Great Hall/ Keeper availability context, and explicit no-checkout/no-payment/no-settlement boundaries.");
+console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 including Year/Tags metadata authority and collector UI plus the production-wired Kingdom Street Market fixed-price listing foundation: Vault-linked seller drafts, explicit publication attestations, immutable offer representation hashes, sanitized public discovery, seller withdrawal without ownership transfer, Great Hall/Keeper availability context, and explicit no-checkout/no-payment/no-settlement boundaries; existing valuation, grading, catalog, provenance, portfolio, saved-view, reorganization, import, intake, scanner, secure-media and voice artifacts remain required.");

@@ -45,6 +45,8 @@ function currentFilters() {
     category: document.querySelector("#filter-category")?.value,
     collectionId: document.querySelector("#filter-collection")?.value,
     locationId: document.querySelector("#filter-location")?.value,
+    year: document.querySelector("#filter-year")?.value,
+    tag: document.querySelector("#filter-tag")?.value,
     sort: document.querySelector("#filter-sort")?.value
   });
 }

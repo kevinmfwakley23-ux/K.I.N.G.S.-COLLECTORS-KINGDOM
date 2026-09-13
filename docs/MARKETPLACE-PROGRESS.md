@@ -1,24 +1,26 @@
 # K.I.N.G.S. Collector's Kingdom — Marketplace Progress
 
-This file is the parallel recovery ledger for the Kingdom Street Market workstream. It exists so Marketplace work can proceed without editing the shared `docs/MISSION-PROGRESS.md` while another co-chief engineer is actively completing the Royal Vault Phase 1 workstream.
+This file is the parallel recovery ledger for the Kingdom Street Market workstream. Marketplace work was isolated while a second co-chief engineer completed Royal Vault Phase 1 metadata so the two workstreams could advance without silently overwriting each other.
 
 ## Coordination boundary
 
 **Date:** 2026-09-13 (America/Denver)  
 **Branch:** `marketplace/foundation-listings`  
 **Pull request:** #31 — `Marketplace: Vault-linked listing foundation`  
-**Base production commit:** `dc9d5a3b180df6fa5c04c115a53a5b105b48b8a4` (PR #30 merged)  
-**Concurrent co-chief work:** PR #32 — Royal Vault Year/Tags metadata  
-**File-overlap audit:** PR #32 changes Vault metadata/query/import/UI files only; PR #31 does not modify those files.
+**Original base production commit:** `dc9d5a3b180df6fa5c04c115a53a5b105b48b8a4` (PR #30 merged)  
+**Concurrent co-chief work:** PR #32 — Royal Vault Year/Tags metadata — **MERGED** to `main` at `62d1e56b2d13c74d3a1d71da1dcb5a8f630d799b`  
+**File-overlap audit:** PR #32 changed Vault metadata/query/import/UI files; PR #31 does not own those files.
 
-The Marketplace workstream intentionally does not edit the shared core `apps/web/server.mjs`, the Vault schema/store file, or PR #32's Year/Tags implementation. Marketplace persistence creates its own tables through a Marketplace repository using the existing Vault SQLite connection.
+The Marketplace workstream intentionally does not rewrite the shared core `apps/web/server.mjs` or the Vault schema/store. Marketplace persistence creates its own tables through a Marketplace repository using the existing Vault SQLite connection. After PR #32 merged, this PR was deliberately advanced only through this coordination-ledger commit so GitHub would regenerate and verify the PR merge result against the new production `main` before integration.
 
 ## Current verified checkpoint
 
-**Marketplace hardened implementation head:** `2bd2fee8e332cdee089cc04d2467cdcd245a52e4`  
-**Kingdom Quality Gates:** #698 — **PASS**
+**Marketplace hardened implementation head:** `6686fc47eeadf96a6afc9af50acfca5077fbfa34`  
+**Kingdom Quality Gates:** #699 — **PASS** before PR #32 merged
 
-The #698 gate ran the repository's canonical `npm run verify` chain: lint, type-contract verification, the complete Node test suite including the Marketplace service/HTTP/integrity/Vault-support/UI tests, production build, and production artifact verification. The production dependency audit remains part of the GitHub workflow.
+The #699 gate ran the repository's canonical `npm run verify` chain: lint, type-contract verification, the complete Node test suite including Marketplace service/HTTP/integrity/Vault-support/UI tests, production build, production artifact verification, and the workflow's production dependency audit.
+
+**Post-PR-32 reconciliation:** the current documentation-only PR #31 head exists to force a fresh merge-result Quality Gate against `main` containing the merged Year/Tags work. Do not merge PR #31 until that fresh gate passes.
 
 ## Implemented in this slice
 
@@ -141,6 +143,8 @@ Do not describe the following as available:
 
 ## Next Marketplace target
 
-After this listing foundation is integrated against the latest `main`, research and design the **Safeguarded Transaction Foundation** before writing checkout code. The design must cover seller eligibility/KYC boundaries, order state machine and idempotency, payment-provider/webhook authority, taxes, shipment evidence, cancellation/refund rules, disputes/buyer protection, fraud controls, atomic settlement, and the exact condition under which a completed transaction may append provenance and transfer authoritative Vault ownership.
+After this listing foundation is integrated against the latest `main`, continue the already isolated Marketplace discovery stack, then build **private saved searches + bounded cursor pagination** before transaction code. Search definitions may be saved and rerun against current market state, but notifications must remain explicitly unavailable until a real delivery service exists.
+
+The later **Safeguarded Transaction Foundation** must cover seller eligibility/KYC boundaries, order state machine and idempotency, payment-provider/webhook authority, taxes, shipment evidence, cancellation/refund rules, disputes/buyer protection, fraud controls, atomic settlement, and the exact condition under which a completed transaction may append provenance and transfer authoritative Vault ownership.
 
 The guiding rule is: a Marketplace click is never a sale. Ownership changes only after an independently verified transaction state authorizes it.

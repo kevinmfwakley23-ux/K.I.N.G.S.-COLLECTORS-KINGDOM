@@ -6,6 +6,8 @@ export function buildPagedVaultQuery(filters = {}, { cursor = null, pageSize = 5
     ["collectionId", "collectionId"],
     ["locationId", "locationId"],
     ["condition", "condition"],
+    ["year", "year"],
+    ["tag", "tag"],
     ["sort", "sort"],
     ["order", "order"]
   ];
