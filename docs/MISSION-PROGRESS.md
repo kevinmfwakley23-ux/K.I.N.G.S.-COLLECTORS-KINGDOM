@@ -18,27 +18,17 @@ This file is the durable engineering recovery ledger. Read it before substantial
 
 **Date:** 2026-09-12 (America/Denver)  
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Active implementation slice:** **Provider-Neutral Valuation Observations + Evidence-Cited Keeper**  
-**Active pull request:** **#28 — `IMP-005: licensed valuation observations + evidence-cited Keeper`**  
-**Implementation branch:** `imp-005-provider-observations-keeper-evidence`  
-**First complete implementation head:** `d6ef4b62907f9bd9c54cfba8d9f2070602c1c1ce`  
-**Verified implementation gate:** **Kingdom Quality Gates #674** — run `34731699236` — **PASS**  
-**Current branch state:** acceptance-gap correction + research/documentation commits are layered after #674 and require the final PR-head gate before merge.
+**Latest integrated production slice:** **Provider-Neutral Valuation Observations + Evidence-Cited Keeper**  
+**Merged pull request:** **#28 — `IMP-005: licensed valuation observations + evidence-cited Keeper`**  
+**Final PR head:** `7dcb7d62be793d08ac44c9ff3d0abee28bc2ce16`  
+**Final pre-merge verification:** **Kingdom Quality Gates #679** — run `34731859320` — **PASS**  
+**Production commit:** `e2105bcae637228ed39de55cb22d0045d5b9c568`
 
-### What #674 proved
-
-The canonical workflow completed successfully with:
-
-- Node.js 22;
-- exact dependency installation via `npm ci --ignore-scripts`;
-- lint/type-contract verification;
-- the full repository Node test suite;
-- production build + artifact verification;
-- production dependency audit at high severity.
+PR #28 was squash-merged after the exact final head passed the canonical workflow with Node.js 22, exact dependency installation, the full lint/type-contract/test/build/artifact verification chain and production dependency audit.
 
 ### Exact recovery point
 
-Do **not** rebuild these already verified production IMP-005 slices:
+Do **not** rebuild these verified production IMP-005 slices:
 
 - permanent owner-scoped treasure UUIDs and SQLite persistence;
 - treasure create/read/update/archive;
@@ -75,11 +65,18 @@ Do **not** rebuild these already verified production IMP-005 slices:
 - append-only evidence-backed market valuation with transparent estimate rules;
 - realized-sale/value-history linkage derived from immutable valuation and provenance records;
 - production-wired advanced Royal Vault UI enhancement stack;
-- evidence-backed collection portfolio coverage, per-currency totals, category/collection rollups and exact contribution evidence IDs.
+- evidence-backed collection portfolio coverage, per-currency totals, category/collection rollups and exact contribution evidence IDs;
+- normalized provider-originated valuation observation contract;
+- official eBay Browse asking-listing observation adapter with server-side OAuth;
+- explicit provider-policy gating before network market observations can be enabled;
+- immutable provider evidence metadata and deduplication;
+- exact valuation evidence/source-record citations in Keeper explanations;
+- exact realized-sale provenance record IDs/correction history in Keeper explanations;
+- wired production runtime composition for optional valuation providers.
 
 ---
 
-## Active slice — Provider-Neutral Valuation Observations + Evidence-Cited Keeper
+## Latest integrated slice — Provider-Neutral Valuation Observations + Evidence-Cited Keeper
 
 ### Why this slice was prioritized
 
@@ -101,9 +98,9 @@ The implementation reviewed current behavior and access constraints for:
 
 Research record: `docs/research/2026-09-12-IMP-005-PROVIDER-OBSERVATIONS-KEEPER-EVIDENCE.md`.
 
-### Implemented provider-observation boundary
+### Integrated provider-observation boundary
 
-The branch adds a normalized observation contract requiring:
+Every provider observation must carry:
 
 - provider ID;
 - provider observation/source-record ID;
@@ -119,9 +116,9 @@ The branch adds a normalized observation contract requiring:
 
 Provider-originated evidence is a separate `provider-originated-observation` evidence class. Provider identifiers never replace permanent Kingdom treasure UUIDs.
 
-### eBay Browse adapter behavior
+### Integrated eBay Browse behavior
 
-The first official network adapter:
+The first official network market adapter:
 
 - uses application OAuth client credentials server-side;
 - searches the official eBay Browse API;
@@ -151,7 +148,7 @@ Collector-recorded valuation evidence keeps its existing append-only/correction 
 
 ### Keeper evidence explanations
 
-The Keeper explanation route now exposes:
+The Keeper explanation route exposes:
 
 - exact valuation evidence UUIDs used by the selected estimate bucket;
 - source record/reference IDs where they actually exist;
@@ -166,7 +163,7 @@ The Keeper does not invent missing source record IDs.
 
 ### Royal Vault UX
 
-The valuation panel adds:
+The valuation panel now includes:
 
 - an Official Market Observations section;
 - provider selection and explicit refresh action;
@@ -177,13 +174,13 @@ The valuation panel adds:
 
 ### Production composition
 
-A real `apps/web/runtime.mjs` composition root now creates the optional eBay observation provider from runtime configuration and passes it into `createVaultValuationService`.
+`apps/web/runtime.mjs` is the wired composition root for the running app. It creates the optional eBay observation provider from runtime configuration and passes it into `createVaultValuationService`.
 
-`npm start`, `npm run dev`, the production build manifest and `start:prod` now point at the wired runtime rather than relying on test-only injection.
+`npm start`, `npm run dev`, the production build manifest and `start:prod` point at this wired runtime rather than relying on test-only provider injection.
 
-### Verification coverage added
+### Verification coverage
 
-Tests cover:
+Tests prove:
 
 - eBay OAuth/token caching;
 - Browse request authorization and marketplace headers;
@@ -195,23 +192,23 @@ Tests cover:
 - provider observation deduplication;
 - provider metadata tamper detection;
 - collector-correction rejection for provider-originated evidence;
-- regression proof that asking observations never influence sold estimates;
+- asking observations never influence sold estimates;
 - exact valuation evidence/source record citations;
 - exact realized-sale provenance record citations and correction visibility;
 - fail-closed all-or-none runtime configuration;
 - production artifact inclusion of provider modules + wired runtime.
 
-First complete implementation verification:
+Verification sequence:
 
-- head `d6ef4b62907f9bd9c54cfba8d9f2070602c1c1ce` — Kingdom Quality Gates #674 / run `34731699236` — **PASS**.
-
-Final PR-head gate is still required after the acceptance-gap/documentation commits before merge.
+- first complete implementation head `d6ef4b62907f9bd9c54cfba8d9f2070602c1c1ce` — Kingdom Quality Gates #674 / run `34731699236` — **PASS**;
+- final PR #28 head `7dcb7d62be793d08ac44c9ff3d0abee28bc2ce16` — Kingdom Quality Gates #679 / run `34731859320` — **PASS**;
+- squash-merged production commit `e2105bcae637228ed39de55cb22d0045d5b9c568`.
 
 ---
 
 ## Previous integrated slice — Live Vault Bootstrap + Portfolio Intelligence
 
-PR #26 closed a runtime-proof gap by making `/vault-bootstrap.js` the real Royal Vault browser entry point and explicitly loading the advanced Vault module stack. It also added evidence-backed collection valuation coverage, separate per-currency portfolio totals, category/collection rollups, exact supporting sold-evidence IDs, quantity-aware safe-integer totals, explicit exclusions and non-appraisal language.
+PR #26 made `/vault-bootstrap.js` the real Royal Vault browser entry point and explicitly loaded the advanced Vault module stack. It also added evidence-backed collection valuation coverage, separate per-currency portfolio totals, category/collection rollups, exact supporting sold-evidence IDs, quantity-aware safe-integer totals, explicit exclusions and non-appraisal language.
 
 Final PR #26 head `88487686375d6a0648fd96616a69ecf1c43a7c0f` passed Kingdom Quality Gates #670 / run `34718684431`; squash-merged production commit `82624118f88d367c687ba2aee5499287bf19a5a6`.
 
@@ -260,11 +257,11 @@ Merged implementation `5addf3d483e978c79028ff00812d8beca08b9661`; merged baselin
 - Evidence-Backed Valuation Foundation — PR #22 / #658 — PASS and merged.
 - Realized-Sale / Value-History Linkage — PR #24 / #664 — PASS and merged.
 - Live Vault Bootstrap + Evidence-Backed Portfolio Intelligence — PR #26 / #670 — PASS and merged.
-- Provider-Neutral Valuation Observations + Evidence-Cited Keeper — PR #28 first complete implementation / #674 — PASS; final PR-head gate pending.
+- Provider-Neutral Valuation Observations + Evidence-Cited Keeper — PR #28 / #679 — PASS and merged.
 
 ---
 
-## Exact next engineering target after PR #28 merges
+## Exact next engineering target
 
 **Persistent Collection Value History + Portfolio/History Keeper Intelligence**
 
