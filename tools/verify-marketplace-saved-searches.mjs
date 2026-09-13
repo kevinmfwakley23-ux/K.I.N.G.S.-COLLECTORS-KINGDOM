@@ -25,10 +25,13 @@ const runtime = await readFile(resolve(root, "dist/apps/web/runtime.mjs"), "utf8
 for (const marker of ["market-saved-searches", "load-more-market", "marketplace-saved-searches-ui.js"]) {
   if (!html.includes(marker)) throw new Error(`Marketplace saved-search UI artifact is missing ${marker}.`);
 }
+if (!html.includes("not old result snapshots") || !html.includes("Automatic search alerts are not enabled yet")) {
+  throw new Error("Street Market must explain live saved-search reruns and the unavailable alert boundary.");
+}
 if (!discovery.includes("MARKET_PAGE_SIZE = 24") || !discovery.includes("nextCursor")) {
   throw new Error("Street Market discovery must use bounded cursor-backed pages.");
 }
-if (!savedUi.includes("Automatic search alerts are not enabled yet") || !savedUi.includes("resultsAreSnapshots")) {
+if (!savedUi.includes("Automatic alerts are not enabled yet") || !savedUi.includes("rerun the current market")) {
   throw new Error("Saved-search UI must preserve live-rerun and no-alert truth boundaries.");
 }
 if (!queryService.includes("invalid_marketplace_cursor") || !queryService.includes("notificationsAvailable: false")) {
