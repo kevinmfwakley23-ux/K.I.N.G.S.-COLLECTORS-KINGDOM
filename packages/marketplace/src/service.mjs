@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 
 const FULFILLMENT_METHODS = Object.freeze(["shipping", "local-pickup", "shipping-or-pickup"]);
 const SALE_FORMAT = "fixed-price";
+const BROWSE_SORTS = Object.freeze(["newest", "price-asc", "price-desc", "title"]);
 
 export class MarketplaceError extends Error {
   constructor(code, message, statusCode = 400, details = null) {
@@ -190,6 +191,87 @@ function eventFor(listing, eventType, now, metadata = {}, snapshotSha256 = null)
   });
 }
 
+function cleanOptionalLabel(value, label, max = 120) {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value !== "string") throw new MarketplaceError(`invalid_marketplace_${label}`, `${label} filter must be text.`);
+  const cleaned = value.trim();
+  if (!cleaned) return null;
+  if (cleaned.length > max) throw new MarketplaceError(`invalid_marketplace_${label}`, `${label} filter is too long.`);
+  return cleaned;
+}
+
+function cleanBrowseQuery(value) {
+  const cleaned = cleanOptionalLabel(value, "query", 160);
+  if (!cleaned) return Object.freeze({ query: null, tokens: Object.freeze([]) });
+  const tokens = cleaned.normalize("NFKD").replace(/\p{M}+/gu, "").toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+  if (tokens.length > 12) throw new MarketplaceError("invalid_marketplace_query", "Marketplace search may contain at most 12 searchable terms.");
+  return Object.freeze({ query: cleaned, tokens: Object.freeze(tokens) });
+}
+
+function cleanOptionalPrice(value, label) {
+  if (value === undefined || value === null || value === "") return null;
+  const numeric = Number(value);
+  if (!Number.isSafeInteger(numeric) || numeric < 0) {
+    throw new MarketplaceError(`invalid_marketplace_${label}`, `${label} must be a non-negative integer number of minor currency units.`);
+  }
+  return numeric;
+}
+
+function cleanBrowseFilters(input = {}) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new MarketplaceError("invalid_marketplace_filters", "Marketplace discovery filters must be an object.");
+  }
+  const query = cleanBrowseQuery(input.query);
+  const category = cleanOptionalLabel(input.category, "category");
+  const currency = input.currency === undefined || input.currency === null || input.currency === "" ? null : cleanCurrency(input.currency);
+  const fulfillmentMethod = input.fulfillmentMethod === undefined || input.fulfillmentMethod === null || input.fulfillmentMethod === ""
+    ? null
+    : cleanFulfillment(input.fulfillmentMethod);
+  const minAmountCents = cleanOptionalPrice(input.minAmountCents, "min_amount_cents");
+  const maxAmountCents = cleanOptionalPrice(input.maxAmountCents, "max_amount_cents");
+  if ((minAmountCents !== null || maxAmountCents !== null) && !currency) {
+    throw new MarketplaceError(
+      "marketplace_price_filter_currency_required",
+      "Choose a currency before applying a Marketplace price range so unlike currencies are never compared as if they were equivalent."
+    );
+  }
+  if (minAmountCents !== null && maxAmountCents !== null && minAmountCents > maxAmountCents) {
+    throw new MarketplaceError("invalid_marketplace_price_range", "Minimum Marketplace price cannot exceed maximum price.");
+  }
+  const sort = input.sort === undefined || input.sort === null || input.sort === "" ? "newest" : String(input.sort).trim().toLowerCase();
+  if (!BROWSE_SORTS.includes(sort)) {
+    throw new MarketplaceError("invalid_marketplace_sort", "Unsupported Marketplace sort order.", 400, { allowed: BROWSE_SORTS });
+  }
+  const limit = input.limit === undefined || input.limit === null || input.limit === "" ? 50 : Number(input.limit);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    throw new MarketplaceError("invalid_marketplace_limit", "Marketplace result limit must be between 1 and 100.");
+  }
+  return Object.freeze({
+    query: query.query,
+    queryTokens: query.tokens,
+    category,
+    currency,
+    fulfillmentMethod,
+    minAmountCents,
+    maxAmountCents,
+    sort,
+    limit
+  });
+}
+
+function publicAppliedFilters(filters) {
+  return Object.freeze({
+    query: filters.query,
+    category: filters.category,
+    currency: filters.currency,
+    fulfillmentMethod: filters.fulfillmentMethod,
+    minAmountCents: filters.minAmountCents,
+    maxAmountCents: filters.maxAmountCents,
+    sort: filters.sort,
+    limit: filters.limit
+  });
+}
+
 export function createMarketplaceService({ vaultStore, marketplaceRepository, now = () => new Date() } = {}) {
   if (!vaultStore || typeof vaultStore.findTreasureById !== "function" || typeof vaultStore.writeEvent !== "function") {
     throw new TypeError("Marketplace service requires the Vault store boundary.");
@@ -197,6 +279,7 @@ export function createMarketplaceService({ vaultStore, marketplaceRepository, no
   if (!marketplaceRepository || typeof marketplaceRepository.createDraft !== "function") {
     throw new TypeError("Marketplace service requires a marketplace repository.");
   }
+  if (typeof marketplaceRepository.activeFacets !== "function") throw new TypeError("Marketplace repository must expose active discovery facets.");
   if (typeof now !== "function") throw new TypeError("Marketplace service now must be a function.");
 
   function createDraft(identity, input = {}) {
@@ -357,8 +440,20 @@ export function createMarketplaceService({ vaultStore, marketplaceRepository, no
     return sellerListing(listing, marketplaceRepository.listEvents(listing.id));
   }
 
-  function browse({ limit = 50 } = {}) {
-    return marketplaceRepository.listActive({ limit }).map(publicListing).filter(Boolean);
+  function browse(input = {}) {
+    const filters = cleanBrowseFilters(input);
+    return marketplaceRepository.listActive(filters).map(publicListing).filter(Boolean);
+  }
+
+  function discovery(input = {}) {
+    const filters = cleanBrowseFilters(input);
+    return Object.freeze({
+      listings: Object.freeze(marketplaceRepository.listActive(filters).map(publicListing).filter(Boolean)),
+      appliedFilters: publicAppliedFilters(filters),
+      facets: marketplaceRepository.activeFacets(),
+      priceRangesRequireCurrency: true,
+      crossCurrencyPriceComparison: false
+    });
   }
 
   function getPublic(listingIdValue) {
@@ -371,6 +466,7 @@ export function createMarketplaceService({ vaultStore, marketplaceRepository, no
   return Object.freeze({
     saleFormats: Object.freeze([SALE_FORMAT]),
     fulfillmentMethods: FULFILLMENT_METHODS,
+    browseSorts: BROWSE_SORTS,
     createDraft,
     updateDraft,
     publish,
@@ -378,6 +474,7 @@ export function createMarketplaceService({ vaultStore, marketplaceRepository, no
     listMine,
     getMine,
     browse,
+    discovery,
     getPublic
   });
 }
