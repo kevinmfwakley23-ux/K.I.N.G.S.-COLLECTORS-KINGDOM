@@ -61,6 +61,15 @@ function resolveKingsAiBaseUrl(env) {
 export function loadRuntimeConfig(env = process.env) {
   const logLevel = env.KINGDOM_LOG_LEVEL ?? "info";
   if (!LOG_LEVELS.has(logLevel)) throw new Error("KINGDOM_LOG_LEVEL must be one of debug, info, warn, error.");
+
+  const ebayClientId = parseOptionalSecret(env.KINGDOM_EBAY_CLIENT_ID, "KINGDOM_EBAY_CLIENT_ID", 1024);
+  const ebayClientSecret = parseOptionalSecret(env.KINGDOM_EBAY_CLIENT_SECRET, "KINGDOM_EBAY_CLIENT_SECRET", 2048);
+  const ebayProviderPolicyId = parseOptionalSecret(env.KINGDOM_EBAY_PROVIDER_POLICY_ID, "KINGDOM_EBAY_PROVIDER_POLICY_ID", 240);
+  const ebayParts = [ebayClientId, ebayClientSecret, ebayProviderPolicyId].filter(Boolean).length;
+  if (ebayParts !== 0 && ebayParts !== 3) {
+    throw new Error("eBay valuation observations require KINGDOM_EBAY_CLIENT_ID, KINGDOM_EBAY_CLIENT_SECRET, and KINGDOM_EBAY_PROVIDER_POLICY_ID together.");
+  }
+
   return Object.freeze({
     host: env.KINGDOM_HOST ?? "127.0.0.1",
     port: parsePort(env.KINGDOM_PORT ?? "8788"),
@@ -96,6 +105,13 @@ export function loadRuntimeConfig(env = process.env) {
     cardApiBaseUrl: parseExternalHttpsUrl(env.KINGDOM_CARD_API_BASE_URL ?? "https://www.thecardapi.com/api/v1", "KINGDOM_CARD_API_BASE_URL"),
     cardApiKey: parseOptionalSecret(env.KINGDOM_CARD_API_KEY, "KINGDOM_CARD_API_KEY", 4096),
     cardApiTimeoutMs: parsePositiveInteger(env.KINGDOM_CARD_API_TIMEOUT_MS ?? "5000", "KINGDOM_CARD_API_TIMEOUT_MS"),
-    cardApiMinIntervalMs: parsePositiveInteger(env.KINGDOM_CARD_API_MIN_INTERVAL_MS ?? "250", "KINGDOM_CARD_API_MIN_INTERVAL_MS")
+    cardApiMinIntervalMs: parsePositiveInteger(env.KINGDOM_CARD_API_MIN_INTERVAL_MS ?? "250", "KINGDOM_CARD_API_MIN_INTERVAL_MS"),
+    ebayApiBaseUrl: parseExternalHttpsUrl(env.KINGDOM_EBAY_API_BASE_URL ?? "https://api.ebay.com", "KINGDOM_EBAY_API_BASE_URL"),
+    ebayClientId,
+    ebayClientSecret,
+    ebayProviderPolicyId,
+    ebayMarketplaceId: parseOptionalSecret(env.KINGDOM_EBAY_MARKETPLACE_ID ?? "EBAY_US", "KINGDOM_EBAY_MARKETPLACE_ID", 80),
+    ebayTimeoutMs: parsePositiveInteger(env.KINGDOM_EBAY_TIMEOUT_MS ?? "5000", "KINGDOM_EBAY_TIMEOUT_MS"),
+    ebayValuationEnabled: ebayParts === 3
   });
 }

@@ -13,7 +13,9 @@ test("runtime configuration applies secure local defaults", () => {
     pokemonTcgBaseUrl: "https://api.pokemontcg.io", pokemonTcgApiKey: null, pokemonTcgTimeoutMs: 5000, pokemonTcgMinIntervalMs: 5000,
     scryfallBaseUrl: "https://api.scryfall.com", scryfallTimeoutMs: 5000, scryfallMinIntervalMs: 150,
     psaBaseUrl: "https://api.psacard.com/publicapi", psaAccessToken: null, psaTimeoutMs: 5000, psaMinIntervalMs: 1000,
-    cardApiBaseUrl: "https://www.thecardapi.com/api/v1", cardApiKey: null, cardApiTimeoutMs: 5000, cardApiMinIntervalMs: 250
+    cardApiBaseUrl: "https://www.thecardapi.com/api/v1", cardApiKey: null, cardApiTimeoutMs: 5000, cardApiMinIntervalMs: 250,
+    ebayApiBaseUrl: "https://api.ebay.com", ebayClientId: null, ebayClientSecret: null, ebayProviderPolicyId: null,
+    ebayMarketplaceId: "EBAY_US", ebayTimeoutMs: 5000, ebayValuationEnabled: false
   });
 });
 
@@ -87,6 +89,30 @@ test("runtime configuration validates The Card API HTTPS transport, server-only 
   assert.throws(() => loadRuntimeConfig({ KINGDOM_CARD_API_KEY: "bad\nkey" }), /CARD_API_KEY/);
   assert.throws(() => loadRuntimeConfig({ KINGDOM_CARD_API_TIMEOUT_MS: "0" }), /CARD_API_TIMEOUT_MS/);
   assert.throws(() => loadRuntimeConfig({ KINGDOM_CARD_API_MIN_INTERVAL_MS: "0" }), /CARD_API_MIN_INTERVAL_MS/);
+});
+
+test("runtime configuration enables eBay valuation observations only with credentials and an explicit reviewed policy ID", () => {
+  const config = loadRuntimeConfig({
+    KINGDOM_EBAY_API_BASE_URL: "http://127.0.0.1:9950/",
+    KINGDOM_EBAY_CLIENT_ID: "client-id",
+    KINGDOM_EBAY_CLIENT_SECRET: "client-secret",
+    KINGDOM_EBAY_PROVIDER_POLICY_ID: "reviewed-policy-2026-09-12",
+    KINGDOM_EBAY_MARKETPLACE_ID: "EBAY_US",
+    KINGDOM_EBAY_TIMEOUT_MS: "4500"
+  });
+  assert.equal(config.ebayApiBaseUrl, "http://127.0.0.1:9950");
+  assert.equal(config.ebayClientId, "client-id");
+  assert.equal(config.ebayClientSecret, "client-secret");
+  assert.equal(config.ebayProviderPolicyId, "reviewed-policy-2026-09-12");
+  assert.equal(config.ebayMarketplaceId, "EBAY_US");
+  assert.equal(config.ebayTimeoutMs, 4500);
+  assert.equal(config.ebayValuationEnabled, true);
+
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_EBAY_CLIENT_ID: "client-id" }), /EBAY_CLIENT_ID.*EBAY_CLIENT_SECRET.*EBAY_PROVIDER_POLICY_ID/i);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_EBAY_CLIENT_ID: "client-id", KINGDOM_EBAY_CLIENT_SECRET: "secret" }), /EBAY_PROVIDER_POLICY_ID/i);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_EBAY_API_BASE_URL: "http://example.com" }), /EBAY_API_BASE_URL/);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_EBAY_CLIENT_SECRET: "bad\nsecret" }), /EBAY_CLIENT_SECRET/);
+  assert.throws(() => loadRuntimeConfig({ KINGDOM_EBAY_TIMEOUT_MS: "0" }), /EBAY_TIMEOUT_MS/);
 });
 
 test("runtime configuration rejects invalid ports, sessions, cookies, and KINGS AI settings", () => {
