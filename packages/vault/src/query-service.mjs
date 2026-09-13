@@ -1,9 +1,9 @@
 import { createHash, randomUUID } from "node:crypto";
 import { VaultError } from "./service.mjs";
 
-const SORT_FIELDS = new Set(["title", "category", "createdAt", "updatedAt", "acquisitionDate", "purchasePrice"]);
+const SORT_FIELDS = new Set(["title", "category", "year", "createdAt", "updatedAt", "acquisitionDate", "purchasePrice"]);
 const ORDER_VALUES = new Set(["asc", "desc"]);
-const FILTER_FIELDS = new Set(["query", "collectionId", "locationId", "category", "condition", "sort", "order", "includeArchived"]);
+const FILTER_FIELDS = new Set(["query", "collectionId", "locationId", "category", "condition", "year", "tag", "sort", "order", "includeArchived"]);
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
 
@@ -19,7 +19,7 @@ function hasOwn(value, key) {
 function cleanText(value, label, max) {
   if (value === undefined || value === null || value === "") return null;
   if (typeof value !== "string") throw new VaultError(`invalid_${label}`, `${label} must be text.`);
-  const cleaned = value.trim();
+  const cleaned = value.normalize("NFKC").trim().replace(/\s+/g, " ");
   if (!cleaned) return null;
   if (cleaned.length > max) throw new VaultError(`invalid_${label}`, `${label} must contain at most ${max} characters.`);
   return cleaned;
@@ -28,6 +28,15 @@ function cleanText(value, label, max) {
 function cleanReference(value, label) {
   const cleaned = cleanText(value, label, 100);
   return cleaned || null;
+}
+
+function cleanYear(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const numeric = Number(value);
+  if (!Number.isInteger(numeric) || numeric < 1 || numeric > 9999) {
+    throw new VaultError("invalid_year", "year must be a whole number between 1 and 9999.");
+  }
+  return numeric;
 }
 
 function normalizedFilters(input = {}) {
@@ -58,6 +67,8 @@ function normalizedFilters(input = {}) {
     locationId: cleanReference(input.locationId, "location_id"),
     category: cleanText(input.category, "category", 100),
     condition: cleanText(input.condition, "condition", 100),
+    year: cleanYear(input.year),
+    tag: cleanText(input.tag, "tag", 60),
     sort,
     order,
     includeArchived: input.includeArchived === true
