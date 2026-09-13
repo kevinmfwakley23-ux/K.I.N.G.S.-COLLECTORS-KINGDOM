@@ -48,7 +48,8 @@ test("metadata UI and HTTP surface support indexed filtering, metadata managemen
   assert.match(pagination, /\["tag", "tag"\]/);
   assert.match(queryHttp, /\/api\/vault\/tags/);
   assert.match(queryHttp, /\/api\/vault\/metadata-index/);
-  assert.match(queryHttp, /treasures\\\/\(\[\^\/\]\+\).*metadata/);
+  assert.match(queryHttp, /parseTreasureRoute/);
+  assert.match(queryHttp, /action === "metadata"/);
   assert.match(metadataUi, /\/api\/vault\/tags/);
   assert.match(metadataUi, /\/api\/vault\/metadata-index/);
   assert.match(metadataUi, /schemaVersion: Math\.max/);
