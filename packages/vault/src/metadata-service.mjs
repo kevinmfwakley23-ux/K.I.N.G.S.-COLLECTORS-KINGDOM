@@ -239,6 +239,16 @@ export function createVaultMetadataService({
     return Object.freeze(metadataRepository.listTags(collector.id));
   }
 
+  function exportMetadata(identity) {
+    const collector = requireCollector(identity);
+    return Object.freeze(metadataRepository.exportForOwner(collector.id).map((record) => Object.freeze({
+      treasureId: record.treasureId,
+      year: record.year,
+      tags: record.tags,
+      updatedAt: record.updatedAt
+    })));
+  }
+
   return Object.freeze({
     ...vaultService,
     createTreasure,
@@ -252,6 +262,7 @@ export function createVaultMetadataService({
     getMetadata,
     setMetadata,
     listTags,
+    exportMetadata,
     cleanYear: cleanTreasureYear,
     cleanTags: cleanTreasureTags
   });
