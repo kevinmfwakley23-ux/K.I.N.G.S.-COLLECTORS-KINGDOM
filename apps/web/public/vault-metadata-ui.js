@@ -143,6 +143,20 @@ async function fetchJson(path) {
   return body;
 }
 
+function selectTagImmediately(value) {
+  const select = document.querySelector("#filter-tag");
+  if (!select) return;
+  const wanted = String(value ?? "");
+  if (wanted && ![...select.options].some((option) => option.value === wanted)) {
+    const pending = document.createElement("option");
+    pending.value = wanted;
+    pending.textContent = wanted;
+    pending.dataset.pendingSavedViewTag = "true";
+    select.append(pending);
+  }
+  select.value = wanted;
+}
+
 async function refreshTags(selected = null) {
   const select = document.querySelector("#filter-tag");
   if (!select) return;
@@ -160,9 +174,16 @@ async function refreshTags(selected = null) {
       option.textContent = `${tag.label} (${tag.treasureCount})`;
       select.append(option);
     }
-    if ([...select.options].some((option) => option.value === keep)) select.value = keep;
+    if (keep && ![...select.options].some((option) => option.value === keep)) {
+      const retained = document.createElement("option");
+      retained.value = keep;
+      retained.textContent = keep;
+      retained.dataset.pendingSavedViewTag = "true";
+      select.append(retained);
+    }
+    select.value = keep || "";
   } catch {
-    // Core Vault remains usable if metadata suggestions cannot refresh.
+    selectTagImmediately(keep);
   }
 }
 
@@ -301,9 +322,9 @@ if (clearFiltersButton) clearFiltersButton.addEventListener("click", () => {
 window.addEventListener("vault:apply-saved-view", (event) => {
   const filters = event.detail?.view?.filters ?? {};
   const year = document.querySelector("#filter-year");
-  const tag = document.querySelector("#filter-tag");
   if (year) year.value = filters.year ?? "";
-  if (tag) refreshTags(filters.tag ?? "");
+  selectTagImmediately(filters.tag ?? "");
+  refreshTags(filters.tag ?? "");
 }, { capture: true });
 
 if (editor) {
