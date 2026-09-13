@@ -3,6 +3,8 @@ import { IdentityError } from "../../packages/identity/src/service.mjs";
 import { VaultError } from "../../packages/vault/src/service.mjs";
 
 const MAX_JSON_BYTES = 64 * 1024;
+const YEAR_BRIDGE_KEY = "__kingsYear";
+const TAGS_BRIDGE_KEY = "__kingsTags";
 
 function requireIdentity(identityService, request) {
   const token = parseCookies(request.headers.cookie ?? "").kingdom_session ?? null;
@@ -41,6 +43,25 @@ async function readJson(request) {
     if (error instanceof VaultError) throw error;
     throw new VaultError("invalid_json", "Request body must contain valid JSON.");
   }
+}
+
+function metadataAwarePayload(input) {
+  const payload = { ...input };
+  const attributes = input?.attributes && typeof input.attributes === "object" && !Array.isArray(input.attributes)
+    ? { ...input.attributes }
+    : input?.attributes;
+  if (attributes && typeof attributes === "object" && !Array.isArray(attributes)) {
+    if (!Object.prototype.hasOwnProperty.call(payload, "year") && Object.prototype.hasOwnProperty.call(attributes, YEAR_BRIDGE_KEY)) {
+      payload.year = attributes[YEAR_BRIDGE_KEY];
+    }
+    if (!Object.prototype.hasOwnProperty.call(payload, "tags") && Object.prototype.hasOwnProperty.call(attributes, TAGS_BRIDGE_KEY)) {
+      payload.tags = attributes[TAGS_BRIDGE_KEY];
+    }
+    delete attributes[YEAR_BRIDGE_KEY];
+    delete attributes[TAGS_BRIDGE_KEY];
+    payload.attributes = attributes;
+  }
+  return payload;
 }
 
 function decodePathValue(value, code = "invalid_saved_view_id") {
@@ -118,7 +139,7 @@ export async function handleVaultQueryRoute({
   }
 
   if (isTreasureCollection && method === "POST") {
-    const treasure = vaultQueryService.createTreasure(identity, await readJson(request));
+    const treasure = vaultQueryService.createTreasure(identity, metadataAwarePayload(await readJson(request)));
     return sendJson(response, 201, { treasure }, method, securityHeaders);
   }
   if (isTreasureCollection) return null;
@@ -139,7 +160,7 @@ export async function handleVaultQueryRoute({
       return sendJson(response, 200, { treasure: vaultQueryService.getTreasure(identity, treasureRoute.id) }, method, securityHeaders);
     }
     if (method === "PATCH") {
-      const treasure = vaultQueryService.updateTreasure(identity, treasureRoute.id, await readJson(request));
+      const treasure = vaultQueryService.updateTreasure(identity, treasureRoute.id, metadataAwarePayload(await readJson(request)));
       return sendJson(response, 200, { treasure }, method, securityHeaders);
     }
     if (method === "DELETE") {
