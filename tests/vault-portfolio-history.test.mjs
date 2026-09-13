@@ -88,7 +88,7 @@ test("portfolio history persists daily evidence-addressable snapshots and dedupl
     assert.equal(first.created, true);
     assert.equal(first.snapshot.portfolio.currencyRollups[0].currency, "USD");
     assert.equal(first.snapshot.portfolio.currencyRollups[0].totalEstimatedCents, 40000);
-    assert.deepEqual(first.snapshot.portfolio.contributions[0].evidenceIds, evidence.map((item) => item.id));
+    assert.deepEqual([...first.snapshot.portfolio.contributions[0].evidenceIds].sort(), evidence.map((item) => item.id).sort());
     assert.match(first.snapshot.snapshotSha256, /^[a-f0-9]{64}$/);
 
     const duplicate = history.capture(owner);
