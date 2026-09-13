@@ -80,7 +80,8 @@ function cards(listings) {
 }
 
 async function loadStorefront() {
-  const publicId = new URL(window.location.href).searchParams.get("id");
+  const parameters = new URL(window.location.href).searchParams;
+  const publicId = parameters.get("store") ?? parameters.get("id");
   if (!publicId) {
     title.textContent = "Storefront not specified";
     status.textContent = "Open a seller storefront from a Marketplace listing or a seller's shared storefront link.";
