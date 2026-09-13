@@ -281,6 +281,7 @@ export function createVaultQueryService({ vaultStore, vaultService, queryReposit
     archiveTreasure: metadataService.archiveTreasure,
     getTreasureMetadata: metadataService.getMetadata,
     setTreasureMetadata: metadataService.setMetadata,
-    listTags: metadataService.listTags
+    listTags: metadataService.listTags,
+    exportMetadata: metadataService.exportMetadata
   });
 }
