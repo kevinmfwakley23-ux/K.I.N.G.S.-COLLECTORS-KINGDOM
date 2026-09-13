@@ -18,6 +18,7 @@ import { createVaultIntakeService } from "../../packages/vault/src/intake-servic
 import { createVaultMediaRepository } from "../../packages/vault/src/media-repository.mjs";
 import { createVaultMediaService } from "../../packages/vault/src/media-service.mjs";
 import { LocalVaultMediaStorage } from "../../packages/vault/src/media-storage.mjs";
+import { createVaultMetadataRepository } from "../../packages/vault/src/metadata-repository.mjs";
 import { createVaultPortfolioHistoryRepository } from "../../packages/vault/src/portfolio-history-repository.mjs";
 import { createVaultPortfolioHistoryService } from "../../packages/vault/src/portfolio-history-service.mjs";
 import { createVaultProvenanceRepository } from "../../packages/vault/src/provenance-repository.mjs";
@@ -26,6 +27,7 @@ import { createVaultQueryRepository } from "../../packages/vault/src/query-repos
 import { createVaultQueryService } from "../../packages/vault/src/query-service.mjs";
 import { createVaultReorganizationRepository } from "../../packages/vault/src/reorganization-repository.mjs";
 import { createVaultReorganizationService } from "../../packages/vault/src/reorganization-service.mjs";
+import { createVaultReportService } from "../../packages/vault/src/report-service.mjs";
 import { createVaultService } from "../../packages/vault/src/service.mjs";
 import { SqliteVaultStore } from "../../packages/vault/src/sqlite-store.mjs";
 import { createVaultValuationRepository } from "../../packages/vault/src/valuation-repository.mjs";
@@ -66,6 +68,7 @@ export async function runKingdomRuntime() {
     mediaRepository: vaultMediaRepository,
     storage: vaultMediaStorage
   });
+  const vaultMetadataRepository = createVaultMetadataRepository({ vaultStore });
   const gradingAnalysisRepository = createPregradeAnalysisRepository({ vaultStore });
   const gradingAnalysisService = createPregradeAnalysisService({
     vaultStore,
@@ -100,9 +103,18 @@ export async function runKingdomRuntime() {
     historyRepository: vaultPortfolioHistoryRepository,
     valuationService: vaultValuationCoreService
   });
+  const vaultReportService = createVaultReportService({
+    vaultStore,
+    metadataRepository: vaultMetadataRepository,
+    mediaRepository: vaultMediaRepository,
+    provenanceService: vaultProvenanceService,
+    valuationService: vaultValuationCoreService,
+    portfolioHistoryService: vaultPortfolioHistoryService
+  });
   const vaultValuationService = Object.freeze({
     ...vaultValuationCoreService,
-    portfolioHistoryService: vaultPortfolioHistoryService
+    portfolioHistoryService: vaultPortfolioHistoryService,
+    reportService: vaultReportService
   });
   const vaultReorganizationRepository = createVaultReorganizationRepository({ vaultStore });
   const vaultReorganizationService = createVaultReorganizationService({
@@ -147,7 +159,8 @@ export async function runKingdomRuntime() {
       host: config.host,
       port: config.port,
       version: config.version,
-      valuationObservationProviders: observationProviders.map((provider) => provider.id)
+      valuationObservationProviders: observationProviders.map((provider) => provider.id),
+      collectionEvidenceReporting: true
     });
   });
 
