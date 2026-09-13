@@ -86,6 +86,35 @@ export function createMarketplaceEngagementRepository({ vaultStore } = {}) {
     return Number(result.changes) === 1 ? findSellerProfileByAccountId(profile.sellerAccountId) : null;
   }
 
+  function listActiveListingIdsForSellerAccount(sellerAccountId, { limit = 100 } = {}) {
+    const bounded = Math.min(Math.max(Number(limit) || 100, 1), 100);
+    return database.prepare(`
+      SELECT l.id
+      FROM marketplace_listings l
+      INNER JOIN vault_treasures t
+        ON t.id = l.treasure_id
+       AND t.owner_account_id = l.seller_account_id
+       AND t.archived_at IS NULL
+       AND t.quantity >= l.quantity
+      WHERE l.seller_account_id = ? AND l.state = 'active'
+      ORDER BY l.published_at DESC,l.id ASC
+      LIMIT ?
+    `).all(sellerAccountId, bounded).map((row) => row.id);
+  }
+
+  function countActiveListingsForSellerAccount(sellerAccountId) {
+    return Number(database.prepare(`
+      SELECT COUNT(*) AS count
+      FROM marketplace_listings l
+      INNER JOIN vault_treasures t
+        ON t.id = l.treasure_id
+       AND t.owner_account_id = l.seller_account_id
+       AND t.archived_at IS NULL
+       AND t.quantity >= l.quantity
+      WHERE l.seller_account_id = ? AND l.state = 'active'
+    `).get(sellerAccountId).count);
+  }
+
   function addWatch(ownerAccountId, listingId, addedAt) {
     const result = database.prepare(`
       INSERT OR IGNORE INTO marketplace_watchlist (owner_account_id,listing_id,added_at)
@@ -130,6 +159,8 @@ export function createMarketplaceEngagementRepository({ vaultStore } = {}) {
     findSellerProfileByPublicId,
     ensureSellerProfile,
     updateSellerProfile,
+    listActiveListingIdsForSellerAccount,
+    countActiveListingsForSellerAccount,
     addWatch,
     findWatch,
     removeWatch,
