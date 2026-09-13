@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f3eee2">
+  <title>Seller Storefront · Kingdom Street Market</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/marketplace.css">
+  <link rel="stylesheet" href="/marketplace-discovery.css">
+  <link rel="stylesheet" href="/marketplace-engagement.css">
+</head>
+<body class="marketplace-page marketplace-storefront-page">
+  <header class="marketplace-header">
+    <a class="marketplace-brand" href="/marketplace.html" aria-label="Return to the Kingdom Street Market">
+      <img src="/assets/marketplace.svg" alt="" width="58" height="58">
+      <span><strong>K.I.N.G.S.</strong><small>Seller Storefront</small></span>
+    </a>
+    <nav aria-label="Marketplace navigation">
+      <a href="/marketplace.html">Street Market</a>
+      <a href="/great-hall.html">Great Hall</a>
+      <a href="/vault.html">Royal Vault</a>
+    </nav>
+  </header>
+
+  <main class="marketplace-storefront-shell">
+    <section class="marketplace-section" aria-labelledby="storefront-title">
+      <div class="marketplace-storefront-heading">
+        <div>
+          <p class="marketplace-kicker">Public seller storefront</p>
+          <h1 id="storefront-title">Loading storefront…</h1>
+          <p id="storefront-bio"></p>
+        </div>
+        <a class="marketplace-secondary-link" href="/marketplace.html">Browse all market offers</a>
+      </div>
+
+      <div id="storefront-trust" class="marketplace-storefront-trust" role="status" aria-live="polite">Loading seller trust status…</div>
+      <p id="storefront-status" class="marketplace-status" role="status" aria-live="polite">Loading current active inventory…</p>
+      <div id="storefront-inventory" class="marketplace-grid marketplace-storefront-inventory" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <footer class="marketplace-footer">
+    <p>K.I.N.G.S. Collector's Kingdom · Seller storefront identity is seller-controlled public information and is not identity verification.</p>
+  </footer>
+  <script type="module" src="/marketplace-seller.js"></script>
+</body>
+</html>
