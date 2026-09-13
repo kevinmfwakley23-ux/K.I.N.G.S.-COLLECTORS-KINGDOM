@@ -89,9 +89,30 @@
         </details>
       </form>
 
+      <aside id="market-saved-searches" class="marketplace-saved-searches" aria-labelledby="market-saved-searches-title">
+        <div class="marketplace-saved-search-heading">
+          <div>
+            <p class="marketplace-kicker">Private discovery tools</p>
+            <h3 id="market-saved-searches-title">Saved market searches</h3>
+          </div>
+          <p id="market-saved-search-status" class="marketplace-form-note" role="status" aria-live="polite">Checking saved searches…</p>
+        </div>
+        <form id="market-save-search-form" class="marketplace-save-search-form" hidden>
+          <label>Name this search
+            <input id="market-save-search-name" name="name" maxlength="120" autocomplete="off" required placeholder="Vintage Jordan cards">
+          </label>
+          <button type="submit">Save current search</button>
+        </form>
+        <div id="market-saved-search-list" class="marketplace-saved-search-list"></div>
+        <p class="marketplace-form-note">Saved searches store private search definitions, not old result snapshots. Running one always checks the current supported market. Automatic search alerts are not enabled yet.</p>
+      </aside>
+
       <div id="market-active-filters" class="marketplace-active-filters" aria-label="Active market filters"></div>
       <p id="market-status" class="marketplace-status" role="status" aria-live="polite">Loading active offers…</p>
       <div id="market-listings" class="marketplace-grid" aria-live="polite"></div>
+      <div class="marketplace-load-more-wrap">
+        <button id="load-more-market" type="button" hidden>Load more offers</button>
+      </div>
     </section>
 
     <section id="seller-stall" class="marketplace-section marketplace-stall" aria-labelledby="seller-stall-title">
@@ -144,5 +165,6 @@
   </footer>
   <script src="/marketplace-discovery-boot.js"></script>
   <script type="module" src="/marketplace.js"></script>
+  <script type="module" src="/marketplace-saved-searches-ui.js"></script>
 </body>
 </html>
