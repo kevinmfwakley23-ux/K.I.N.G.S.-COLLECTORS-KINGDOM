@@ -1,4 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
+import { createVaultMetadataRepository } from "./metadata-repository.mjs";
+import { createVaultMetadataService } from "./metadata-service.mjs";
 import { VaultError } from "./service.mjs";
 
 const SORT_FIELDS = new Set(["title", "category", "year", "createdAt", "updatedAt", "acquisitionDate", "purchasePrice"]);
@@ -151,6 +153,9 @@ export function createVaultQueryService({ vaultStore, vaultService, queryReposit
   if (!vaultService) throw new TypeError("Vault service is required.");
   if (!queryRepository) throw new TypeError("Vault query repository is required.");
 
+  const metadataRepository = createVaultMetadataRepository({ vaultStore });
+  const metadataService = createVaultMetadataService({ vaultService, vaultStore, metadataRepository, now });
+
   function audit(ownerAccountId, eventType, metadata) {
     vaultStore.writeEvent({
       id: randomUUID(),
@@ -269,6 +274,13 @@ export function createVaultQueryService({ vaultStore, vaultService, queryReposit
     deleteView,
     queryPage,
     runView,
-    normalizeFilters: normalizedFilters
+    normalizeFilters: normalizedFilters,
+    createTreasure: metadataService.createTreasure,
+    getTreasure: metadataService.getTreasure,
+    updateTreasure: metadataService.updateTreasure,
+    archiveTreasure: metadataService.archiveTreasure,
+    getTreasureMetadata: metadataService.getMetadata,
+    setTreasureMetadata: metadataService.setMetadata,
+    listTags: metadataService.listTags
   });
 }
