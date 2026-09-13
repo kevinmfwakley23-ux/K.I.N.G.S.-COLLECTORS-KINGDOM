@@ -1,6 +1,7 @@
 import { parseCookies } from "../../packages/identity/src/tokens.mjs";
 import { IdentityError } from "../../packages/identity/src/service.mjs";
 import { VaultError } from "../../packages/vault/src/service.mjs";
+import { handleVaultPortfolioHistoryRoute } from "./vault-portfolio-history-http.mjs";
 
 const MAX_VALUATION_JSON_BYTES = 16 * 1024;
 
@@ -112,6 +113,17 @@ export async function handleVaultValuationRoute({
   vaultValuationService,
   securityHeaders
 } = {}) {
+  if (requestUrl.pathname === "/api/vault/portfolio-history" || requestUrl.pathname.startsWith("/api/vault/portfolio-history/")) {
+    return handleVaultPortfolioHistoryRoute({
+      request,
+      response,
+      requestUrl,
+      identityService,
+      vaultPortfolioHistoryService: vaultValuationService?.portfolioHistoryService ?? null,
+      securityHeaders
+    });
+  }
+
   const route = valuationRoute(requestUrl.pathname);
   if (!route) return null;
   if (!vaultValuationService) throw new VaultError("vault_valuation_unavailable", "The Vault valuation evidence service is unavailable.", 503);
