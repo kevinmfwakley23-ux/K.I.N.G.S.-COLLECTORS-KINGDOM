@@ -33,6 +33,10 @@ CREATE INDEX IF NOT EXISTS marketplace_listings_seller_state_idx
   ON marketplace_listings(seller_account_id,state,updated_at DESC,id);
 CREATE INDEX IF NOT EXISTS marketplace_listings_active_idx
   ON marketplace_listings(state,published_at DESC,id);
+CREATE INDEX IF NOT EXISTS marketplace_listings_active_category_idx
+  ON marketplace_listings(state,category_snapshot COLLATE NOCASE,published_at DESC,id);
+CREATE INDEX IF NOT EXISTS marketplace_listings_active_currency_price_idx
+  ON marketplace_listings(state,currency,amount_cents,published_at DESC,id);
 
 CREATE TABLE IF NOT EXISTS marketplace_listing_events (
   id TEXT PRIMARY KEY,
@@ -45,6 +49,15 @@ CREATE TABLE IF NOT EXISTS marketplace_listing_events (
 );
 CREATE INDEX IF NOT EXISTS marketplace_listing_events_listing_idx
   ON marketplace_listing_events(listing_id,created_at ASC,id ASC);
+`;
+
+const ACTIVE_VAULT_JOIN = `
+  FROM marketplace_listings l
+  INNER JOIN vault_treasures t
+    ON t.id = l.treasure_id
+   AND t.owner_account_id = l.seller_account_id
+   AND t.archived_at IS NULL
+   AND t.quantity >= l.quantity
 `;
 
 function parseJson(value, fallback) {
@@ -124,6 +137,52 @@ function transaction(database, work) {
   } catch (error) {
     database.exec("ROLLBACK;");
     throw error;
+  }
+}
+
+function activeWhere(filters = {}) {
+  const where = ["l.state = 'active'"];
+  const values = [];
+
+  for (const token of filters.queryTokens ?? []) {
+    const pattern = `%${token}%`;
+    where.push(`(
+      LOWER(l.title_snapshot) LIKE ? OR LOWER(l.category_snapshot) LIKE ? OR
+      LOWER(COALESCE(l.manufacturer_snapshot,'')) LIKE ? OR LOWER(COALESCE(l.series_snapshot,'')) LIKE ? OR
+      LOWER(COALESCE(l.variant_snapshot,'')) LIKE ? OR LOWER(COALESCE(l.condition_snapshot,'')) LIKE ? OR
+      LOWER(COALESCE(l.seller_description,'')) LIKE ?
+    )`);
+    values.push(pattern, pattern, pattern, pattern, pattern, pattern, pattern);
+  }
+  if (filters.category) {
+    where.push("l.category_snapshot = ? COLLATE NOCASE");
+    values.push(filters.category);
+  }
+  if (filters.currency) {
+    where.push("l.currency = ?");
+    values.push(filters.currency);
+  }
+  if (filters.fulfillmentMethod) {
+    where.push("l.fulfillment_method = ?");
+    values.push(filters.fulfillmentMethod);
+  }
+  if (filters.minAmountCents !== null && filters.minAmountCents !== undefined) {
+    where.push("l.amount_cents >= ?");
+    values.push(filters.minAmountCents);
+  }
+  if (filters.maxAmountCents !== null && filters.maxAmountCents !== undefined) {
+    where.push("l.amount_cents <= ?");
+    values.push(filters.maxAmountCents);
+  }
+  return { where, values };
+}
+
+function activeOrder(sort) {
+  switch (sort) {
+    case "price-asc": return "l.amount_cents ASC,l.published_at DESC,l.id ASC";
+    case "price-desc": return "l.amount_cents DESC,l.published_at DESC,l.id ASC";
+    case "title": return "l.title_snapshot COLLATE NOCASE ASC,l.published_at DESC,l.id ASC";
+    default: return "l.published_at DESC,l.id ASC";
   }
 }
 
@@ -260,30 +319,57 @@ export function createMarketplaceRepository({ vaultStore } = {}) {
     `).all(sellerAccountId, Math.min(Math.max(Number(limit) || 100, 1), 250)).map(mapListing);
   }
 
-  function listActive({ limit = 50 } = {}) {
+  function listActive(filters = {}) {
+    const { where, values } = activeWhere(filters);
+    const limit = Math.min(Math.max(Number(filters.limit) || 50, 1), 100);
     return database.prepare(`
       SELECT l.*
-      FROM marketplace_listings l
-      INNER JOIN vault_treasures t
-        ON t.id = l.treasure_id
-       AND t.owner_account_id = l.seller_account_id
-       AND t.archived_at IS NULL
-       AND t.quantity >= l.quantity
-      WHERE l.state = 'active'
-      ORDER BY l.published_at DESC,l.id ASC
+      ${ACTIVE_VAULT_JOIN}
+      WHERE ${where.join(" AND ")}
+      ORDER BY ${activeOrder(filters.sort)}
       LIMIT ?
-    `).all(Math.min(Math.max(Number(limit) || 50, 1), 100)).map(mapListing);
+    `).all(...values, limit).map(mapListing);
+  }
+
+  function activeFacets() {
+    const total = Number(database.prepare(`
+      SELECT COUNT(*) AS count
+      ${ACTIVE_VAULT_JOIN}
+      WHERE l.state = 'active'
+    `).get().count);
+    const categories = database.prepare(`
+      SELECT l.category_snapshot AS value, COUNT(*) AS count
+      ${ACTIVE_VAULT_JOIN}
+      WHERE l.state = 'active'
+      GROUP BY l.category_snapshot COLLATE NOCASE
+      ORDER BY count DESC,l.category_snapshot COLLATE NOCASE ASC
+    `).all().map((row) => Object.freeze({ value: row.value, count: Number(row.count) }));
+    const currencies = database.prepare(`
+      SELECT l.currency AS value, COUNT(*) AS count
+      ${ACTIVE_VAULT_JOIN}
+      WHERE l.state = 'active'
+      GROUP BY l.currency
+      ORDER BY l.currency ASC
+    `).all().map((row) => Object.freeze({ value: row.value, count: Number(row.count) }));
+    const fulfillmentMethods = database.prepare(`
+      SELECT l.fulfillment_method AS value, COUNT(*) AS count
+      ${ACTIVE_VAULT_JOIN}
+      WHERE l.state = 'active'
+      GROUP BY l.fulfillment_method
+      ORDER BY l.fulfillment_method ASC
+    `).all().map((row) => Object.freeze({ value: row.value, count: Number(row.count) }));
+    return Object.freeze({
+      totalActiveListings: total,
+      categories: Object.freeze(categories),
+      currencies: Object.freeze(currencies),
+      fulfillmentMethods: Object.freeze(fulfillmentMethods)
+    });
   }
 
   function findActiveById(id) {
     return mapListing(database.prepare(`
       SELECT l.*
-      FROM marketplace_listings l
-      INNER JOIN vault_treasures t
-        ON t.id = l.treasure_id
-       AND t.owner_account_id = l.seller_account_id
-       AND t.archived_at IS NULL
-       AND t.quantity >= l.quantity
+      ${ACTIVE_VAULT_JOIN}
       WHERE l.id = ? AND l.state = 'active'
     `).get(id));
   }
@@ -306,6 +392,7 @@ export function createMarketplaceRepository({ vaultStore } = {}) {
     findActiveById,
     listForSeller,
     listActive,
+    activeFacets,
     listEvents
   });
 }
