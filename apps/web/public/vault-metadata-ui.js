@@ -26,7 +26,7 @@ function createFilterControls() {
   yearInput.min = "1";
   yearInput.max = "9999";
   yearInput.inputMode = "numeric";
-  yearInput.placeholder = "Any year";
+  yearInput.setAttribute("aria-label", "Filter by exact year");
   yearLabel.append(yearCaption, yearInput);
 
   const tagLabel = document.createElement("label");
@@ -70,7 +70,7 @@ function createEditorControls() {
   yearInput.min = "1";
   yearInput.max = "9999";
   yearInput.inputMode = "numeric";
-  yearInput.placeholder = "1999";
+  yearInput.setAttribute("aria-label", "Treasure year");
   yearLabel.append(yearInput);
 
   const tagsLabel = document.createElement("label");
@@ -79,7 +79,7 @@ function createEditorControls() {
   const tagsInput = document.createElement("input");
   tagsInput.id = "treasure-tags";
   tagsInput.maxLength = 2440;
-  tagsInput.placeholder = "rookie, signed, favorite, display case";
+  tagsInput.setAttribute("aria-label", "Collector tags separated by commas");
   tagsInput.setAttribute("aria-describedby", "treasure-tags-help");
   const help = document.createElement("small");
   help.id = "treasure-tags-help";
