@@ -32,7 +32,9 @@
 
 .portfolio-summary-card,
 .portfolio-currency-block,
-.portfolio-contribution-row {
+.portfolio-contribution-row,
+.portfolio-history-card,
+.portfolio-keeper-explanation {
   border: 1px solid rgba(59, 46, 25, 0.16);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.72);
@@ -49,7 +51,8 @@
 .portfolio-summary-card > small,
 .portfolio-currency-head small,
 .portfolio-group-copy small,
-.portfolio-contribution-copy small {
+.portfolio-contribution-copy small,
+.portfolio-history-card-head small {
   color: var(--muted, #6b655b);
 }
 
@@ -149,13 +152,167 @@
   background: rgba(177, 138, 48, 0.08);
 }
 
-.portfolio-exclusion-details summary {
+.portfolio-exclusion-details summary,
+.portfolio-history-details summary {
   cursor: pointer;
   font-weight: 700;
 }
 
 .portfolio-exclusion-details ul {
   margin-bottom: 0;
+}
+
+.portfolio-history-section {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(59, 46, 25, 0.14);
+}
+
+.portfolio-history-heading,
+.portfolio-history-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.portfolio-history-heading h2,
+.portfolio-history-card-head h3 {
+  margin: 0.15rem 0;
+}
+
+.portfolio-history-ranges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+.portfolio-range-button[aria-pressed="true"] {
+  border-color: rgba(136, 101, 24, 0.65);
+  box-shadow: inset 0 0 0 1px rgba(136, 101, 24, 0.3);
+  font-weight: 800;
+}
+
+.portfolio-history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.portfolio-history-card {
+  min-width: 0;
+  padding: 1rem;
+}
+
+.portfolio-history-delta {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  background: rgba(177, 138, 48, 0.1);
+  font-variant-numeric: tabular-nums;
+}
+
+.portfolio-history-delta.is-up::before {
+  content: "↗ ";
+}
+
+.portfolio-history-delta.is-down::before {
+  content: "↘ ";
+}
+
+.portfolio-history-delta.is-flat::before {
+  content: "→ ";
+}
+
+.portfolio-history-figure {
+  margin: 0.9rem 0 0;
+}
+
+.portfolio-history-figure svg {
+  display: block;
+  width: 100%;
+  min-height: 180px;
+  overflow: visible;
+  color: #8a691f;
+}
+
+.portfolio-history-axis {
+  stroke: rgba(54, 46, 30, 0.28);
+  stroke-width: 1;
+}
+
+.portfolio-history-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.portfolio-history-point {
+  fill: #fff;
+  stroke: currentColor;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.portfolio-history-label {
+  display: none;
+}
+
+.portfolio-history-date-label {
+  fill: currentColor;
+  font-size: 12px;
+}
+
+.portfolio-history-date-label-end {
+  text-anchor: end;
+}
+
+.portfolio-history-caption {
+  margin-top: 0.5rem;
+  color: var(--muted, #6b655b);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.portfolio-history-details {
+  margin-top: 0.75rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 12px;
+  background: rgba(177, 138, 48, 0.07);
+}
+
+.portfolio-history-point-list,
+.portfolio-history-citations {
+  margin: 0.65rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.portfolio-history-point-list li,
+.portfolio-history-citations li {
+  margin: 0.35rem 0;
+  overflow-wrap: anywhere;
+}
+
+.portfolio-explain-button {
+  margin-top: 1rem;
+}
+
+.portfolio-history-explanation {
+  margin-top: 0.75rem;
+}
+
+.portfolio-keeper-explanation {
+  padding: 1rem;
+}
+
+.portfolio-keeper-copy {
+  margin: 0.4rem 0 0;
+  line-height: 1.62;
 }
 
 @media (max-width: 820px) {
@@ -166,11 +323,30 @@
 
   .portfolio-heading,
   .portfolio-group-row,
-  .portfolio-contribution-row {
+  .portfolio-contribution-row,
+  .portfolio-history-heading,
+  .portfolio-history-card-head {
     align-items: flex-start;
   }
 
-  .portfolio-contribution-row {
+  .portfolio-contribution-row,
+  .portfolio-history-card-head,
+  .portfolio-history-heading {
     flex-direction: column;
+  }
+
+  .portfolio-history-ranges {
+    justify-content: flex-start;
+  }
+
+  .portfolio-history-delta {
+    align-self: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-history-line,
+  .portfolio-history-point {
+    transition: none;
   }
 }
