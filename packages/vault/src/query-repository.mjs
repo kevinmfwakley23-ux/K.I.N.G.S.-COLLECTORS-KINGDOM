@@ -1,3 +1,5 @@
+import { canonicalTagKey, createVaultMetadataRepository } from "./metadata-repository.mjs";
+
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS vault_saved_views (
   id TEXT PRIMARY KEY,
@@ -60,6 +62,8 @@ function mapTreasure(row) {
     manufacturer: row.manufacturer,
     series: row.series,
     variant: row.variant,
+    year: row.metadata_year === null ? null : Number(row.metadata_year),
+    tags: Object.freeze(parseJson(row.metadata_tags_json, []).filter((item) => typeof item === "string")),
     condition: row.condition_label,
     conditionNotes: row.condition_notes,
     quantity: Number(row.quantity),
@@ -88,17 +92,19 @@ function mapView(row) {
 }
 
 const SORT_EXPRESSIONS = Object.freeze({
-  title: "title COLLATE NOCASE",
-  category: "category COLLATE NOCASE",
-  createdAt: "created_at",
-  updatedAt: "updated_at",
-  acquisitionDate: "COALESCE(acquisition_date, '')",
-  purchasePrice: "COALESCE(purchase_price_cents, -1)"
+  title: "t.title COLLATE NOCASE",
+  category: "t.category COLLATE NOCASE",
+  year: "COALESCE(m.year, -1)",
+  createdAt: "t.created_at",
+  updatedAt: "t.updated_at",
+  acquisitionDate: "COALESCE(t.acquisition_date, '')",
+  purchasePrice: "COALESCE(t.purchase_price_cents, -1)"
 });
 
 function cursorSortValue(row, sort) {
   if (sort === "title") return row.title;
   if (sort === "category") return row.category;
+  if (sort === "year") return row.metadata_year === null ? -1 : Number(row.metadata_year);
   if (sort === "createdAt") return row.created_at;
   if (sort === "acquisitionDate") return row.acquisition_date ?? "";
   if (sort === "purchasePrice") return row.purchase_price_cents === null ? -1 : Number(row.purchase_price_cents);
@@ -108,6 +114,7 @@ function cursorSortValue(row, sort) {
 export function createVaultQueryRepository({ vaultStore } = {}) {
   if (!vaultStore?.database) throw new TypeError("Vault store database is required.");
   const database = vaultStore.database;
+  createVaultMetadataRepository({ vaultStore });
   database.exec(SCHEMA);
 
   function createView(view) {
@@ -149,31 +156,53 @@ export function createVaultQueryRepository({ vaultStore } = {}) {
   }
 
   function listTreasurePage(ownerAccountId, filters, { pageSize, cursorKey = null } = {}) {
-    const where = ["owner_account_id = ?"];
+    const where = ["t.owner_account_id = ?"];
     const values = [ownerAccountId];
 
-    if (!filters.includeArchived) where.push("archived_at IS NULL");
+    if (!filters.includeArchived) where.push("t.archived_at IS NULL");
     if (filters.collectionId) {
-      where.push("collection_id = ?");
+      where.push("t.collection_id = ?");
       values.push(filters.collectionId);
     }
     if (filters.locationId) {
-      where.push("location_id = ?");
+      where.push("t.location_id = ?");
       values.push(filters.locationId);
     }
     if (filters.category) {
-      where.push("category = ? COLLATE NOCASE");
+      where.push("t.category = ? COLLATE NOCASE");
       values.push(filters.category);
     }
     if (filters.condition) {
-      where.push("condition_label = ? COLLATE NOCASE");
+      where.push("t.condition_label = ? COLLATE NOCASE");
       values.push(filters.condition);
+    }
+    if (filters.year !== null && filters.year !== undefined) {
+      where.push("m.year = ?");
+      values.push(filters.year);
+    }
+    if (filters.tag) {
+      where.push(`EXISTS (
+        SELECT 1 FROM vault_treasure_tags exact_tag
+        WHERE exact_tag.owner_account_id = t.owner_account_id
+          AND exact_tag.treasure_id = t.id
+          AND exact_tag.tag_key = ?
+      )`);
+      values.push(canonicalTagKey(filters.tag));
     }
     if (filters.query) {
       const tokens = normalizeSearchText(filters.query).split(/\s+/).filter(Boolean);
       for (const token of tokens) {
-        where.push("search_text LIKE ?");
-        values.push(`%${token}%`);
+        where.push(`(
+          t.search_text LIKE ?
+          OR CAST(m.year AS TEXT) LIKE ?
+          OR EXISTS (
+            SELECT 1 FROM vault_treasure_tags search_tag
+            WHERE search_tag.owner_account_id = t.owner_account_id
+              AND search_tag.treasure_id = t.id
+              AND search_tag.tag_key LIKE ?
+          )
+        )`);
+        values.push(`%${token}%`, `%${token}%`, `%${token}%`);
       }
     }
 
@@ -181,14 +210,17 @@ export function createVaultQueryRepository({ vaultStore } = {}) {
     const order = filters.order === "asc" ? "ASC" : "DESC";
     if (cursorKey) {
       const operator = order === "ASC" ? ">" : "<";
-      where.push(`((${sortExpression}) ${operator} ? OR ((${sortExpression}) = ? AND id > ?))`);
+      where.push(`((${sortExpression}) ${operator} ? OR ((${sortExpression}) = ? AND t.id > ?))`);
       values.push(cursorKey.sortValue, cursorKey.sortValue, cursorKey.id);
     }
 
     const rows = database.prepare(`
-      SELECT * FROM vault_treasures
+      SELECT t.*, m.year AS metadata_year, m.tags_json AS metadata_tags_json
+      FROM vault_treasures t
+      LEFT JOIN vault_treasure_metadata m
+        ON m.owner_account_id = t.owner_account_id AND m.treasure_id = t.id
       WHERE ${where.join(" AND ")}
-      ORDER BY ${sortExpression} ${order}, id ASC
+      ORDER BY ${sortExpression} ${order}, t.id ASC
       LIMIT ?
     `).all(...values, pageSize + 1);
 
