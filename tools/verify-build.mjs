@@ -5,6 +5,8 @@ const root = resolve(new URL("..", import.meta.url).pathname);
 const required = [
   "dist/apps/web/server.mjs",
   "dist/apps/web/runtime.mjs",
+  "dist/apps/web/marketplace-server.mjs",
+  "dist/apps/web/marketplace-http.mjs",
   "dist/apps/web/catalog-http.mjs",
   "dist/apps/web/grading-analysis-http.mjs",
   "dist/apps/web/grading-reference-http.mjs",
@@ -13,7 +15,6 @@ const required = [
   "dist/apps/web/vault-media-http.mjs",
   "dist/apps/web/vault-provenance-http.mjs",
   "dist/apps/web/vault-valuation-http.mjs",
-  "dist/apps/web/vault-portfolio-history-http.mjs",
   "dist/apps/web/vault-report-http.mjs",
   "dist/apps/web/vault-report-html.mjs",
   "dist/apps/web/vault-query-http.mjs",
@@ -27,6 +28,9 @@ const required = [
   "dist/apps/web/public/room.js",
   "dist/apps/web/public/keeper.js",
   "dist/apps/web/public/voice.js",
+  "dist/apps/web/public/marketplace.html",
+  "dist/apps/web/public/marketplace.js",
+  "dist/apps/web/public/marketplace.css",
   "dist/apps/web/public/vault.html",
   "dist/apps/web/public/vault.js",
   "dist/apps/web/public/vault-bootstrap.js",
@@ -92,6 +96,9 @@ const required = [
   "dist/packages/identity/src/service.mjs",
   "dist/packages/kings-ai/src/client.mjs",
   "dist/packages/great-hall/src/service.mjs",
+  "dist/packages/marketplace/src/repository.mjs",
+  "dist/packages/marketplace/src/service.mjs",
+  "dist/packages/marketplace/src/great-hall-adapter.mjs",
   "dist/packages/catalog/src/cache.mjs",
   "dist/packages/catalog/src/open-library-provider.mjs",
   "dist/packages/catalog/src/upcitemdb-provider.mjs",
@@ -133,9 +140,6 @@ const required = [
   "dist/packages/vault/src/ebay-browse-valuation-provider.mjs",
   "dist/packages/vault/src/valuation-repository.mjs",
   "dist/packages/vault/src/valuation-service.mjs",
-  "dist/packages/vault/src/portfolio-history-repository.mjs",
-  "dist/packages/vault/src/portfolio-history-service.mjs",
-  "dist/packages/vault/src/portfolio-rollup.mjs",
   "dist/packages/vault/src/query-repository.mjs",
   "dist/packages/vault/src/query-service.mjs",
   "dist/packages/vault/src/reorganization-repository.mjs",
@@ -147,4 +151,4 @@ for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
 if (manifest.phase !== "IMP-005-ROYAL-VAULT-PHASE-1") throw new Error("Unexpected build phase in manifest.");
 if (manifest.entrypoint !== "apps/web/runtime.mjs") throw new Error("Production build must use the wired runtime composition entrypoint.");
-console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 including collector-owned insurance-preparation evidence reporting, Year/Tags metadata authority and collector UI, official provider valuation-observation contracts with explicit policy identity, provider evidence integrity/deduplication, evidence-cited Keeper valuation explanations, AI card pre-grading profiles, centering, capture-quality/card-geometry/contour/macro-corner-edge/paired-raking-light surface/color analysis, macro-aware explainable dimension completeness, web-backed autograph visual similarity with authenticated Commons search/proxy, SHA-linked detector coverage, append-only hashed pre-grade persistence, read-only server-derived Kingdom advisory range, deterministic finding identity, normalized defect extent, explainable front/back dimension summaries, append-only finding-review/report service and responsive report/review UI, catalog/cert evidence, provenance, evidence-backed valuation, live advanced-Vault bootstrap, evidence-backed collection portfolio rollups with coverage and separate currencies, saved views, bulk reorganization, transactional import, Royal Intake, scanner, secure media and Kingdom voice output.");
+console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 including collector-owned insurance-preparation evidence reporting, Year/Tags metadata authority and collector UI plus the production-wired Kingdom Street Market fixed-price listing/discovery foundation: Vault-linked seller drafts, explicit publication attestations, immutable offer representation hashes, sanitized public discovery, seller withdrawal without ownership transfer, Great Hall/Keeper availability context, and explicit no-checkout/no-payment/no-settlement boundaries; existing valuation, grading, catalog, provenance, portfolio, saved-view, reorganization, import, intake, scanner, secure-media and voice artifacts remain required.");
