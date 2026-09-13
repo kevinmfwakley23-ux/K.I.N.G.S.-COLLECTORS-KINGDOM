@@ -1,11 +1,14 @@
-export function filterStateFromControls({ search, category, collectionId, locationId, sort } = {}) {
+export function filterStateFromControls({ search, category, collectionId, locationId, year, tag, sort } = {}) {
   const normalizedSort = String(sort || "updatedAt");
+  const normalizedYear = String(year ?? "").trim();
   return Object.freeze({
     query: String(search ?? "").trim() || null,
     category: String(category ?? "").trim() || null,
     collectionId: String(collectionId ?? "").trim() || null,
     locationId: String(locationId ?? "").trim() || null,
     condition: null,
+    year: normalizedYear ? Number(normalizedYear) : null,
+    tag: String(tag ?? "").trim() || null,
     sort: normalizedSort,
     order: normalizedSort === "title" || normalizedSort === "category" ? "asc" : "desc",
     includeArchived: false
@@ -20,6 +23,8 @@ export function savedViewSummary(view, { collectionNames = new Map(), locationNa
   if (filters.collectionId) parts.push(`Collection: ${collectionNames.get(filters.collectionId) ?? "saved collection"}`);
   if (filters.locationId) parts.push(`Location: ${locationNames.get(filters.locationId) ?? "saved location"}`);
   if (filters.condition) parts.push(`Condition: ${filters.condition}`);
+  if (filters.year !== null && filters.year !== undefined) parts.push(`Year: ${filters.year}`);
+  if (filters.tag) parts.push(`Tag: ${filters.tag}`);
   parts.push(`Sort: ${filters.sort ?? "updatedAt"} ${filters.order ?? "desc"}`);
   if (filters.includeArchived) parts.push("Includes archived records");
   return parts.join(" • ");

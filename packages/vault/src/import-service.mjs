@@ -1,4 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
+import { createVaultMetadataRepository } from "./metadata-repository.mjs";
+import { createVaultMetadataService } from "./metadata-service.mjs";
 import { VaultError } from "./service.mjs";
 
 const PREVIEW_TTL_MS = 2 * 60 * 60 * 1000;
@@ -73,6 +75,8 @@ function searchText(treasure) {
     treasure.manufacturer,
     treasure.series,
     treasure.variant,
+    treasure.year,
+    ...(Array.isArray(treasure.tags) ? treasure.tags : []),
     treasure.condition,
     treasure.conditionNotes,
     treasure.notes,
@@ -238,6 +242,9 @@ export function createVaultImportService({ vaultService, vaultStore, importRepos
   if (!vaultStore) throw new TypeError("Vault import service requires the Vault store.");
   if (!importRepository) throw new TypeError("Vault import service requires an import repository.");
 
+  const metadataRepository = createVaultMetadataRepository({ vaultStore });
+  const validationService = createVaultMetadataService({ vaultService, vaultStore, metadataRepository, now });
+
   function expireIfNeeded(ownerAccountId, batch) {
     const currentTime = now();
     if (!batch || !isExpired(batch, currentTime)) return batch;
@@ -253,7 +260,7 @@ export function createVaultImportService({ vaultService, vaultStore, importRepos
     }
 
     const sourceLabel = cleanSourceLabel(input.sourceLabel);
-    const validation = vaultService.previewImport(collector, { records: input.records });
+    const validation = validationService.previewImport(collector, { records: input.records });
     const acceptedByIndex = new Map(validation.accepted.map((entry) => [entry.index, entry.treasure]));
     const rejectedByIndex = new Map(validation.rejected.map((entry) => [entry.index, { code: entry.code, message: entry.message }]));
     const rows = [];
@@ -342,7 +349,7 @@ export function createVaultImportService({ vaultService, vaultStore, importRepos
 
     const selectedRows = rows.filter((row) => actions.get(row.index) === "import");
     if (selectedRows.length) {
-      const revalidation = vaultService.previewImport(collector, { records: selectedRows.map((row) => row.normalized) });
+      const revalidation = validationService.previewImport(collector, { records: selectedRows.map((row) => row.normalized) });
       if (revalidation.rejected.length) {
         throw new VaultError("import_preview_stale", "One or more selected rows no longer pass Vault validation. Create a fresh preview.", 409, revalidation.rejected);
       }
@@ -380,7 +387,9 @@ export function createVaultImportService({ vaultService, vaultStore, importRepos
         sourceBatchId: id,
         sourceLabel: batch.sourceLabel,
         sourceRowIndex: treasure.importRowIndex,
-        payloadHash: batch.payloadHash
+        payloadHash: batch.payloadHash,
+        year: treasure.year ?? null,
+        tags: Array.isArray(treasure.tags) ? treasure.tags : []
       },
       createdAt: timestamp
     }));
