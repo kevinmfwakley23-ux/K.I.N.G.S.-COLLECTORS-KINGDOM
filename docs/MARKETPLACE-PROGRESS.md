@@ -1,150 +1,207 @@
 # K.I.N.G.S. Collector's Kingdom — Marketplace Progress
 
-This file is the parallel recovery ledger for the Kingdom Street Market workstream. Marketplace work was isolated while a second co-chief engineer completed Royal Vault Phase 1 metadata so the two workstreams could advance without silently overwriting each other.
+This is the durable recovery ledger for the Kingdom Street Market. Read it before Marketplace implementation and update it after every major verified production batch.
 
-## Coordination boundary
+## Current checkpoint
 
 **Date:** 2026-09-13 (America/Denver)  
-**Branch:** `marketplace/foundation-listings`  
-**Pull request:** #31 — `Marketplace: Vault-linked listing foundation`  
-**Original base production commit:** `dc9d5a3b180df6fa5c04c115a53a5b105b48b8a4` (PR #30 merged)  
-**Concurrent co-chief work:** PR #32 — Royal Vault Year/Tags metadata — **MERGED** to `main` at `62d1e56b2d13c74d3a1d71da1dcb5a8f630d799b`  
-**File-overlap audit:** PR #32 changed Vault metadata/query/import/UI files; PR #31 does not own those files.
+**Production `main`:** `08a743abda8aaee14e3f7a852069964df119c7f2`  
+**Integrated production slice:** PR #35 — private saved searches + bounded query-bound Marketplace pagination  
+**Active pull request:** #36 — private watchlists + seller storefronts  
+**Branch:** `marketplace/watchlist-seller-storefront`  
+**Verified implementation head:** `2224ed115cff86fa0513b2a56ff8932fcd8fd651`  
+**Kingdom Quality Gates:** #737 / run `34762428847` — **PASS**, including the production dependency audit  
+**Closeout state:** documentation is being advanced; the documented head must pass the complete gate again before merge.
 
-The Marketplace workstream intentionally does not rewrite the shared core `apps/web/server.mjs` or the Vault schema/store. Marketplace persistence creates its own tables through a Marketplace repository using the existing Vault SQLite connection. After PR #32 merged, this PR was deliberately advanced only through this coordination-ledger commit so GitHub would regenerate and verify the PR merge result against the new production `main` before integration.
+## Integrated Marketplace production foundation
 
-## Current verified checkpoint
+### Vault-linked fixed-price listings
 
-**Marketplace hardened implementation head:** `6686fc47eeadf96a6afc9af50acfca5077fbfa34`  
-**Kingdom Quality Gates:** #699 — **PASS** before PR #32 merged
+The production Marketplace already provides:
 
-The #699 gate ran the repository's canonical `npm run verify` chain: lint, type-contract verification, the complete Node test suite including Marketplace service/HTTP/integrity/Vault-support/UI tests, production build, production artifact verification, and the workflow's production dependency audit.
+- authenticated private drafts linked to owner-scoped permanent Vault treasures;
+- fixed-price offers in integer minor currency units with explicit currency;
+- quantity validation against current Vault possession;
+- one open draft/active listing per permanent treasure UUID;
+- explicit seller possession, right-to-sell and representation-accuracy attestations;
+- quantity revalidation immediately before publication;
+- frozen sanitized public representation plus SHA-256 integrity digest;
+- fail-closed integrity verification on public reads;
+- active-offer suppression when the source Vault treasure is archived or current quantity no longer supports the offer;
+- private seller listing/history workflows;
+- seller withdrawal as append-only Marketplace history;
+- no automatic Vault ownership transfer.
 
-**Post-PR-32 reconciliation:** the current documentation-only PR #31 head exists to force a fresh merge-result Quality Gate against `main` containing the merged Year/Tags work. Do not merge PR #31 until that fresh gate passes.
+Public offers do not expose seller account IDs, permanent Vault treasure IDs, acquisition cost, private owner notes, storage locations or other private Vault fields.
 
-## Implemented in this slice
+### Searchable public discovery
 
-### Marketplace domain and persistence
+Integrated public discovery provides:
 
-- `packages/marketplace/src/repository.mjs`
-- `packages/marketplace/src/service.mjs`
+- accent-insensitive multi-field search with AND term semantics;
+- category, currency and fulfillment filters;
+- currency-scoped min/max price filtering and price ordering;
+- deterministic newest/title ordering;
+- shareable responsive filter state;
+- live active facets;
+- current Vault support checks and published-representation integrity checks.
 
-Production behavior:
+### Private saved searches + bounded pagination — PR #35
 
-- owner-scoped Vault treasure is required before a listing draft can exist;
-- fixed-price is the only live sale format in this slice;
-- seller price uses integer minor currency units and explicit three-letter currency;
-- seller-selected quantity cannot exceed current Vault quantity;
-- only one open draft/active listing can exist for the same permanent Vault treasure UUID;
-- draft creation is private;
-- publishing requires explicit seller confirmations for physical possession, right to sell, and representation accuracy;
-- quantity is revalidated immediately before publication;
-- publication creates a frozen JSON representation and SHA-256 digest;
-- active offers cannot be edited in place;
-- withdrawal is append-only Marketplace history and explicitly does not transfer ownership;
-- public active-listing queries join back to the current Vault state and suppress offers whose treasure is archived or whose current quantity no longer covers the offered quantity;
-- public responses never expose seller account ID, permanent Vault treasure ID, acquisition cost, private owner notes, or storage location;
-- stored published representation integrity is verified on read and fails closed if its SHA-256 does not match.
+Production `main` `08a743abda8aaee14e3f7a852069964df119c7f2` includes:
 
-### Production HTTP/runtime integration
+- bounded deterministic cursor pagination for public active-offer discovery;
+- cursors cryptographically/query-bound to the active filter/sort definition so they cannot be replayed against changed query state;
+- private owner-scoped saved searches;
+- saved definitions rather than frozen result snapshots;
+- rerun against current supported Marketplace state;
+- private authenticated create/list/delete workflows;
+- explicit `notificationsAvailable: false` boundary until a real delivery service exists;
+- production HTTP/UI/artifact verification.
 
+A saved search is discovery state only. It is not a reservation, order, price lock or purchase commitment.
+
+## PR #36 — Private watchlists + explicit seller storefronts
+
+### Research
+
+`docs/research/2026-09-13-MARKETPLACE-WATCHLIST-SELLER-STOREFRONT.md`
+
+Official Marketplace patterns reviewed include eBay Watchlist/Saved Seller behavior, TCGplayer Seller Storefront and transaction-backed feedback, and Whatnot's explicit public seller profile surface.
+
+Kingdom decisions:
+
+- buyer watch intent stays private and separate from transaction intent;
+- storefront publication is explicit seller opt-in rather than an automatic exposure of account identity;
+- public inventory remains derived from current supported active listings;
+- reputation/verification cannot exist without evidence-producing transaction and delivery systems.
+
+### Private watchlist
+
+Implemented behavior:
+
+- authenticated and owner-isolated;
+- idempotent add;
+- bounded to 300 entries;
+- cannot watch the collector's own listing;
+- active watches resolve through the existing sanitized public-listing integrity boundary;
+- withdrawn/unsupported offers become an unavailable tombstone instead of republishing stale/private listing content;
+- representation-integrity failures still fail closed and are never downgraded into an ordinary tombstone;
+- removal is private and authenticated;
+- `notificationsAvailable: false`;
+- `purchaseCommitmentCreated: false`;
+- no public watcher counts or seller notification in this slice.
+
+### Explicit opt-in seller storefront
+
+Implemented behavior:
+
+- no seller storefront is auto-created by account registration or listing publication;
+- initial profile creation requires explicit seller-selected public ID and shop name;
+- profile remains private unless `published: true` is explicitly selected;
+- public ID is 3–40 lowercase letters/numbers/single hyphens, case-insensitively unique, reserved-route safe and immutable after creation;
+- optional bio is bounded;
+- seller may unpublish without withdrawing individual Marketplace listings;
+- public storefront inventory is recomputed from current Vault-supported active Marketplace offers;
+- public listing representations continue through the existing sanitized/hash-verified Marketplace boundary;
+- public seller payloads expose seller-selected storefront data only;
+- no account ID, email, Vault treasure UUID, acquisition cost, storage location or private collection data is published.
+
+Trust state is explicit:
+
+- identity verification available: **false**;
+- verified-purchase feedback available: **false**;
+- seller rating: **none**;
+- verified-purchase feedback count: **0**;
+- transaction checkout available: **false**.
+
+The storefront UI says these capabilities are unavailable rather than manufacturing badges, stars, sales counts or buyer-protection claims.
+
+### Production wiring
+
+Core implementation:
+
+- `packages/marketplace/src/engagement-repository.mjs`
+- `packages/marketplace/src/engagement-service.mjs`
 - `apps/web/marketplace-http.mjs`
-- `apps/web/marketplace-server.mjs`
 - `apps/web/runtime.mjs`
+- `apps/web/public/marketplace-engagement-ui.js`
+- `apps/web/public/marketplace-engagement.css`
+- `apps/web/public/marketplace-seller.html`
+- `apps/web/public/marketplace-storefront.html`
+- `apps/web/public/marketplace-seller.js`
 
-The production runtime constructs the Marketplace repository/service and uses a Marketplace-aware wrapper around the existing verified Kingdom server. Only `/api/marketplace/*` is intercepted; all existing auth, Vault, grading, catalog, Keeper, health and static routes continue through the original server handler.
+Public storefront compatibility currently supports the canonical `/marketplace-storefront.html?store=<public-id>` link and the alternate `/marketplace-seller.html?id=<public-id>` surface through the same live API/runtime.
 
-Marketplace API responses are `no-store` so a withdrawal or unsupported Vault quantity is not obscured by a short public cache.
+### Verification
 
-Live Marketplace routes include:
+Focused coverage includes:
 
-- `GET /api/marketplace/listings` — public sanitized active offers;
-- `GET /api/marketplace/listings/:id` — one public active offer;
-- `POST /api/marketplace/listings` — authenticated private draft creation;
-- `PATCH /api/marketplace/listings/:id` — authenticated draft-only editing;
-- `POST /api/marketplace/listings/:id/publish` — authenticated attested publication;
-- `POST /api/marketplace/listings/:id/withdraw` — authenticated withdrawal;
-- `GET /api/marketplace/my-listings` — authenticated seller view;
-- `GET /api/marketplace/my-listings/:id` — authenticated seller detail with append-only listing events.
+- `tests/marketplace-engagement.test.mjs` — explicit publication, public-ID constraints, current Vault-backed inventory, owner-isolated/idempotent watchlists, own-listing rejection, unavailable tombstones and integrity fail-closed behavior;
+- `tests/marketplace-engagement-http.test.mjs` — real identity/Vault/listing/storefront/watchlist HTTP paths;
+- `tests/marketplace-engagement-ui.test.mjs` — watch/storefront/trust UI contracts and responsive public seller surfaces;
+- `tools/typecheck.mjs` — engagement repository/service contracts;
+- `tools/verify-marketplace-engagement.mjs` — production artifact/runtime/truth-boundary verification.
 
-### Great Hall / Keeper integration
+Implementation head `2224ed115cff86fa0513b2a56ff8932fcd8fd651` passed Kingdom Quality Gates #737, including exact dependency install, lint, type contracts, the complete test suite, production build/artifact verifiers and the production dependency audit.
 
-- `packages/marketplace/src/great-hall-adapter.mjs`
+## Intentionally unavailable
 
-The adapter marks the outdoor Kingdom Street Market available, links it to `/marketplace.html`, adds a Great Hall quick action and real public-listing highlights, and amends Keeper context with current Marketplace availability while preserving the core Great Hall implementation unchanged.
+Do not describe the following as live:
 
-### Collector-facing Street Market
-
-- `apps/web/public/marketplace.html`
-- `apps/web/public/marketplace.js`
-- `apps/web/public/marketplace.css`
-
-The live page provides:
-
-- public active-offer discovery;
-- publication hash visibility;
-- signed-in My Stall workflow;
-- active Vault treasure selection;
-- private draft creation;
-- price/currency/quantity/fulfillment/description entry;
-- three explicit publish attestations;
-- publishing and withdrawal;
-- mobile layout, keyboard focus visibility and reduced-motion handling;
-- direct language stating that checkout/payment/settlement/buyer protection/ownership transfer are not yet live.
-
-No fake Buy, Checkout or Pay control is presented.
-
-## Research record
-
-`docs/research/2026-09-13-MARKETPLACE-LISTING-FOUNDATION.md`
-
-Current official research reviewed:
-
-- eBay Inventory API — inventory item and offer separation;
-- TCGplayer Marketplace Seller Agreement — physical possession/right-to-sell/accurate-description obligations;
-- Whatnot Trust Center and Buyer Protection — representation transparency, seller verification and post-purchase protection patterns.
-
-No competitor source code or proprietary UI was copied.
-
-## Verification coverage
-
-- `tests/marketplace.test.mjs` — owner scope, duplicate prevention, quantity validation, attestations, immutable/sanitized representation, withdrawal and ownership non-transfer;
-- `tests/marketplace-integrity.test.mjs` — direct SQLite tamper detection/fail-closed read;
-- `tests/marketplace-vault-support.test.mjs` — stale quantity/archive suppression from public discovery;
-- `tests/marketplace-server.test.mjs` — real account/auth + Vault + Marketplace HTTP path through the production wrapper;
-- `tests/marketplace-ui.test.mjs` — live Street Market artifact/accessibility/truth-boundary contract;
-- `tools/typecheck.mjs` — Marketplace module contracts required;
-- `tools/verify-build.mjs` — Marketplace server/domain/UI files required in `dist`.
-
-## Intentionally unfinished
-
-Do not describe the following as available:
-
-- checkout or carts;
+- cart or checkout;
 - payment authorization/capture;
 - escrow or settlement;
 - seller payouts;
-- seller identity/KYC approval;
+- KYC/identity approval;
+- verified seller badges;
+- verified-purchase feedback or seller ratings;
+- sales-count reputation;
 - tax calculation/reporting;
 - order lifecycle;
 - shipping labels/tracking;
 - buyer protection;
-- returns, refunds or disputes;
+- returns/refunds/disputes;
 - fraud/risk scoring;
+- watchlist or saved-search notifications;
 - offers/counteroffers;
 - auctions;
 - trades;
-- bundles;
-- public seller profiles/reputation;
-- Marketplace-specific public media publishing;
-- automatic `sold` provenance events;
+- automatic sold provenance;
 - Marketplace-driven Vault ownership transfer;
 - external marketplace cross-posting.
 
-## Next Marketplace target
+## Exact recovery instructions
 
-After this listing foundation is integrated against the latest `main`, continue the already isolated Marketplace discovery stack, then build **private saved searches + bounded cursor pagination** before transaction code. Search definitions may be saved and rerun against current market state, but notifications must remain explicitly unavailable until a real delivery service exists.
+If work is interrupted now:
 
-The later **Safeguarded Transaction Foundation** must cover seller eligibility/KYC boundaries, order state machine and idempotency, payment-provider/webhook authority, taxes, shipment evidence, cancellation/refund rules, disputes/buyer protection, fraud controls, atomic settlement, and the exact condition under which a completed transaction may append provenance and transfer authoritative Vault ownership.
+1. Resume PR #36 / `marketplace/watchlist-seller-storefront`.
+2. Do not rebuild the engagement implementation unless CI/review exposes a real defect.
+3. Confirm README, `docs/MISSION-PROGRESS.md` and this ledger reflect PR #35 as integrated and PR #36 as active.
+4. Run the complete Kingdom Quality Gate on the final documented PR #36 head.
+5. Merge only if the entire gate and production dependency audit pass.
+6. Confirm `main` contains listing/discovery, bounded pagination, private saved searches, private watchlists and explicitly published seller storefronts.
+7. Begin fresh research for the Safeguarded Transaction Foundation before exposing any Buy/Checkout/Pay control.
 
-The guiding rule is: a Marketplace click is never a sale. Ownership changes only after an independently verified transaction state authorizes it.
+## Next Marketplace target — Safeguarded Transaction Foundation
+
+This must be built as a separate governed authority rather than bolted onto listing/watch state.
+
+Research and design must establish:
+
+- seller eligibility and KYC/provider boundaries;
+- authoritative order state machine;
+- idempotent order creation and mutation;
+- buyer/seller/listing snapshot authority;
+- payment-provider intent and webhook authority;
+- amount/currency/tax/shipping truth boundaries;
+- inventory reservation and release rules;
+- cancellation and refund state;
+- shipment/delivery evidence;
+- disputes/buyer protection;
+- fraud/risk controls;
+- settlement/payout authority;
+- append-only audit/provenance links;
+- the exact terminal verified state that may authorize a permanent Vault ownership transfer.
+
+Until that foundation is real and verified, a click, listing, saved search, watch or storefront view is **never a sale** and must never mutate authoritative Vault ownership.
