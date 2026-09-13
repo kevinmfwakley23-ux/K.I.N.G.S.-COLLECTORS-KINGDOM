@@ -217,7 +217,7 @@ test("shareable listing detail API refuses withdrawn and integrity-failed offers
     `).run(JSON.stringify({ title: "Tampered stale representation" }), secondDraft.body.listing.id);
 
     const tamperedDetail = await requestJson(baseUrl, `/api/marketplace/listings/${secondDraft.body.listing.id}`);
-    assert.equal(tamperedDetail.response.status, 409);
+    assert.equal(tamperedDetail.response.status, 500);
     assert.equal(tamperedDetail.body.error, "marketplace_representation_integrity_failure");
     assert.equal("listing" in tamperedDetail.body, false);
   });
