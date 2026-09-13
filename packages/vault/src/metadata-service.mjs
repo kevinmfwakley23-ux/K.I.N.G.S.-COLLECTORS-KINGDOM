@@ -170,6 +170,23 @@ export function createVaultMetadataService({
     });
   }
 
+  function previewImport(identity, input = {}) {
+    const collector = requireCollector(identity);
+    const preview = vaultService.previewImport(collector, input);
+    const accepted = preview.accepted.map((entry) => {
+      const source = input.records?.[entry.index] ?? {};
+      return Object.freeze({
+        ...entry,
+        treasure: Object.freeze({
+          ...entry.treasure,
+          year: cleanTreasureYear(source.year),
+          tags: cleanTreasureTags(source.tags)
+        })
+      });
+    });
+    return Object.freeze({ ...preview, accepted: Object.freeze(accepted) });
+  }
+
   function snapshot(identity) {
     const collector = requireCollector(identity);
     const snapshot = vaultService.snapshot(collector);
@@ -205,11 +222,14 @@ export function createVaultMetadataService({
       tags: next.tags,
       updatedAt: now().toISOString()
     });
-    audit(collector.id, treasureId, "treasure.metadata_updated", {
-      previous: { year: existing.year, tags: existing.tags },
-      current: { year: saved.year, tags: saved.tags },
-      title: treasure.title
-    });
+    const changed = next.year !== existing.year || JSON.stringify(next.tags) !== JSON.stringify(existing.tags);
+    if (changed) {
+      audit(collector.id, treasureId, "treasure.metadata_updated", {
+        previous: { year: existing.year, tags: existing.tags },
+        current: { year: saved.year, tags: saved.tags },
+        title: treasure.title
+      });
+    }
     const { ownerAccountId: _ownerAccountId, ...publicMetadata } = saved;
     return Object.freeze(publicMetadata);
   }
@@ -227,6 +247,7 @@ export function createVaultMetadataService({
     updateTreasure,
     archiveTreasure,
     exportData,
+    previewImport,
     snapshot,
     getMetadata,
     setMetadata,
