@@ -17,14 +17,16 @@
 }
 
 .marketplace-search-field,
-.marketplace-refine-grid label {
+.marketplace-refine-grid label,
+.marketplace-save-search-form label {
   display: grid;
   gap: .35rem;
   font-weight: 750;
 }
 
 .marketplace-discovery input,
-.marketplace-discovery select {
+.marketplace-discovery select,
+.marketplace-save-search-form input {
   width: 100%;
   min-height: 2.75rem;
   padding: .65rem .75rem;
@@ -60,6 +62,74 @@
   margin: 1rem 0 .7rem;
 }
 
+.marketplace-saved-searches {
+  display: grid;
+  gap: .8rem;
+  margin: 0 0 1rem;
+  padding: 1rem;
+  border: 1px solid var(--market-border);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgba(255,255,255,.8), rgba(243,238,226,.72));
+}
+
+.marketplace-saved-search-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.marketplace-saved-search-heading h3 {
+  margin: .1rem 0 0;
+}
+
+.marketplace-save-search-form {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: end;
+  gap: .7rem;
+}
+
+.marketplace-saved-search-list {
+  display: grid;
+  gap: .6rem;
+}
+
+.marketplace-saved-search-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .75rem;
+  background: rgba(255,255,255,.72);
+  border: 1px solid rgba(98,78,39,.18);
+  border-radius: .7rem;
+}
+
+.marketplace-saved-search-card > div:first-child {
+  display: grid;
+  gap: .15rem;
+  min-width: 0;
+}
+
+.marketplace-saved-search-card small {
+  color: var(--market-muted);
+  overflow-wrap: anywhere;
+}
+
+.marketplace-saved-search-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+  justify-content: end;
+}
+
+.marketplace-load-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
 .marketplace-active-filters {
   display: flex;
   flex-wrap: wrap;
@@ -87,6 +157,12 @@
 
 @media (max-width: 620px) {
   .marketplace-discovery-primary,
-  .marketplace-refine-grid { grid-template-columns: 1fr; }
-  .marketplace-discovery-primary button { width: 100%; }
+  .marketplace-refine-grid,
+  .marketplace-save-search-form { grid-template-columns: 1fr; }
+  .marketplace-discovery-primary button,
+  .marketplace-save-search-form button { width: 100%; }
+  .marketplace-saved-search-heading,
+  .marketplace-saved-search-card { align-items: stretch; flex-direction: column; }
+  .marketplace-saved-search-actions { justify-content: stretch; }
+  .marketplace-saved-search-actions button { flex: 1 1 auto; }
 }
