@@ -48,7 +48,7 @@ async function readJson(request) {
 }
 
 function valuationRoute(pathname) {
-  const match = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/valuation(?:\/(evidence))?$/);
+  const match = pathname.match(/^\/api\/vault\/treasures\/([^/]+)\/valuation(?:\/(evidence|provider-observations|explanation))?$/);
   if (!match) return null;
   try {
     return { treasureId: decodeURIComponent(match[1]), action: match[2] ?? null };
@@ -81,6 +81,14 @@ export async function handleVaultValuationRoute({
     }, method, securityHeaders);
   }
 
+  if (route.action === "explanation" && (method === "GET" || method === "HEAD")) {
+    return sendJson(response, 200, {
+      explanation: vaultValuationService.explain(identity, route.treasureId, {
+        bucketKey: requestUrl.searchParams.get("bucketKey") ?? undefined
+      })
+    }, method, securityHeaders);
+  }
+
   if (route.action === "evidence" && method === "POST") {
     const body = await readJson(request);
     const evidence = vaultValuationService.append(identity, route.treasureId, {
@@ -101,6 +109,19 @@ export async function handleVaultValuationRoute({
     return sendJson(response, 201, {
       evidence,
       snapshot: vaultValuationService.snapshot(identity, route.treasureId)
+    }, method, securityHeaders);
+  }
+
+  if (route.action === "provider-observations" && method === "POST") {
+    const body = await readJson(request);
+    const refresh = await vaultValuationService.refreshProviderObservations(identity, route.treasureId, {
+      providerId: body.providerId,
+      limit: body.limit
+    });
+    return sendJson(response, 200, {
+      refresh,
+      snapshot: vaultValuationService.snapshot(identity, route.treasureId),
+      evidence: vaultValuationService.list(identity, route.treasureId)
     }, method, securityHeaders);
   }
 
