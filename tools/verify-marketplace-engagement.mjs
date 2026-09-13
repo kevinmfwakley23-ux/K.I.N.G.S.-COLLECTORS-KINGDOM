@@ -55,11 +55,14 @@ for (const marker of ["marketplace_seller_profiles", "marketplace_watchlist", "i
 for (const marker of ["isPublic", "identityVerificationAvailable: false", "verifiedPurchaseFeedbackAvailable: false", "purchaseCommitmentCreated: false"]) {
   if (!service.includes(marker)) throw new Error(`Marketplace engagement service is missing ${marker}.`);
 }
-for (const marker of ["seller-profile", "watchlist", "sellers/"]) {
+for (const marker of ["seller-profile", "seller-listings", "watchlist"]) {
   if (!http.includes(marker)) throw new Error(`Marketplace HTTP boundary is missing ${marker}.`);
 }
 if (!runtime.includes("createMarketplaceEngagementService") || !runtime.includes("createMarketplaceEngagementRepository")) {
   throw new Error("Production runtime must wire Marketplace watchlists and seller storefronts.");
+}
+if (!runtime.includes("marketplaceVerifiedPurchaseFeedbackAvailable: false") || !runtime.includes("marketplaceWatchlistNotificationsAvailable: false")) {
+  throw new Error("Production runtime must keep reputation and watchlist notification capabilities explicitly unavailable.");
 }
 
 console.log("Marketplace private watchlist and explicit opt-in seller storefront production artifact verification passed.");
