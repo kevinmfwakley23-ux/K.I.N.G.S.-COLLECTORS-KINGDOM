@@ -103,6 +103,23 @@ export function createVaultValuationUi() {
   const estimates = node("div", "valuation-estimates");
   section.append(estimateHeading, estimates);
 
+  const explanationPanel = node("div", "valuation-keeper-explanation");
+  explanationPanel.hidden = true;
+  section.append(explanationPanel);
+
+  const providerHeading = node("div", "valuation-section-heading");
+  providerHeading.append(node("h3", "", "Official market observations"), node("small", "", "Licensed/API-backed sources only"));
+  const providerControls = node("div", "valuation-provider-controls");
+  const providerSelect = document.createElement("select");
+  providerSelect.id = "valuation-provider-select";
+  const providerRefreshButton = node("button", "dark-button", "Refresh official asking listings");
+  providerRefreshButton.type = "button";
+  const providerStatus = node("span", "form-status valuation-provider-status");
+  providerStatus.setAttribute("role", "status");
+  providerStatus.setAttribute("aria-live", "polite");
+  providerControls.append(providerSelect, providerRefreshButton, providerStatus);
+  section.append(providerHeading, providerControls);
+
   const entryHeading = node("div", "valuation-section-heading");
   entryHeading.append(node("h3", "", "Record market evidence"), node("small", "", "Collector-recorded • append-only"));
   section.append(entryHeading);
@@ -209,13 +226,75 @@ export function createVaultValuationUi() {
     blank.value = "";
     blank.textContent = "No correction — new evidence";
     correctionSelect.append(blank);
-    for (const item of evidence.filter((entry) => !entry.corrected)) {
+    for (const item of evidence.filter((entry) => !entry.corrected && entry.evidenceClass === "collector-recorded-comparable")) {
       const option = document.createElement("option");
       option.value = item.id;
       option.textContent = `${valuationEvidenceTypeLabel(item.evidenceType)} • ${item.observedDate} • ${formatValuationMoney(item.amountCents, item.currency)} • ${item.sourceName}`;
       correctionSelect.append(option);
     }
     if ([...correctionSelect.options].some((option) => option.value === selected)) correctionSelect.value = selected;
+  }
+
+  function renderProviderControls() {
+    const providers = snapshot?.observationProviders ?? [];
+    const selected = providerSelect.value;
+    providerSelect.replaceChildren();
+    if (!providers.length) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "No licensed provider configured";
+      providerSelect.append(option);
+      providerSelect.disabled = true;
+      providerRefreshButton.disabled = true;
+      providerStatus.textContent = "Automatic market observations stay off until a permitted provider and explicit policy ID are configured. Manual evidence remains available.";
+      return;
+    }
+
+    providerSelect.disabled = false;
+    providerRefreshButton.disabled = false;
+    for (const provider of providers) {
+      const option = document.createElement("option");
+      option.value = provider.id;
+      option.textContent = `${provider.id} • ${provider.observationTypes.join(", ")}`;
+      providerSelect.append(option);
+    }
+    if ([...providerSelect.options].some((option) => option.value === selected)) providerSelect.value = selected;
+    providerStatus.textContent = "Provider observations retain provider record IDs, retrieval time and the reviewed policy identifier. Asking listings never drive estimates.";
+  }
+
+  async function loadExplanation(bucketKey) {
+    if (!activeTreasureId) return;
+    explanationPanel.hidden = false;
+    explanationPanel.replaceChildren(node("strong", "", "The Keeper is tracing the exact valuation evidence…"));
+    try {
+      const query = new URLSearchParams({ bucketKey }).toString();
+      const result = await api(`/api/vault/treasures/${encodeURIComponent(activeTreasureId)}/valuation/explanation?${query}`);
+      const explanation = result.explanation;
+      explanationPanel.replaceChildren(
+        node("strong", "", "Keeper evidence explanation"),
+        node("p", "valuation-keeper-text", explanation.text)
+      );
+      if (explanation.citations?.length) {
+        const list = node("div", "valuation-citation-list");
+        for (const citation of explanation.citations) {
+          const item = node("div", "valuation-citation");
+          item.append(node("code", "", `EV ${citation.evidenceId}`));
+          if (citation.sourceRecordId) item.append(node("code", "", `SRC ${citation.sourceRecordId}`));
+          item.append(node("span", "", `${citation.sourceName} • ${citation.observedDate} • ${formatValuationMoney(citation.amountCents, citation.currency)}`));
+          if (citation.sourceUrl) {
+            const link = node("a", "text-link", "Open source");
+            link.href = citation.sourceUrl;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            item.append(link);
+          }
+          list.append(item);
+        }
+        explanationPanel.append(list);
+      }
+    } catch (error) {
+      explanationPanel.replaceChildren(node("strong", "", "Keeper evidence explanation unavailable"), node("p", "valuation-keeper-text", error.message));
+    }
   }
 
   function renderEstimates() {
@@ -246,6 +325,10 @@ export function createVaultValuationUi() {
       if (bucket.estimateAvailable) {
         card.append(node("p", "valuation-method", `Method: median of up to 20 sold comparables observed within ${bucket.freshnessWindowDays} days. Asking listings do not affect the result.`));
       }
+      const explainButton = node("button", "valuation-explain-button", "Keeper: explain with evidence IDs");
+      explainButton.type = "button";
+      explainButton.addEventListener("click", () => loadExplanation(bucket.key));
+      card.append(explainButton);
       estimates.append(card);
     }
   }
@@ -274,8 +357,13 @@ export function createVaultValuationUi() {
       card.append(context);
       const trust = item.corrected
         ? "Corrected by a later append-only record — excluded from active estimates"
-        : "Collector-recorded comparable • not independently verified";
+        : item.providerOriginated
+          ? `Provider-originated observation • ${item.providerId} • policy ${item.providerPolicyId}`
+          : "Collector-recorded comparable • not independently verified";
       card.append(node("p", `valuation-evidence-trust ${item.corrected ? "is-corrected" : ""}`, trust));
+      card.append(node("p", "valuation-evidence-note valuation-evidence-id", `Evidence ID: ${item.id}`));
+      if (item.providerObservationId) card.append(node("p", "valuation-evidence-note valuation-evidence-id", `Provider record ID: ${item.providerObservationId}`));
+      if (item.retrievedAt) card.append(node("p", "valuation-evidence-note", `Provider retrieved: ${formatRecordedTime(item.retrievedAt)}`));
       if (item.sourceReference) card.append(node("p", "valuation-evidence-note", `Reference: ${item.sourceReference}`));
       if (item.notes) card.append(node("p", "valuation-evidence-note", item.notes));
       if (item.correctsEvidenceId) card.append(node("p", "valuation-correction-note", `Correction of evidence ${item.correctsEvidenceId}`));
@@ -298,7 +386,9 @@ export function createVaultValuationUi() {
     evidence = result.evidence ?? [];
     snapshot = result.snapshot ?? null;
     renderEstimates();
+    renderProviderControls();
     renderLedger();
+    explanationPanel.hidden = true;
     status.textContent = "Evidence loaded. Values remain advisory and source-backed.";
   }
 
@@ -322,6 +412,29 @@ export function createVaultValuationUi() {
   itemState.addEventListener("change", updateGradeFields);
   section.addEventListener("keydown", (event) => {
     if (event.key === "Enter" && event.target?.tagName !== "TEXTAREA") event.preventDefault();
+  });
+
+  providerRefreshButton.addEventListener("click", async () => {
+    const treasureId = activeTreasureId;
+    if (!treasureId || !providerSelect.value) return;
+    providerRefreshButton.disabled = true;
+    providerStatus.textContent = "Retrieving official provider observations…";
+    try {
+      const result = await api(`/api/vault/treasures/${encodeURIComponent(treasureId)}/valuation/provider-observations`, {
+        method: "POST",
+        body: JSON.stringify({ providerId: providerSelect.value, limit: 10 })
+      });
+      evidence = result.evidence ?? [];
+      snapshot = result.snapshot ?? null;
+      renderEstimates();
+      renderProviderControls();
+      renderLedger();
+      providerStatus.textContent = `${result.refresh.createdCount} new observation(s) stored; ${result.refresh.skippedExistingCount} already recorded; ${result.refresh.rejectedByProviderCount} incomplete provider row(s) rejected.`;
+    } catch (error) {
+      providerStatus.textContent = error.message;
+    } finally {
+      providerRefreshButton.disabled = !(snapshot?.observationProviders?.length);
+    }
   });
 
   appendButton.addEventListener("click", async () => {
@@ -371,7 +484,9 @@ export function createVaultValuationUi() {
     snapshot = null;
     clearEntryFields();
     renderEstimates();
+    renderProviderControls();
     renderLedger();
+    explanationPanel.hidden = true;
     if (!nextId) {
       section.hidden = true;
       status.textContent = "Save the treasure before recording valuation evidence.";
