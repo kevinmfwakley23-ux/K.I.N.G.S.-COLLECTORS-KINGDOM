@@ -124,10 +124,11 @@ export async function handleVaultQueryRoute({
   const pathname = requestUrl.pathname;
   const isQuery = pathname === "/api/vault/query";
   const isTagCollection = pathname === "/api/vault/tags";
+  const isMetadataIndex = pathname === "/api/vault/metadata-index";
   const isTreasureCollection = pathname === "/api/vault/treasures";
   const treasureRoute = parseTreasureRoute(pathname);
-  const viewRoute = isQuery || isTagCollection || isTreasureCollection || treasureRoute ? null : parseViewRoute(pathname);
-  if (!isQuery && !isTagCollection && !isTreasureCollection && !treasureRoute && !viewRoute) return null;
+  const viewRoute = isQuery || isTagCollection || isMetadataIndex || isTreasureCollection || treasureRoute ? null : parseViewRoute(pathname);
+  if (!isQuery && !isTagCollection && !isMetadataIndex && !isTreasureCollection && !treasureRoute && !viewRoute) return null;
   if (!vaultQueryService) throw new VaultError("vault_query_unavailable", "Saved Vault views and paged retrieval are unavailable.", 503);
 
   const method = request.method ?? "GET";
@@ -136,6 +137,20 @@ export async function handleVaultQueryRoute({
   if (isTagCollection) {
     if (method !== "GET" && method !== "HEAD") return false;
     return sendJson(response, 200, { tags: vaultQueryService.listTags(identity) }, method, securityHeaders);
+  }
+
+  if (isMetadataIndex) {
+    if (method !== "GET" && method !== "HEAD") return false;
+    return sendJson(response, 200, {
+      metadata: vaultQueryService.exportMetadata(identity),
+      policy: {
+        yearRange: "1-9999-or-null",
+        maximumTagsPerTreasure: 40,
+        maximumTagLength: 60,
+        tagComparison: "unicode-normalized-case-insensitive",
+        permanentTreasureIdentityUnchanged: true
+      }
+    }, method, securityHeaders);
   }
 
   if (isTreasureCollection && method === "POST") {
