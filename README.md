@@ -5,10 +5,10 @@ K.I.N.G.S. Collector's Kingdom is a collector-first system for cataloging, locat
 ## Engineering status
 
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Latest verified production slice:** **PR #30 — Persistent Evidence-Cited Collection Value History**  
-**Canonical validation:** repository `npm run verify` + production dependency audit — **PASS** on the implementation branch before integration
+**Latest verified production slice:** **PR #32 — First-Class Year + Collector Tags**  
+**Implementation validation:** **Kingdom Quality Gates #708 / run `34760201763` — PASS** before documentation closeout
 
-PR #30 adds the next trust-first portfolio layer: owner-scoped immutable valuation snapshots, SHA-256 snapshot integrity, exact sold-evidence IDs, separate currency history, collection/time-range queries, cause-aware deltas, realized-sale provenance citations, an accessible historical Vault view, and Keeper explanations that distinguish evidence movement from collector-driven collection changes.
+PR #32 closes the locked Royal Vault metadata gap with validated Year, normalized owner-scoped collector Tags, indexed filtering/search, Year sorting, saved-view persistence, transactional import preservation, metadata-complete export, accessible editor/filter controls and compatibility for older treasures that have no metadata row. The verified implementation head passed exact dependency installation, lint, type contracts, the complete test suite, production build/artifact verification and the production dependency audit. The final documented head must pass the same gate again before merge.
 
 ## Permanent truth boundary
 
@@ -40,6 +40,9 @@ The current verified system includes:
 - deterministic keyset pagination with verified SQLite indexes;
 - secure private treasure media with SHA-256 integrity metadata;
 - structured condition, variant, quantity, acquisition, cost, identifiers and custom attributes;
+- first-class validated Year metadata and normalized owner-scoped collector Tags keyed to the permanent treasure UUID;
+- exact Year/Tag filtering, Year sorting, Year/Tag text discovery and Year/Tag-aware Saved Vault Views;
+- transactional import and portable export preservation of Year/Tags with compatibility for older records that have no metadata row;
 - duplicate-review warnings and normalized search/filter/sort;
 - transactional review-first JSON/CSV import;
 - Royal Intake Queue with repeated-capture counts and preserved dismissed history;
@@ -62,6 +65,8 @@ The current verified system includes:
 - cause-aware portfolio change summaries;
 - Keeper portfolio-history explanations with snapshot, valuation-evidence and realized-sale provenance citations;
 - accessible 30-day, 90-day, one-year and all-history Vault charts with explicit evidence gaps rather than manufactured zeroes.
+
+Treasure removal remains archive-based rather than destructive: a collector can remove an item from the active Vault while preserving permanent identity, audit, provenance, grading and valuation history.
 
 ## Provider-neutral valuation observations — integrated in PR #28
 
@@ -315,7 +320,8 @@ The production build manifest identifies `apps/web/runtime.mjs` as the real wire
 
 - [`docs/MISSION-STATEMENT.md`](docs/MISSION-STATEMENT.md) — permanent mission and authority order.
 - [`docs/MISSION-PROGRESS.md`](docs/MISSION-PROGRESS.md) — recoverable build state, verified checkpoints, blockers and exact next target.
-- [`docs/research/2026-09-13-IMP-005-COLLECTION-VALUE-HISTORY.md`](docs/research/2026-09-13-IMP-005-COLLECTION-VALUE-HISTORY.md) — current collection-history competitor research and Kingdom evidence/cause design decisions.
+- [`docs/research/2026-09-13-IMP-005-VAULT-YEAR-TAGS.md`](docs/research/2026-09-13-IMP-005-VAULT-YEAR-TAGS.md) — Year/Tags competitor research and the indexed owner-scoped metadata design decisions.
+- [`docs/research/2026-09-13-IMP-005-COLLECTION-VALUE-HISTORY.md`](docs/research/2026-09-13-IMP-005-COLLECTION-VALUE-HISTORY.md) — collection-history competitor research and Kingdom evidence/cause design decisions.
 - [`docs/research/2026-09-12-IMP-005-PROVIDER-OBSERVATIONS-KEEPER-EVIDENCE.md`](docs/research/2026-09-12-IMP-005-PROVIDER-OBSERVATIONS-KEEPER-EVIDENCE.md) — provider/competitor research and trust decisions for licensed observations.
 - [`docs/research/`](docs/research/) — dated competitor, provider, standards and technical research.
 
