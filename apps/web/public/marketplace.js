@@ -1,6 +1,17 @@
 const marketStatus = document.querySelector("#market-status");
 const marketListings = document.querySelector("#market-listings");
 const refreshMarketButton = document.querySelector("#refresh-market");
+const discoveryForm = document.querySelector("#market-discovery-form");
+const marketQuery = document.querySelector("#market-query");
+const marketCategory = document.querySelector("#market-category");
+const marketCurrency = document.querySelector("#market-currency");
+const marketFulfillment = document.querySelector("#market-fulfillment");
+const marketSort = document.querySelector("#market-sort");
+const marketMinPrice = document.querySelector("#market-min-price");
+const marketMaxPrice = document.querySelector("#market-max-price");
+const marketPriceGuidance = document.querySelector("#market-price-guidance");
+const marketActiveFilters = document.querySelector("#market-active-filters");
+const clearMarketFiltersButton = document.querySelector("#clear-market-filters");
 const sellerAuthState = document.querySelector("#seller-auth-state");
 const listingForm = document.querySelector("#listing-form");
 const treasureSelect = document.querySelector("#listing-treasure");
@@ -41,21 +52,39 @@ async function requestJson(url, options = {}) {
 
 function money(amountCents, currency) {
   try {
-    return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(amountCents / 100);
+    return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(amountCents / (10 ** currencyFractionDigits(currency)));
   } catch {
-    return `${currency} ${(amountCents / 100).toFixed(2)}`;
+    return `${currency} ${amountCents}`;
   }
 }
 
-function parseMoneyToCents(value) {
+function currencyFractionDigits(currency) {
+  try {
+    return new Intl.NumberFormat("en", { style: "currency", currency }).resolvedOptions().maximumFractionDigits;
+  } catch {
+    return 2;
+  }
+}
+
+function parseMoneyToMinorUnits(value, currency, { allowZero = false } = {}) {
   const cleaned = String(value ?? "").trim();
-  const match = cleaned.match(/^(\d+)(?:\.(\d{1,2}))?$/);
-  if (!match) throw new Error("Enter a price such as 125 or 125.00.");
+  const digits = currencyFractionDigits(currency);
+  const pattern = digits === 0 ? /^(\d+)$/ : new RegExp(`^(\\d+)(?:\\.(\\d{1,${digits}}))?$`);
+  const match = cleaned.match(pattern);
+  const example = digits === 0 ? "125" : `125.${"0".repeat(digits)}`;
+  if (!match) throw new Error(`Enter a price such as ${example} for ${currency}.`);
   const whole = Number(match[1]);
-  const fraction = Number((match[2] ?? "").padEnd(2, "0") || 0);
-  const cents = whole * 100 + fraction;
-  if (!Number.isSafeInteger(cents) || cents < 1) throw new Error("Enter a positive price.");
-  return cents;
+  const fraction = digits === 0 ? 0 : Number((match[2] ?? "").padEnd(digits, "0") || 0);
+  const units = whole * (10 ** digits) + fraction;
+  if (!Number.isSafeInteger(units) || units < (allowZero ? 0 : 1)) throw new Error(allowZero ? "Enter a non-negative price." : "Enter a positive price.");
+  return units;
+}
+
+function formatMinorUnitsForInput(amount, currency) {
+  if (amount === null || amount === undefined || amount === "") return "";
+  const digits = currencyFractionDigits(currency);
+  const divisor = 10 ** digits;
+  return digits === 0 ? String(amount) : (Number(amount) / divisor).toFixed(digits);
 }
 
 function listingFacts(listing) {
@@ -68,9 +97,11 @@ function listingFacts(listing) {
   ].filter(Boolean).map((value) => `<span>${escapeHtml(value)}</span>`).join("");
 }
 
-function renderPublicListings(listings) {
+function renderPublicListings(listings, hasFilters = false) {
   if (!listings.length) {
-    marketListings.innerHTML = `<article class="marketplace-empty"><h3>No active offers yet</h3><p>The Street Market is open, but no collector has published an offer.</p></article>`;
+    marketListings.innerHTML = hasFilters
+      ? `<article class="marketplace-empty"><h3>No matching offers</h3><p>No currently supported active listing matches these filters. Clear or broaden the search to inspect the rest of the Street Market.</p></article>`
+      : `<article class="marketplace-empty"><h3>No active offers yet</h3><p>The Street Market is open, but no collector has published an offer.</p></article>`;
     return;
   }
   marketListings.innerHTML = listings.map((listing) => `
@@ -93,12 +124,158 @@ function renderPublicListings(listings) {
   `).join("");
 }
 
-async function loadMarket() {
+function replaceFacetOptions(select, facetLabel, facets, selectedValue) {
+  const selected = selectedValue ?? select.value;
+  select.innerHTML = `<option value="">${escapeHtml(facetLabel)}</option>${facets.map((facet) => `
+    <option value="${escapeHtml(facet.value)}">${escapeHtml(facet.value)} (${Number(facet.count)})</option>
+  `).join("")}`;
+  if ([...select.options].some((option) => option.value === selected)) select.value = selected;
+}
+
+function fulfillmentLabel(value) {
+  return ({
+    "shipping": "Shipping",
+    "local-pickup": "Local pickup",
+    "shipping-or-pickup": "Shipping or pickup"
+  })[value] ?? value;
+}
+
+function replaceFulfillmentFacetOptions(facets, selectedValue) {
+  const selected = selectedValue ?? marketFulfillment.value;
+  marketFulfillment.innerHTML = `<option value="">Any fulfillment</option>${facets.map((facet) => `
+    <option value="${escapeHtml(facet.value)}">${escapeHtml(fulfillmentLabel(facet.value))} (${Number(facet.count)})</option>
+  `).join("")}`;
+  if ([...marketFulfillment.options].some((option) => option.value === selected)) marketFulfillment.value = selected;
+}
+
+function syncPriceControls() {
+  const hasCurrency = Boolean(marketCurrency.value);
+  marketMinPrice.disabled = !hasCurrency;
+  marketMaxPrice.disabled = !hasCurrency;
+  for (const option of marketSort.options) {
+    if (["price-asc", "price-desc"].includes(option.value)) option.disabled = !hasCurrency;
+  }
+  if (!hasCurrency && ["price-asc", "price-desc"].includes(marketSort.value)) marketSort.value = "newest";
+  if (!hasCurrency) {
+    marketMinPrice.value = "";
+    marketMaxPrice.value = "";
+  }
+  marketPriceGuidance.textContent = hasCurrency
+    ? `Price filtering and ordering are scoped to ${marketCurrency.value}. Other currencies are excluded whenever a price range or price sort is used.`
+    : "Choose a currency to filter or sort by price. The Kingdom never ranks unlike currencies as though they were equivalent.";
+}
+
+function filtersFromControls() {
+  const filters = {
+    query: marketQuery.value.trim() || null,
+    category: marketCategory.value || null,
+    currency: marketCurrency.value || null,
+    fulfillmentMethod: marketFulfillment.value || null,
+    sort: marketSort.value || "newest",
+    minAmountCents: null,
+    maxAmountCents: null
+  };
+  if (filters.currency && marketMinPrice.value.trim()) filters.minAmountCents = parseMoneyToMinorUnits(marketMinPrice.value, filters.currency, { allowZero: true });
+  if (filters.currency && marketMaxPrice.value.trim()) filters.maxAmountCents = parseMoneyToMinorUnits(marketMaxPrice.value, filters.currency, { allowZero: true });
+  return filters;
+}
+
+function queryStringForFilters(filters) {
+  const parameters = new URLSearchParams();
+  if (filters.query) parameters.set("q", filters.query);
+  if (filters.category) parameters.set("category", filters.category);
+  if (filters.currency) parameters.set("currency", filters.currency);
+  if (filters.fulfillmentMethod) parameters.set("fulfillment", filters.fulfillmentMethod);
+  if (filters.minAmountCents !== null) parameters.set("minAmountCents", String(filters.minAmountCents));
+  if (filters.maxAmountCents !== null) parameters.set("maxAmountCents", String(filters.maxAmountCents));
+  if (filters.sort && filters.sort !== "newest") parameters.set("sort", filters.sort);
+  parameters.set("limit", "100");
+  return parameters;
+}
+
+function hasMeaningfulFilters(filters) {
+  return Boolean(
+    filters.query || filters.category || filters.currency || filters.fulfillmentMethod ||
+    filters.minAmountCents !== null || filters.maxAmountCents !== null || filters.sort !== "newest"
+  );
+}
+
+function renderActiveFilters(filters) {
+  const labels = [];
+  if (filters.query) labels.push(`Search: ${filters.query}`);
+  if (filters.category) labels.push(`Category: ${filters.category}`);
+  if (filters.currency) labels.push(`Currency: ${filters.currency}`);
+  if (filters.fulfillmentMethod) labels.push(`Fulfillment: ${fulfillmentLabel(filters.fulfillmentMethod)}`);
+  if (filters.minAmountCents !== null) labels.push(`Min: ${money(filters.minAmountCents, filters.currency)}`);
+  if (filters.maxAmountCents !== null) labels.push(`Max: ${money(filters.maxAmountCents, filters.currency)}`);
+  if (filters.sort !== "newest") labels.push(`Sort: ${marketSort.selectedOptions[0]?.textContent ?? filters.sort}`);
+  marketActiveFilters.innerHTML = labels.map((label) => `<span>${escapeHtml(label)}</span>`).join("");
+}
+
+function updateShareableUrl(filters) {
+  const url = new URL(window.location.href);
+  for (const key of ["q", "category", "currency", "fulfillment", "minAmountCents", "maxAmountCents", "sort"]) url.searchParams.delete(key);
+  const parameters = queryStringForFilters(filters);
+  parameters.delete("limit");
+  for (const [key, value] of parameters) url.searchParams.set(key, value);
+  window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
+function loadControlsFromUrl() {
+  const parameters = new URL(window.location.href).searchParams;
+  marketQuery.value = parameters.get("q") ?? "";
+  marketCategory.dataset.initialValue = parameters.get("category") ?? "";
+  marketCurrency.dataset.initialValue = (parameters.get("currency") ?? "").toUpperCase();
+  marketFulfillment.dataset.initialValue = parameters.get("fulfillment") ?? "";
+  marketSort.value = parameters.get("sort") ?? "newest";
+  marketMinPrice.dataset.initialMinor = parameters.get("minAmountCents") ?? "";
+  marketMaxPrice.dataset.initialMinor = parameters.get("maxAmountCents") ?? "";
+}
+
+function applyInitialFacetValues(payload) {
+  const category = marketCategory.dataset.initialValue ?? marketCategory.value;
+  const currency = marketCurrency.dataset.initialValue ?? marketCurrency.value;
+  const fulfillment = marketFulfillment.dataset.initialValue ?? marketFulfillment.value;
+  replaceFacetOptions(marketCategory, "All categories", payload.facets?.categories ?? [], category);
+  replaceFacetOptions(marketCurrency, "All currencies", payload.facets?.currencies ?? [], currency);
+  replaceFulfillmentFacetOptions(payload.facets?.fulfillmentMethods ?? [], fulfillment);
+  delete marketCategory.dataset.initialValue;
+  delete marketCurrency.dataset.initialValue;
+  delete marketFulfillment.dataset.initialValue;
+  syncPriceControls();
+  const initialMin = marketMinPrice.dataset.initialMinor;
+  const initialMax = marketMaxPrice.dataset.initialMinor;
+  if (marketCurrency.value) {
+    if (initialMin) marketMinPrice.value = formatMinorUnitsForInput(Number(initialMin), marketCurrency.value);
+    if (initialMax) marketMaxPrice.value = formatMinorUnitsForInput(Number(initialMax), marketCurrency.value);
+  }
+  delete marketMinPrice.dataset.initialMinor;
+  delete marketMaxPrice.dataset.initialMinor;
+}
+
+async function loadMarket({ preserveUrl = false } = {}) {
   marketStatus.textContent = "Refreshing active offers…";
   try {
-    const payload = await requestJson("/api/marketplace/listings?limit=100");
-    renderPublicListings(payload.listings ?? []);
-    marketStatus.textContent = `${payload.listings?.length ?? 0} active offer${payload.listings?.length === 1 ? "" : "s"}. Checkout remains disabled until safeguarded transaction services are built.`;
+    const filters = filtersFromControls();
+    const parameters = queryStringForFilters(filters);
+    const payload = await requestJson(`/api/marketplace/listings?${parameters.toString()}`);
+    const firstFacetLoad = marketCategory.dataset.initialValue !== undefined || marketCurrency.dataset.initialValue !== undefined;
+    if (firstFacetLoad) applyInitialFacetValues(payload);
+    else {
+      replaceFacetOptions(marketCategory, "All categories", payload.facets?.categories ?? [], filters.category);
+      replaceFacetOptions(marketCurrency, "All currencies", payload.facets?.currencies ?? [], filters.currency);
+      replaceFulfillmentFacetOptions(payload.facets?.fulfillmentMethods ?? [], filters.fulfillmentMethod);
+      syncPriceControls();
+    }
+    const currentFilters = filtersFromControls();
+    renderPublicListings(payload.listings ?? [], hasMeaningfulFilters(currentFilters));
+    renderActiveFilters(currentFilters);
+    const total = Number(payload.facets?.totalActiveListings ?? payload.listings?.length ?? 0);
+    const shown = payload.listings?.length ?? 0;
+    marketStatus.textContent = hasMeaningfulFilters(currentFilters)
+      ? `${shown} matching offer${shown === 1 ? "" : "s"} shown from ${total} currently supported active listing${total === 1 ? "" : "s"}. Checkout remains disabled.`
+      : `${shown} active offer${shown === 1 ? "" : "s"} shown. Checkout remains disabled until safeguarded transaction services are built.`;
+    if (!preserveUrl) updateShareableUrl(currentFilters);
   } catch (error) {
     marketStatus.textContent = `The market could not be loaded: ${error.message}`;
     marketListings.replaceChildren();
@@ -171,6 +348,34 @@ async function loadSeller() {
   }
 }
 
+discoveryForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await loadMarket();
+});
+
+marketCurrency.addEventListener("change", () => {
+  syncPriceControls();
+});
+
+for (const control of [marketCategory, marketCurrency, marketFulfillment, marketSort]) {
+  control.addEventListener("change", async () => {
+    syncPriceControls();
+    await loadMarket();
+  });
+}
+
+clearMarketFiltersButton.addEventListener("click", async () => {
+  discoveryForm.reset();
+  marketCategory.value = "";
+  marketCurrency.value = "";
+  marketFulfillment.value = "";
+  marketSort.value = "newest";
+  marketMinPrice.value = "";
+  marketMaxPrice.value = "";
+  syncPriceControls();
+  await loadMarket();
+});
+
 listingForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = listingForm.querySelector("button[type='submit']");
@@ -179,10 +384,11 @@ listingForm.addEventListener("submit", async (event) => {
   button.disabled = true;
   sellerAuthState.textContent = "Saving private draft…";
   try {
+    const currency = document.querySelector("#listing-currency").value.trim().toUpperCase();
     const body = {
       treasureId: treasureSelect.value,
-      amountCents: parseMoneyToCents(document.querySelector("#listing-price").value),
-      currency: document.querySelector("#listing-currency").value,
+      amountCents: parseMoneyToMinorUnits(document.querySelector("#listing-price").value, currency),
+      currency,
       quantity: Number(document.querySelector("#listing-quantity").value),
       fulfillmentMethod: document.querySelector("#listing-fulfillment").value,
       sellerDescription: document.querySelector("#listing-description").value
@@ -237,6 +443,7 @@ sellerListings.addEventListener("click", async (event) => {
   }
 });
 
-refreshMarketButton.addEventListener("click", loadMarket);
+refreshMarketButton.addEventListener("click", () => loadMarket({ preserveUrl: true }));
 
-await Promise.all([loadMarket(), loadSeller()]);
+loadControlsFromUrl();
+await Promise.all([loadMarket({ preserveUrl: true }), loadSeller()]);
