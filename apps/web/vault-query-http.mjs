@@ -129,9 +129,13 @@ export async function handleVaultQueryRoute({
   const treasureRoute = parseTreasureRoute(pathname);
   const viewRoute = isQuery || isTagCollection || isMetadataIndex || isTreasureCollection || treasureRoute ? null : parseViewRoute(pathname);
   if (!isQuery && !isTagCollection && !isMetadataIndex && !isTreasureCollection && !treasureRoute && !viewRoute) return null;
-  if (!vaultQueryService) throw new VaultError("vault_query_unavailable", "Saved Vault views and paged retrieval are unavailable.", 503);
 
   const method = request.method ?? "GET";
+  if (!vaultQueryService) {
+    if (isTreasureCollection || treasureRoute?.action === "item") return null;
+    throw new VaultError("vault_query_unavailable", "Saved Vault views and paged retrieval are unavailable.", 503);
+  }
+
   const identity = requireIdentity(identityService, request);
 
   if (isTagCollection) {
