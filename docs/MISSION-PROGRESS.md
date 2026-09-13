@@ -18,19 +18,25 @@ This file is the durable engineering recovery ledger. Read it before substantial
 
 **Date:** 2026-09-13 (America/Denver)  
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Latest verified production slice:** **Persistent Evidence-Cited Collection Value History**  
-**Pull request:** **#30 — `IMP-005: Persist evidence-cited collection value history`**  
-**Implementation verification:** **Kingdom Quality Gates #683** — run `34757807965` — **PASS** before documentation closeout
+**Latest verified implementation slice:** **First-Class Year + Collector Tags**  
+**Pull request:** **#32 — `Complete Royal Vault Phase 1 year and tag metadata`**  
+**Implementation verification:** **Kingdom Quality Gates #708** — run `34760201763` — **PASS** before documentation closeout
 
-PR #30 implements the next trust-first collection-intelligence boundary and passed the canonical Node.js 22 workflow with exact dependency installation, lint/type-contract/test/build/artifact verification and production dependency audit. The final documented PR head must pass the same workflow again before merge.
+PR #32 closes the remaining locked Royal Vault metadata gap with first-class Year and collector Tags while preserving the already-verified Vault core. The implementation head passed the canonical Node.js 22 workflow with exact dependency installation, lint, type contracts, the complete test suite, production build/artifact verification and the production dependency audit. README, research and this recovery ledger are being advanced on the same branch; the final documented head must pass the same complete workflow again before merge.
 
 ### Exact recovery point
 
 Do **not** rebuild these verified production IMP-005 slices:
 
 - permanent owner-scoped treasure UUIDs and SQLite persistence;
-- treasure create/read/update/archive;
+- treasure create/read/update/archive, with archive as the safe collector removal path;
 - collections and arbitrary-depth physical storage locations;
+- first-class validated Year metadata tied to permanent treasure identity;
+- normalized, owner-scoped, indexed collector Tags;
+- exact Year/Tag filtering, Year sorting and Year/Tag text discovery;
+- Year/Tag-aware Saved Vault Views and deterministic keyset pagination;
+- transactional import and portable export preservation of Year/Tags;
+- compatibility for older treasures without metadata rows;
 - secure private media and SHA-256 integrity linkage;
 - voice navigation/talk-to-text where browser speech APIs exist;
 - transactional JSON/CSV migration;
@@ -39,7 +45,6 @@ Do **not** rebuild these verified production IMP-005 slices:
 - review-only UPCitemdb UPC/EAN/GTIN evidence;
 - append-only Provenance & Ownership Ledger;
 - cycle-safe individual and previewed atomic bulk reorganization;
-- private Saved Vault Views and deterministic keyset pagination;
 - review-only Pokémon exact-card evidence;
 - review-only Magic exact-printing evidence via Scryfall;
 - review-only PSA certification-number database evidence;
@@ -83,268 +88,148 @@ Do **not** rebuild these verified production IMP-005 slices:
 
 ---
 
-## Latest verified slice — Persistent Evidence-Cited Collection Value History
+## Latest verified slice — First-Class Year + Collector Tags
 
 ### Why this slice was prioritized
 
-The previous Vault portfolio view could calculate the current evidence-backed collection total, but it did not persist what the evidence supported at earlier points in time. Recomputing old values from today's evidence would have created a misleading history, especially after append-only corrections, quantity changes, archive actions or collection movement.
+The Royal Vault completion audit found a concrete locked-spec gap rather than a need for another speculative feature. Treasure removal already existed as safe archive behavior, preserving permanent identity and evidence history, but Year and Tags were not dedicated metadata fields across storage, query, saved views, import/export and the collector UI.
 
-The locked Treasury/Observatory construction requirements call for historical value trends, collection growth, historical pricing, accessible charts and Keeper explanations of meaningful changes while keeping estimates visibly separate from confirmed financial records and speculative claims.
+The implementation therefore closes the gap without rewriting the proven treasure/provenance/valuation schema.
 
-### Fresh competitor research
+### Research
 
-Current official product documentation was reviewed for:
+Current collection-management behavior was reviewed across **iCollect Everything**, **Ludex** and **hobbyDB**. The useful market pattern is consistent: collectors expect important descriptive metadata such as Year to participate in search/filter/sort and expect collection metadata to remain portable in exports.
 
-- **Ludex** — total collection value, quantity-aware collection totals, price-history reports and selectable time ranges;
-- **Card Ladder** — daily collection value tracking, multiple collection scopes and deep historical sales research;
-- **hobbyDB** — collection Estimated Value history and gain/loss report/export workflows.
+Kingdom improvement: Year/Tags are not generic decorative fields. They are owner-scoped, indexed, auditable, queryable and tied to the permanent Kingdom treasure UUID while remaining independent of external provider identity.
 
-The Kingdom adopts useful history/navigation ideas without copying proprietary UI or algorithms. Its improvement is the evidence/cause model: every stored point retains exact evidence references and every change can distinguish market-evidence movement from collector-driven collection changes.
+Research record: `docs/research/2026-09-13-IMP-005-VAULT-YEAR-TAGS.md`.
 
-Research record: `docs/research/2026-09-13-IMP-005-COLLECTION-VALUE-HISTORY.md`.
+### Metadata authority
 
-### Immutable snapshot authority
+The slice introduces indexed metadata persistence:
 
-`vault_portfolio_snapshots` stores owner-scoped append-only snapshot documents with:
+- `vault_treasure_metadata` — treasure UUID, owner ID, validated Year, normalized tag document and update timestamp;
+- `vault_treasure_tags` — owner ID, treasure UUID, canonical tag key and collector-facing label.
 
-- snapshot ID and generation time;
-- previous-snapshot linkage;
-- active/valued treasure counts;
-- coverage and exclusion state;
-- quantity-aware treasure contributions;
-- separate currency totals;
-- category and collection rollups;
-- exact supporting sold-evidence IDs;
-- change summary;
-- SHA-256 integrity digest.
+Policy:
 
-Old snapshots are not recalculated when newer valuation evidence is corrected. A later calculation becomes a later snapshot.
+- Year is an integer from 1 through 9999 or null;
+- Tags are collector-owned text labels;
+- Unicode and whitespace are normalized;
+- tag comparison is case-insensitive;
+- duplicate labels collapse by canonical key;
+- maximum 40 tags per treasure;
+- maximum 60 characters per tag;
+- metadata never replaces or mutates permanent treasure identity.
 
-### Capture behavior
+Metadata changes append Vault audit events rather than silently rewriting history without a trace.
 
-The capture service:
+### Query and saved-view behavior
 
-- rebuilds the portfolio from current Vault treasures/collections and integrity-checked valuation evidence;
-- refuses corrupted valuation evidence;
-- reuses an unchanged snapshot captured on the same UTC day;
-- captures a changed portfolio immediately even on the same day;
-- permits the next later-day point even if the portfolio estimate itself did not change;
-- emits a Vault audit event for newly captured snapshots.
+The canonical paged query boundary now supports:
 
-### Cause-aware change model
+- exact Year filter;
+- exact canonical Tag filter;
+- Year sort;
+- Year and Tag text discovery;
+- Year/Tag query fingerprinting so cursors cannot be reused against a different query;
+- saved views that capture Year and Tag as filter definitions, not frozen result sets.
 
-Snapshot comparisons currently distinguish:
+Older treasures with no metadata row remain readable and paginatable with `year: null` and an empty tag set.
 
-- `valuation-support-gained`;
-- `valuation-support-lost`;
-- `treasure-no-longer-active`;
-- `quantity-changed`;
-- `collection-membership-changed`;
-- `valuation-correction`;
-- `supporting-evidence-changed`.
+### Import/export behavior
 
-Currency deltas remain separate. The history layer never creates a cross-currency grand total.
+Bulk migration preserves the existing review-first and atomic guarantees:
 
-### History API
-
-Authenticated/no-store routes provide:
-
-- `POST /api/vault/portfolio-history/snapshots` — capture/reuse current snapshot;
-- `GET /api/vault/portfolio-history/snapshots/:id` — retrieve one integrity-checked snapshot;
-- `GET /api/vault/portfolio-history` — bounded history by time range, optional collection and optional currency;
-- `GET /api/vault/portfolio-history/explanation` — evidence-cited Keeper comparison.
-
-Bounded history returns the latest matching snapshot window in chronological order. A missing supported estimate is returned as `available: false` with a null amount rather than zero.
-
-### Keeper portfolio-history intelligence
-
-The explanation boundary cites:
-
-- comparison snapshot IDs/timestamps/SHA-256 hashes;
-- changed treasure IDs;
-- exact valuation evidence IDs;
-- realized-sale provenance IDs where relevant;
-- separate currency deltas;
-- evidence-coverage changes;
-- recorded change causes.
-
-Realized owner sales remain lifecycle context and do not influence the current sold-comparable estimate. Explanations explicitly avoid appraisal, guaranteed-price, prediction and hidden-FX claims.
+- invalid Year/Tags reject only the affected preview row;
+- no treasure is written during preview;
+- selected rows commit treasure + Year/Tags atomically;
+- metadata survives idempotent replay;
+- Year/Tags participate in persisted search text;
+- owner-scoped metadata can be exported and merged into the existing versioned Vault JSON package;
+- provenance and valuation data remain separate and are not lost.
 
 ### Royal Vault UX
 
-The live portfolio panel now renders the persisted server snapshot rather than independently manufacturing the current total in browser code.
+A modular Vault enhancement adds:
 
-It provides:
+- Year editor control;
+- comma-separated collector Tags editor with normalization guidance;
+- exact Year filter;
+- owner-scoped Tag filter with treasure counts;
+- Year sorting;
+- Year/Tag summaries on treasure cards;
+- Year/Tag-aware saved-view application;
+- metadata-complete JSON export.
 
-- 30-day, 90-day, one-year and all-history ranges;
-- one chart per currency;
-- explicit gaps when evidence support is unavailable;
-- screen-reader chart descriptions;
-- keyboard-operable range controls;
-- recent textual audit points with evidence ID previews;
-- “Ask the Keeper why it changed” evidence explanation;
-- snapshot/evidence/provenance citation details;
-- reduced-motion support.
+The module loads before dependent Vault enhancements rather than replacing the stable base page.
+
+### Regression repairs found by CI
+
+The branch was not merged around failures. CI exposed and the implementation repaired:
+
+- anti-placeholder production lint collisions from ordinary source wording;
+- an import path that initially aborted the whole preview for one invalid metadata row;
+- missing Year/Tag capture in the browser saved-view helper;
+- legacy treasure-route interception in isolated runtimes without the query service;
+- a null metadata-row mapper error for older treasures;
+- enhancement-loader tests that had not yet included the new metadata module.
 
 ### Verification coverage
 
-Real SQLite tests prove:
+Real SQLite/browser-contract tests prove:
 
-- snapshot persistence;
-- same-day unchanged deduplication;
-- later-day historical points;
-- quantity-aware historical totals;
-- collection-scoped history;
-- exact evidence IDs;
-- correction preservation without rewriting old snapshots;
-- cause-aware quantity/evidence correction explanations;
-- realized-sale provenance citations;
-- currency separation;
-- gap-not-zero semantics;
+- metadata validation and tag deduplication;
 - owner isolation;
-- deliberate snapshot tamper failure;
-- parity between the new server authority and the previously verified current-portfolio semantics;
-- persistent-history/accessibility Keeper UI contracts.
+- exact Year/Tag filters;
+- Year sorting;
+- Year/Tag text search;
+- current-data saved-view behavior;
+- metadata updates and audit history;
+- query/index durability;
+- transactional import preservation and idempotency;
+- invalid-row rejection without partial writes;
+- UI controls and export wiring;
+- compatibility with legacy treasure records/routes;
+- production artifact inclusion.
 
-First complete implementation head `3b645c60d8bb93541265abc0d6f6af77bf6b3e9a` passed Kingdom Quality Gates #683 / run `34757807965` including the production dependency audit. Documentation was then advanced on the same PR and the final documented head must re-pass before merge.
+Implementation head `01b31c14659ee4835796f267c2049bec044660c0` passed **Kingdom Quality Gates #708 / run `34760201763`**, including the production dependency audit. Documentation closeout follows on the same PR; final documented head re-verification is required before merge.
+
+---
+
+## Previous integrated slice — Persistent Evidence-Cited Collection Value History
+
+PR #30 added owner-scoped immutable valuation snapshots with SHA-256 integrity, exact sold-evidence IDs, separate currencies, collection/time-range history, evidence gaps rather than fake zeroes, cause-aware deltas and Keeper explanations with snapshot/evidence/provenance citations.
+
+The browser portfolio view now uses the persisted server snapshot as authority and provides 30D/90D/1Y/All history, one chart per currency, accessible textual chart descriptions, exact evidence previews and an explicit Keeper “why did it change?” action.
+
+The change model distinguishes valuation support gained/lost, archive/activity changes, quantity changes, collection movement, valuation corrections and supporting-evidence changes instead of labeling every delta as market movement.
+
+Research: `docs/research/2026-09-13-IMP-005-COLLECTION-VALUE-HISTORY.md`.
+
+Final documented PR #30 head `a7d522ae...` passed **Kingdom Quality Gates #685** and was merged to production as `dc9d5a3b180df6fa5c04c115a53a5b105b48b8a4`.
 
 ---
 
 ## Previous integrated slice — Provider-Neutral Valuation Observations + Evidence-Cited Keeper
 
-### Why this slice was prioritized
+PR #28 introduced the provider-originated observation contract and first official eBay Browse asking-listing adapter.
 
-The valuation foundation already kept sold comparables, asking listings, currencies and condition/grade buckets separate, but automatic network observations had no production provider boundary. The durable mission explicitly required any future market adapter to prove provider identity, source-record identity, retrieval time and an approved policy/terms basis before observations could enter the immutable ledger.
+Provider observations preserve provider ID, provider source-record ID, reviewed policy ID, source/reference, observed/retrieved times, integer minor-unit amount, currency and item-state context. They are immutable, deduplicated and protected from collector correction. The eBay adapter uses application OAuth, treats every Browse result as `asking-listing`, and never lets active asking listings affect the sold-comparable median.
 
-The same target required Keeper explanations to expose the exact records behind advisory value guidance instead of repeating a black-box number.
+Keeper explanations expose exact valuation evidence IDs, provider/source-record identity and exact realized-sale provenance/correction IDs without manufacturing missing references.
 
-### Fresh research
+Research: `docs/research/2026-09-12-IMP-005-PROVIDER-OBSERVATIONS-KEEPER-EVIDENCE.md`.
 
-The implementation reviewed current behavior and access constraints for:
-
-- **eBay Buy/Browse API** — official authenticated active-listing search, useful for asking-price context but not treated as a general completed-sales-history feed;
-- **TCGplayer developer access** — current documentation says new API access is not being granted;
-- **PriceCharting API** — useful current catalog/value surface but not treated as a substitute for exact completed-sale evidence history;
-- **Card Ladder** — deep historical sales/analytics and collection-value experience;
-- **Ludex** — fast collection-value visibility and mobile collector UX;
-- **hobbyDB** — completed-sale evidence methodology and collection value context;
-- **hendt/ebay-api** — active open-source Node/eBay implementation pattern reviewed only as a reference; no third-party source code was copied.
-
-Research record: `docs/research/2026-09-12-IMP-005-PROVIDER-OBSERVATIONS-KEEPER-EVIDENCE.md`.
-
-### Integrated provider-observation boundary
-
-Every provider observation must carry:
-
-- provider ID;
-- provider observation/source-record ID;
-- explicit provider policy/terms identifier;
-- observation type;
-- source name + auditable URL/reference;
-- observed date + retrieval timestamp;
-- non-negative integer minor-unit amount;
-- three-letter currency;
-- raw/graded/sealed/other item state;
-- explicit condition context where required;
-- grading company + grade label for graded observations.
-
-Provider-originated evidence is a separate `provider-originated-observation` evidence class. Provider identifiers never replace permanent Kingdom treasure UUIDs.
-
-### Integrated eBay Browse behavior
-
-The first official network market adapter:
-
-- uses application OAuth client credentials server-side;
-- searches the official eBay Browse API;
-- preserves eBay item IDs as provider observation IDs;
-- preserves retrieval time, marketplace identity and the explicitly reviewed provider-policy ID;
-- treats every Browse result as **`asking-listing` only**;
-- rejects incomplete provider rows;
-- fails closed on OAuth/API errors and request timeouts;
-- caches a still-valid application token;
-- never turns an active asking listing into a sold comparable;
-- therefore cannot raise/lower the Kingdom sold-comparable median by itself.
-
-Runtime configuration is all-or-none: `KINGDOM_EBAY_CLIENT_ID`, `KINGDOM_EBAY_CLIENT_SECRET`, and `KINGDOM_EBAY_PROVIDER_POLICY_ID` must all exist before the adapter is enabled.
-
-### Immutable evidence behavior
-
-Provider observations:
-
-- are append-only;
-- are deduplicated by owner + treasure + provider + provider observation ID;
-- hash provider ID, provider record ID, policy ID and retrieval timestamp into the evidence-integrity payload;
-- cannot be silently edited/deleted;
-- cannot be rewritten through the collector correction path;
-- remain explicitly not independently verified unless a later authority verifies them.
-
-Collector-recorded valuation evidence keeps its existing append-only/correction behavior.
-
-### Keeper evidence explanations
-
-The Keeper explanation route exposes:
-
-- exact valuation evidence UUIDs used by the selected estimate bucket;
-- source record/reference IDs where they actually exist;
-- source URLs;
-- provider identity/policy fields for provider-originated observations;
-- exact realized-sale provenance event IDs from immutable value history;
-- realized-sale correction IDs/history;
-- explicit language that asking listings and realized owner sales do **not** influence the current sold-comparable estimate;
-- explicit no-appraisal/no-guaranteed-price/no-cross-currency language.
-
-The Keeper does not invent missing source record IDs.
-
-### Royal Vault UX
-
-The valuation panel includes:
-
-- an Official Market Observations section;
-- provider selection and explicit refresh action;
-- disabled/fail-clear UI when no licensed provider is configured;
-- provider/policy/retrieval/source-record metadata in the evidence ledger;
-- a Keeper “explain with evidence IDs” action per estimate bucket;
-- responsive evidence citation display while preserving the Kingdom's white-marble/black/gold visual language.
-
-### Production composition
-
-`apps/web/runtime.mjs` is the wired composition root for the running app. It creates the optional eBay observation provider from runtime configuration and passes it into `createVaultValuationService`.
-
-`npm start`, `npm run dev`, the production build manifest and `start:prod` point at this wired runtime rather than relying on test-only provider injection.
-
-### Verification coverage
-
-Tests prove:
-
-- eBay OAuth/token caching;
-- Browse request authorization and marketplace headers;
-- raw/graded observation normalization;
-- exact decimal-to-cents mapping;
-- incomplete provider-row rejection;
-- provider OAuth/Browse failures;
-- provider-policy identity;
-- provider observation deduplication;
-- provider metadata tamper detection;
-- collector-correction rejection for provider-originated evidence;
-- asking observations never influence sold estimates;
-- exact valuation evidence/source record citations;
-- exact realized-sale provenance record citations and correction visibility;
-- fail-closed all-or-none runtime configuration;
-- production artifact inclusion of provider modules + wired runtime.
-
-Verification sequence:
-
-- first complete implementation head `d6ef4b62907f9bd9c54cfba8d9f2070602c1c1ce` — Kingdom Quality Gates #674 / run `34731699236` — **PASS**;
-- final PR #28 head `7dcb7d62be793d08ac44c9ff3d0abee28bc2ce16` — Kingdom Quality Gates #679 / run `34731859320` — **PASS**;
-- squash-merged production commit `e2105bcae637228ed39de55cb22d0045d5b9c568`.
+Final PR #28 head `7dcb7d62be793d08ac44c9ff3d0abee28bc2ce16` passed **Kingdom Quality Gates #679 / run `34731859320`**; squash-merged production commit `e2105bcae637228ed39de55cb22d0045d5b9c568`.
 
 ---
 
 ## Previous integrated slice — Live Vault Bootstrap + Portfolio Intelligence
 
-PR #26 made `/vault-bootstrap.js` the real Royal Vault browser entry point and explicitly loaded the advanced Vault module stack. It also added evidence-backed collection valuation coverage, separate per-currency portfolio totals, category/collection rollups, exact supporting sold-evidence IDs, quantity-aware safe-integer totals, explicit exclusions and non-appraisal language.
+PR #26 made `/vault-bootstrap.js` the real Royal Vault browser entry point and explicitly loaded the advanced Vault module stack. It added evidence-backed collection valuation coverage, separate per-currency portfolio totals, category/collection rollups, exact supporting sold-evidence IDs, quantity-aware safe-integer totals, explicit exclusions and non-appraisal language.
 
-Final PR #26 head `88487686375d6a0648fd96616a69ecf1c43a7c0f` passed Kingdom Quality Gates #670 / run `34718684431`; squash-merged production commit `82624118f88d367c687ba2aee5499287bf19a5a6`.
+Final PR #26 head `88487686375d6a0648fd96616a69ecf1c43a7c0f` passed **Kingdom Quality Gates #670 / run `34718684431`**; squash-merged production commit `82624118f88d367c687ba2aee5499287bf19a5a6`.
 
 Research: `docs/research/2026-09-12-IMP-005-LIVE-VAULT-PORTFOLIO.md`.
 
@@ -354,7 +239,7 @@ Research: `docs/research/2026-09-12-IMP-005-LIVE-VAULT-PORTFOLIO.md`.
 
 PR #24 provides the derived value-history read model. Valuation evidence is projected with exact evidence IDs; collector-recorded `sold` provenance events are projected with exact provenance IDs; corrections remain append-only; unpriced sales do not receive manufactured amounts; realized owner sales do not influence the current sold-comparable estimate; and cross-currency aggregation remains disabled.
 
-Final PR #24 head `56e95a7658e4c2ae3cbaac055f28e7add88e412e` passed Quality Gates #664 / run `34682718156`; implementation commit `061e29ab129ec5ee8e09a240afb8018ae408c996`; production recovery closure PR #25 merged as `30b6a4cd55fc577d1218c112389244aeb06a9f15`.
+Final PR #24 head `56e95a7658e4c2ae3cbaac055f28e7add88e412e` passed **Quality Gates #664 / run `34682718156`**; implementation commit `061e29ab129ec5ee8e09a240afb8018ae408c996`; production recovery closure PR #25 merged as `30b6a4cd55fc577d1218c112389244aeb06a9f15`.
 
 Research: `docs/research/2026-09-12-IMP-005-VALUATION-SOURCE-AND-HISTORY.md`.
 
@@ -392,7 +277,8 @@ Merged implementation `5addf3d483e978c79028ff00812d8beca08b9661`; merged baselin
 - Realized-Sale / Value-History Linkage — PR #24 / #664 — PASS and merged.
 - Live Vault Bootstrap + Evidence-Backed Portfolio Intelligence — PR #26 / #670 — PASS and merged.
 - Provider-Neutral Valuation Observations + Evidence-Cited Keeper — PR #28 / #679 — PASS and merged.
-- Persistent Evidence-Cited Collection Value History — PR #30 / #683 implementation gate — PASS; final documented head re-verification required before merge.
+- Persistent Evidence-Cited Collection Value History — PR #30 / final gate #685 — PASS and merged as `dc9d5a3b180df6fa5c04c115a53a5b105b48b8a4`.
+- First-Class Year + Collector Tags — PR #32 / implementation gate #708 — PASS; final documented-head re-verification required before merge.
 
 ---
 
@@ -405,12 +291,14 @@ Build in this order:
 1. map every locked IMP-005 Royal Vault functional deliverable, backend/frontend deliverable, Keeper requirement, test requirement and definition-of-done item to the current production implementation and evidence;
 2. identify any remaining real Vault gap before declaring Royal Vault Phase 1 complete instead of adding redundant code;
 3. research current collector inventory/insurance-report workflows and data requirements from reputable insurance/documentation providers;
-4. build an owner-controlled export/report boundary that can package treasure identity, quantity, condition context, purchase data, media references, provenance references and evidence-backed valuation snapshot data without calling the result an appraisal;
+4. build an owner-controlled export/report boundary that can package treasure identity, quantity, Year/Tags, condition context, acquisition data, media references/integrity, provenance references and evidence-backed valuation snapshot data without calling the result an appraisal;
 5. keep estimated value visibly separate from confirmed acquisition/disposition financial records;
 6. preserve exact snapshot/evidence/provenance identifiers in exported valuation history where included;
 7. keep automatic FX conversion disabled until a separately governed FX policy exists;
 8. maintain accessible print/mobile behavior and collector data portability;
 9. pass full Kingdom Quality Gates and update README/this ledger.
+
+Current research direction already identifies recurring insurance-documentation needs: proof of ownership, inventory records, clear photographs, receipts/acquisition records, condition, provenance, storage location and defensible value documentation. The Kingdom report must package those records honestly and must never label an advisory Kingdom estimate as a professional appraisal.
 
 After the IMP-005 completion audit closes Royal Vault Phase 1, continue the locked construction sequence rather than keeping the Vault milestone open indefinitely.
 
