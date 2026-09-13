@@ -12,6 +12,9 @@ const contractFiles = [
   "packages/identity/src/service.mjs",
   "packages/kings-ai/src/client.mjs",
   "packages/great-hall/src/service.mjs",
+  "packages/marketplace/src/repository.mjs",
+  "packages/marketplace/src/service.mjs",
+  "packages/marketplace/src/great-hall-adapter.mjs",
   "packages/catalog/src/cache.mjs",
   "packages/catalog/src/open-library-provider.mjs",
   "packages/catalog/src/upcitemdb-provider.mjs",
@@ -57,6 +60,8 @@ const contractFiles = [
   "apps/web/catalog-http.mjs",
   "apps/web/grading-analysis-http.mjs",
   "apps/web/grading-reference-http.mjs",
+  "apps/web/marketplace-http.mjs",
+  "apps/web/marketplace-server.mjs",
   "apps/web/vault-import-http.mjs",
   "apps/web/vault-intake-http.mjs",
   "apps/web/vault-media-http.mjs",
@@ -114,4 +119,4 @@ for (const relative of contractFiles) {
 const entries = await readdir(resolve(root, "packages"), { withFileTypes: true });
 if (!entries.some((entry) => entry.isDirectory())) throw new Error("No package boundaries found.");
 
-console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, provider-neutral catalog/cert evidence, AI card pre-grading profiles/centering/evidence/detector-coverage/advisory-range and macro-aware explainable front/back dimension contracts, deterministic finding identity, calibrated physical scale measurement, normalized extent measurement, append-only finding review/report services and responsive explainable report UI, append-only hashed pre-grade persistence and read-only estimate API/UI, browser capture-quality/card-geometry/contour/macro-corner-edge/paired-surface/color/autograph analysis UI, authenticated Commons autograph reference search/proxy, append-only provenance API/UI, append-only evidence-backed valuation API/UI, official provider observation contracts with explicit policy identity, evidence-cited Keeper valuation explanations, live Vault enhancement bootstrap, evidence-backed portfolio rollups with explicit coverage and separate currencies, saved Vault views and deterministic keyset retrieval API/UI, cycle-safe individual and previewed atomic bulk reorganization API/UI, Vault, transactional import, Royal Intake Queue UI/API, progressive barcode scanner, secure media, Kingdom voice boundaries, and wired production runtime composition.");
+console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, Vault, provider-neutral catalog/cert evidence and valuation observations, evidence-backed portfolio intelligence, AI pre-grading and reporting, secure media/import/intake/provenance/reorganization/retrieval boundaries, Kingdom voice, and the production-wired Marketplace fixed-price listing repository/service/HTTP/Great-Hall integration boundary.");
