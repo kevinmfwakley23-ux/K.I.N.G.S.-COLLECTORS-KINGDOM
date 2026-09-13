@@ -11,13 +11,13 @@ function requireIdentity(identityService, request) {
   return identity;
 }
 
-function sendJson(response, statusCode, payload, method, securityHeaders, { publicResponse = false } = {}) {
+function sendJson(response, statusCode, payload, method, securityHeaders) {
   const body = JSON.stringify(payload);
   response.writeHead(statusCode, {
     ...securityHeaders,
     "Content-Type": "application/json; charset=utf-8",
     "Content-Length": Buffer.byteLength(body),
-    "Cache-Control": publicResponse ? "public, max-age=15" : "private, no-store, max-age=0"
+    "Cache-Control": "no-store, max-age=0"
   });
   response.end(method === "HEAD" ? undefined : body);
 }
@@ -98,11 +98,11 @@ export async function handleMarketplaceRoute({
         buyerProtectionAvailable: false,
         ownershipTransferAvailable: false
       }
-    }, method, securityHeaders, { publicResponse: true });
+    }, method, securityHeaders);
   }
 
   if (route.kind === "listing" && !route.action && (method === "GET" || method === "HEAD")) {
-    return sendJson(response, 200, { listing: marketplaceService.getPublic(route.listingId) }, method, securityHeaders, { publicResponse: true });
+    return sendJson(response, 200, { listing: marketplaceService.getPublic(route.listingId) }, method, securityHeaders);
   }
 
   const identity = requireIdentity(identityService, request);
