@@ -73,6 +73,20 @@ function limitFrom(requestUrl, fallback = 50) {
   return limit;
 }
 
+function discoveryFilters(requestUrl) {
+  const parameters = requestUrl.searchParams;
+  return {
+    query: parameters.get("q") ?? undefined,
+    category: parameters.get("category") ?? undefined,
+    currency: parameters.get("currency") ?? undefined,
+    fulfillmentMethod: parameters.get("fulfillment") ?? undefined,
+    minAmountCents: parameters.get("minAmountCents") ?? undefined,
+    maxAmountCents: parameters.get("maxAmountCents") ?? undefined,
+    sort: parameters.get("sort") ?? undefined,
+    limit: parameters.get("limit") ?? undefined
+  };
+}
+
 export async function handleMarketplaceRoute({
   request,
   response,
@@ -87,8 +101,9 @@ export async function handleMarketplaceRoute({
   const method = request.method ?? "GET";
 
   if (route.kind === "listings" && (method === "GET" || method === "HEAD")) {
+    const discovery = marketplaceService.discovery(discoveryFilters(requestUrl));
     return sendJson(response, 200, {
-      listings: marketplaceService.browse({ limit: limitFrom(requestUrl) }),
+      ...discovery,
       commerce: {
         listingPublicationAvailable: true,
         fixedPriceAvailable: true,
