@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/marketplace.css">
   <link rel="stylesheet" href="/marketplace-discovery.css">
+  <link rel="stylesheet" href="/marketplace-engagement.css">
 </head>
 <body class="marketplace-page">
   <header class="marketplace-header">
@@ -18,6 +19,7 @@
     <nav aria-label="Marketplace navigation">
       <a href="/great-hall.html">Great Hall</a>
       <a href="/vault.html">Royal Vault</a>
+      <a href="#market-watchlist">My Watchlist</a>
       <a href="#seller-stall">My Stall</a>
     </nav>
   </header>
@@ -31,7 +33,7 @@
       </div>
       <aside class="marketplace-trust-card" aria-label="Current commerce status">
         <strong>Listing market now open</strong>
-        <p>Fixed-price publication and discovery are live. Checkout, payment, settlement, shipping protection, disputes, and ownership transfer are intentionally not enabled in this foundation.</p>
+        <p>Fixed-price publication, discovery, private watchlists, and opt-in seller storefronts are live. Checkout, payment, settlement, shipping protection, disputes, ownership transfer, alerts, and verified-purchase ratings are intentionally not enabled yet.</p>
       </aside>
     </section>
 
@@ -56,19 +58,13 @@
           <summary>Refine market</summary>
           <div class="marketplace-refine-grid">
             <label>Category
-              <select id="market-category" name="category">
-                <option value="">All categories</option>
-              </select>
+              <select id="market-category" name="category"><option value="">All categories</option></select>
             </label>
             <label>Currency
-              <select id="market-currency" name="currency">
-                <option value="">All currencies</option>
-              </select>
+              <select id="market-currency" name="currency"><option value="">All currencies</option></select>
             </label>
             <label>Fulfillment
-              <select id="market-fulfillment" name="fulfillment">
-                <option value="">Any fulfillment</option>
-              </select>
+              <select id="market-fulfillment" name="fulfillment"><option value="">Any fulfillment</option></select>
             </label>
             <label>Sort
               <select id="market-sort" name="sort">
@@ -91,10 +87,7 @@
 
       <aside id="market-saved-searches" class="marketplace-saved-searches" aria-labelledby="market-saved-searches-title">
         <div class="marketplace-saved-search-heading">
-          <div>
-            <p class="marketplace-kicker">Private discovery tools</p>
-            <h3 id="market-saved-searches-title">Saved market searches</h3>
-          </div>
+          <div><p class="marketplace-kicker">Private discovery tools</p><h3 id="market-saved-searches-title">Saved market searches</h3></div>
           <p id="market-saved-search-status" class="marketplace-form-note" role="status" aria-live="polite">Checking saved searches…</p>
         </div>
         <form id="market-save-search-form" class="marketplace-save-search-form" hidden>
@@ -107,39 +100,61 @@
         <p class="marketplace-form-note">Saved searches store private search definitions, not old result snapshots. Running one always checks the current supported market. Automatic search alerts are not enabled yet.</p>
       </aside>
 
+      <aside id="market-watchlist" class="marketplace-watchlist" aria-labelledby="market-watchlist-title">
+        <div class="marketplace-saved-search-heading">
+          <div><p class="marketplace-kicker">Private buyer tools</p><h3 id="market-watchlist-title">My watched listings</h3></div>
+          <p id="market-watchlist-status" class="marketplace-form-note" role="status" aria-live="polite">Checking your private watchlist…</p>
+        </div>
+        <div id="market-watchlist-list" class="marketplace-watchlist-list"></div>
+        <p class="marketplace-form-note">Watching a listing creates no reservation, offer, order, or purchase commitment. If a seller withdraws an offer, the bookmark remains only as an unavailable tombstone. Watchlist alerts are not enabled yet.</p>
+      </aside>
+
       <div id="market-active-filters" class="marketplace-active-filters" aria-label="Active market filters"></div>
       <p id="market-status" class="marketplace-status" role="status" aria-live="polite">Loading active offers…</p>
       <div id="market-listings" class="marketplace-grid" aria-live="polite"></div>
-      <div class="marketplace-load-more-wrap">
-        <button id="load-more-market" type="button" hidden>Load more offers</button>
-      </div>
+      <div class="marketplace-load-more-wrap"><button id="load-more-market" type="button" hidden>Load more offers</button></div>
     </section>
 
     <section id="seller-stall" class="marketplace-section marketplace-stall" aria-labelledby="seller-stall-title">
       <div class="marketplace-section-heading">
-        <div>
-          <p class="marketplace-kicker">Collector-controlled selling</p>
-          <h2 id="seller-stall-title">My merchant stall</h2>
-        </div>
+        <div><p class="marketplace-kicker">Collector-controlled selling</p><h2 id="seller-stall-title">My merchant stall</h2></div>
       </div>
       <div id="seller-auth-state" class="marketplace-status" role="status" aria-live="polite">Checking your Kingdom session…</div>
+
+      <aside class="marketplace-storefront-editor" aria-labelledby="seller-profile-title">
+        <div class="marketplace-saved-search-heading">
+          <div><p class="marketplace-kicker">Optional public seller identity</p><h3 id="seller-profile-title">Storefront profile</h3></div>
+          <a id="seller-public-link" class="marketplace-secondary-link" href="/marketplace.html" hidden>View public storefront</a>
+        </div>
+        <p id="seller-profile-status" class="marketplace-form-note" role="status" aria-live="polite">Checking your storefront profile…</p>
+        <form id="seller-profile-form" class="marketplace-profile-form" hidden>
+          <label>Public storefront ID
+            <input id="seller-public-id" name="publicId" minlength="3" maxlength="40" pattern="[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])" autocomplete="off" placeholder="card-castle">
+          </label>
+          <p id="seller-public-id-note" class="marketplace-form-note">Choose this once. It becomes part of your public storefront link and cannot be changed after creation.</p>
+          <label>Storefront name
+            <input id="seller-shop-name" name="shopName" minlength="2" maxlength="80" required autocomplete="organization" placeholder="Card Castle Collectibles">
+          </label>
+          <label>Storefront bio
+            <textarea id="seller-bio" name="bio" maxlength="1000" rows="3" placeholder="Describe what you collect and sell. Do not include private contact or payment details."></textarea>
+          </label>
+          <label class="marketplace-storefront-publication">
+            <input id="seller-published" name="published" type="checkbox">
+            Publish this storefront profile and connect it to my active public listings.
+          </label>
+          <button type="submit">Save storefront settings</button>
+        </form>
+        <p class="marketplace-form-note">The storefront is private until you explicitly publish it. Publishing exposes only your seller-selected storefront ID, name, bio, and currently supported public listings. It does not expose your account ID, email, Vault IDs, storage locations, or private collection data. A storefront is not identity verification.</p>
+      </aside>
 
       <form id="listing-form" class="marketplace-form" hidden>
         <fieldset>
           <legend>Create a draft from your Royal Vault</legend>
-          <label>Vault treasure
-            <select id="listing-treasure" name="treasureId" required></select>
-          </label>
+          <label>Vault treasure<select id="listing-treasure" name="treasureId" required></select></label>
           <div class="marketplace-form-row">
-            <label>Price
-              <input id="listing-price" name="price" inputmode="decimal" placeholder="125.00" required>
-            </label>
-            <label>Currency
-              <input id="listing-currency" name="currency" value="USD" maxlength="3" pattern="[A-Za-z]{3}" required>
-            </label>
-            <label>Quantity
-              <input id="listing-quantity" name="quantity" type="number" min="1" step="1" value="1" required>
-            </label>
+            <label>Price<input id="listing-price" name="price" inputmode="decimal" placeholder="125.00" required></label>
+            <label>Currency<input id="listing-currency" name="currency" value="USD" maxlength="3" pattern="[A-Za-z]{3}" required></label>
+            <label>Quantity<input id="listing-quantity" name="quantity" type="number" min="1" step="1" value="1" required></label>
           </div>
           <label>Fulfillment
             <select id="listing-fulfillment" name="fulfillmentMethod" required>
@@ -148,9 +163,7 @@
               <option value="shipping-or-pickup">Shipping or local pickup</option>
             </select>
           </label>
-          <label>Seller description
-            <textarea id="listing-description" name="sellerDescription" maxlength="4000" rows="4" placeholder="Describe included items, visible flaws, accessories, or other buyer-relevant details."></textarea>
-          </label>
+          <label>Seller description<textarea id="listing-description" name="sellerDescription" maxlength="4000" rows="4" placeholder="Describe included items, visible flaws, accessories, or other buyer-relevant details."></textarea></label>
           <p class="marketplace-form-note">Creating a draft does not publish the item. Publication requires three explicit seller attestations and rechecks the current Vault quantity.</p>
           <button type="submit">Create private draft</button>
         </fieldset>
@@ -160,11 +173,10 @@
     </section>
   </main>
 
-  <footer class="marketplace-footer">
-    <p>K.I.N.G.S. Collector's Kingdom · Marketplace representation is evidence, not authentication or an appraisal.</p>
-  </footer>
+  <footer class="marketplace-footer"><p>K.I.N.G.S. Collector's Kingdom · Marketplace representation is evidence, not authentication or an appraisal.</p></footer>
   <script src="/marketplace-discovery-boot.js"></script>
   <script type="module" src="/marketplace.js"></script>
   <script type="module" src="/marketplace-saved-searches-ui.js"></script>
+  <script type="module" src="/marketplace-engagement-ui.js"></script>
 </body>
 </html>

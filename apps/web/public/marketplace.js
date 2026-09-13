@@ -104,18 +104,30 @@ function listingFacts(listing) {
   ].filter(Boolean).map((value) => `<span>${escapeHtml(value)}</span>`).join("");
 }
 
+function sellerLine(listing) {
+  if (!listing.sellerStorefrontAvailable || !listing.seller?.id) {
+    return `<p class="marketplace-meta">Seller storefront unavailable for this listing. Verified-purchase feedback is not enabled yet.</p>`;
+  }
+  const href = `/marketplace-seller.html?id=${encodeURIComponent(listing.seller.id)}`;
+  return `<p class="marketplace-meta">Seller: <a href="${escapeHtml(href)}">${escapeHtml(listing.seller.shopName)}</a> · Verified-purchase feedback is not enabled yet.</p>`;
+}
+
 function listingCards(listings) {
   return listings.map((listing) => `
-    <article class="marketplace-card">
+    <article class="marketplace-card" data-listing-id="${escapeHtml(listing.id)}">
       <div class="marketplace-card-topline">
         <span class="marketplace-badge">${escapeHtml(listing.saleFormat)}</span>
         <span>${escapeHtml(listing.fulfillmentMethod)}</span>
       </div>
       <h3>${escapeHtml(listing.title)}</h3>
+      ${sellerLine(listing)}
       <div class="marketplace-facts">${listingFacts(listing)}</div>
       ${listing.sellerDescription ? `<p>${escapeHtml(listing.sellerDescription)}</p>` : ""}
       <div class="marketplace-price">${escapeHtml(money(listing.amountCents, listing.currency))}</div>
       <p class="marketplace-meta">Quantity offered: ${listing.quantity} · Published ${escapeHtml(new Date(listing.publishedAt).toLocaleString())}</p>
+      <div class="marketplace-card-actions">
+        <button type="button" class="marketplace-secondary" data-watch-listing-id="${escapeHtml(listing.id)}">Watch listing</button>
+      </div>
       <details>
         <summary>Publication evidence</summary>
         <code>${escapeHtml(listing.representationSha256)}</code>

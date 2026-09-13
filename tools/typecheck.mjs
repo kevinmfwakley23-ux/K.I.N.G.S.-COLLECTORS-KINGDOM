@@ -14,6 +14,10 @@ const contractFiles = [
   "packages/great-hall/src/service.mjs",
   "packages/marketplace/src/repository.mjs",
   "packages/marketplace/src/service.mjs",
+  "packages/marketplace/src/query-service.mjs",
+  "packages/marketplace/src/saved-search-repository.mjs",
+  "packages/marketplace/src/engagement-repository.mjs",
+  "packages/marketplace/src/engagement-service.mjs",
   "packages/marketplace/src/great-hall-adapter.mjs",
   "packages/catalog/src/cache.mjs",
   "packages/catalog/src/open-library-provider.mjs",
@@ -119,4 +123,4 @@ for (const relative of contractFiles) {
 const entries = await readdir(resolve(root, "packages"), { withFileTypes: true });
 if (!entries.some((entry) => entry.isDirectory())) throw new Error("No package boundaries found.");
 
-console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, Vault, provider-neutral catalog/cert evidence and valuation observations, evidence-backed portfolio intelligence, AI pre-grading and reporting, secure media/import/intake/provenance/reorganization/retrieval boundaries, Kingdom voice, and the production-wired Marketplace fixed-price listing repository/service/HTTP/Great-Hall integration boundary.");
+console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, Vault, provider-neutral catalog/cert evidence and valuation observations, evidence-backed portfolio intelligence, AI pre-grading and reporting, secure media/import/intake/provenance/reorganization/retrieval boundaries, Kingdom voice, and the production-wired Marketplace listing, discovery, saved-search, watchlist and seller-storefront boundaries.");

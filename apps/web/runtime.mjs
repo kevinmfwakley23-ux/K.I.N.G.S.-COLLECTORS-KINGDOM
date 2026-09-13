@@ -9,6 +9,8 @@ import { createGreatHallService } from "../../packages/great-hall/src/service.mj
 import { createIdentityService } from "../../packages/identity/src/service.mjs";
 import { SqliteIdentityStore } from "../../packages/identity/src/sqlite-store.mjs";
 import { createKingsAiClient } from "../../packages/kings-ai/src/client.mjs";
+import { createMarketplaceEngagementRepository } from "../../packages/marketplace/src/engagement-repository.mjs";
+import { createMarketplaceEngagementService } from "../../packages/marketplace/src/engagement-service.mjs";
 import { createMarketplaceGreatHallAdapter } from "../../packages/marketplace/src/great-hall-adapter.mjs";
 import { createMarketplaceQueryService } from "../../packages/marketplace/src/query-service.mjs";
 import { createMarketplaceRepository } from "../../packages/marketplace/src/repository.mjs";
@@ -58,9 +60,17 @@ export async function runKingdomRuntime() {
     marketplaceService: marketplaceCoreService,
     savedSearchRepository: marketplaceSavedSearchRepository
   });
+  const marketplaceEngagementRepository = createMarketplaceEngagementRepository({ vaultStore });
+  const marketplaceEngagementService = createMarketplaceEngagementService({
+    vaultStore,
+    marketplaceRepository,
+    marketplaceService: marketplaceCoreService,
+    engagementRepository: marketplaceEngagementRepository
+  });
   const marketplaceService = Object.freeze({
     ...marketplaceCoreService,
-    ...marketplaceQueryService
+    ...marketplaceQueryService,
+    ...marketplaceEngagementService
   });
   const vaultQueryRepository = createVaultQueryRepository({ vaultStore });
   const vaultQueryService = createVaultQueryService({
@@ -187,6 +197,10 @@ export async function runKingdomRuntime() {
       marketplaceListingPublicationAvailable: true,
       marketplaceSavedSearchesAvailable: true,
       marketplaceSavedSearchNotificationsAvailable: false,
+      marketplaceSellerStorefrontsAvailable: true,
+      marketplaceVerifiedPurchaseFeedbackAvailable: false,
+      marketplaceWatchlistsAvailable: true,
+      marketplaceWatchlistNotificationsAvailable: false,
       marketplaceCheckoutAvailable: false
     });
   });
