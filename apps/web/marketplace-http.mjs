@@ -59,6 +59,32 @@ function routeFor(pathname) {
   if (pathname === "/api/marketplace/listings") return { kind: "listings" };
   if (pathname === "/api/marketplace/my-listings") return { kind: "mine" };
   if (pathname === "/api/marketplace/saved-searches") return { kind: "saved-searches" };
+  if (pathname === "/api/marketplace/seller-profile") return { kind: "seller-profile" };
+  if (pathname === "/api/marketplace/watchlist") return { kind: "watchlist" };
+
+  const sellerMatch = pathname.match(/^\/api\/marketplace\/sellers\/([^/]+)(?:\/(listings))?$/);
+  if (sellerMatch) {
+    return {
+      kind: sellerMatch[2] === "listings" ? "seller-listings" : "seller",
+      sellerPublicId: decodePathPart(
+        sellerMatch[1],
+        "invalid_marketplace_seller_id",
+        "The Marketplace seller identifier is invalid."
+      )
+    };
+  }
+
+  const watchMatch = pathname.match(/^\/api\/marketplace\/watchlist\/([^/]+)$/);
+  if (watchMatch) {
+    return {
+      kind: "watchlist-entry",
+      listingId: decodePathPart(
+        watchMatch[1],
+        "invalid_marketplace_listing_id",
+        "The Marketplace listing identifier is invalid."
+      )
+    };
+  }
 
   const savedSearchMatch = pathname.match(/^\/api\/marketplace\/saved-searches\/([^/]+)(?:\/(run))?$/);
   if (savedSearchMatch) {
@@ -96,6 +122,16 @@ function limitFrom(requestUrl, fallback = 50) {
   return limit;
 }
 
+function watchlistLimitFrom(requestUrl, fallback = 100) {
+  const raw = requestUrl.searchParams.get("limit");
+  if (raw === null) return fallback;
+  const limit = Number(raw);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 500) {
+    throw new MarketplaceError("invalid_marketplace_watchlist_limit", "Marketplace watchlist limit must be between 1 and 500.");
+  }
+  return limit;
+}
+
 function discoveryFilters(requestUrl) {
   const parameters = requestUrl.searchParams;
   return {
@@ -127,6 +163,28 @@ function savedSearchCapabilities(marketplaceService) {
   });
 }
 
+function engagementCapabilities(marketplaceService) {
+  return Object.freeze({
+    sellerStorefrontsAvailable: typeof marketplaceService.getPublicSeller === "function",
+    watchlistsAvailable: typeof marketplaceService.listWatchlist === "function",
+    maxWatchlist: marketplaceService.maxWatchlist ?? null,
+    watchlistNotificationsAvailable: false,
+    verifiedPurchaseFeedbackAvailable: marketplaceService.verifiedPurchaseFeedbackAvailable === true
+  });
+}
+
+function decorateDiscovery(marketplaceService, discovery) {
+  return typeof marketplaceService.decorateDiscovery === "function"
+    ? marketplaceService.decorateDiscovery(discovery)
+    : discovery;
+}
+
+function decorateListing(marketplaceService, listing) {
+  return typeof marketplaceService.decoratePublicListing === "function"
+    ? marketplaceService.decoratePublicListing(listing)
+    : listing;
+}
+
 export async function handleMarketplaceRoute({
   request,
   response,
@@ -147,8 +205,9 @@ export async function handleMarketplaceRoute({
       ? marketplaceService.browsePage(discoveryFilters(requestUrl))
       : marketplaceService.discovery(discoveryFilters(requestUrl));
     return sendJson(response, 200, {
-      ...discovery,
+      ...decorateDiscovery(marketplaceService, discovery),
       savedSearches: savedSearchCapabilities(marketplaceService),
+      engagement: engagementCapabilities(marketplaceService),
       commerce: {
         listingPublicationAvailable: true,
         fixedPriceAvailable: true,
@@ -162,10 +221,80 @@ export async function handleMarketplaceRoute({
   }
 
   if (route.kind === "listing" && !route.action && (method === "GET" || method === "HEAD")) {
-    return sendJson(response, 200, { listing: marketplaceService.getPublic(route.listingId) }, method, securityHeaders);
+    return sendJson(response, 200, {
+      listing: decorateListing(marketplaceService, marketplaceService.getPublic(route.listingId)),
+      engagement: engagementCapabilities(marketplaceService)
+    }, method, securityHeaders);
+  }
+
+  if (route.kind === "seller" && (method === "GET" || method === "HEAD")) {
+    if (typeof marketplaceService.getPublicSeller !== "function") {
+      throw new MarketplaceError("marketplace_storefronts_unavailable", "Marketplace seller storefronts are unavailable.", 503);
+    }
+    return sendJson(response, 200, {
+      seller: marketplaceService.getPublicSeller(route.sellerPublicId),
+      engagement: engagementCapabilities(marketplaceService)
+    }, method, securityHeaders);
+  }
+
+  if (route.kind === "seller-listings" && (method === "GET" || method === "HEAD")) {
+    if (typeof marketplaceService.listPublicSellerListings !== "function") {
+      throw new MarketplaceError("marketplace_storefronts_unavailable", "Marketplace seller storefronts are unavailable.", 503);
+    }
+    return sendJson(response, 200, {
+      ...marketplaceService.listPublicSellerListings(route.sellerPublicId, { limit: limitFrom(requestUrl, 24) }),
+      engagement: engagementCapabilities(marketplaceService)
+    }, method, securityHeaders);
   }
 
   const identity = requireIdentity(identityService, request);
+
+  if (route.kind === "seller-profile") {
+    if (typeof marketplaceService.getMySellerProfile !== "function") {
+      throw new MarketplaceError("marketplace_storefronts_unavailable", "Marketplace seller storefronts are unavailable.", 503);
+    }
+    if (method === "GET" || method === "HEAD") {
+      return sendJson(response, 200, {
+        seller: marketplaceService.getMySellerProfile(identity),
+        engagement: engagementCapabilities(marketplaceService)
+      }, method, securityHeaders);
+    }
+    if (method === "PATCH") {
+      const body = await readJson(request);
+      return sendJson(response, 200, {
+        seller: marketplaceService.updateMySellerProfile(identity, body),
+        engagement: engagementCapabilities(marketplaceService)
+      }, method, securityHeaders);
+    }
+  }
+
+  if (route.kind === "watchlist") {
+    if (typeof marketplaceService.listWatchlist !== "function") {
+      throw new MarketplaceError("marketplace_watchlist_unavailable", "Marketplace watchlists are unavailable.", 503);
+    }
+    if (method === "GET" || method === "HEAD") {
+      return sendJson(response, 200, {
+        ...marketplaceService.listWatchlist(identity, { limit: watchlistLimitFrom(requestUrl, 100) }),
+        engagement: engagementCapabilities(marketplaceService)
+      }, method, securityHeaders);
+    }
+    if (method === "POST") {
+      const body = await readJson(request);
+      return sendJson(response, 201, {
+        item: marketplaceService.addToWatchlist(identity, body.listingId),
+        engagement: engagementCapabilities(marketplaceService)
+      }, method, securityHeaders);
+    }
+  }
+
+  if (route.kind === "watchlist-entry" && method === "DELETE") {
+    if (typeof marketplaceService.removeFromWatchlist !== "function") {
+      throw new MarketplaceError("marketplace_watchlist_unavailable", "Marketplace watchlists are unavailable.", 503);
+    }
+    return sendJson(response, 200, {
+      result: marketplaceService.removeFromWatchlist(identity, route.listingId)
+    }, method, securityHeaders);
+  }
 
   if (route.kind === "saved-searches") {
     if (typeof marketplaceService.listSavedSearches !== "function") {
@@ -212,8 +341,9 @@ export async function handleMarketplaceRoute({
       }, method, securityHeaders);
     }
     if (route.action === "run" && (method === "GET" || method === "HEAD")) {
+      const result = marketplaceService.runSavedSearch(identity, route.savedSearchId, savedSearchRunOptions(requestUrl));
       return sendJson(response, 200, {
-        ...marketplaceService.runSavedSearch(identity, route.savedSearchId, savedSearchRunOptions(requestUrl)),
+        ...decorateDiscovery(marketplaceService, result),
         capabilities: savedSearchCapabilities(marketplaceService)
       }, method, securityHeaders);
     }
@@ -253,13 +383,13 @@ export async function handleMarketplaceRoute({
 
   if (route.kind === "listing" && route.action === "publish" && method === "POST") {
     const body = await readJson(request);
-    return sendJson(response, 200, {
-      listing: marketplaceService.publish(identity, route.listingId, {
-        attestPossession: body.attestPossession,
-        attestRightToSell: body.attestRightToSell,
-        confirmAccuracy: body.confirmAccuracy
-      })
-    }, method, securityHeaders);
+    const listing = marketplaceService.publish(identity, route.listingId, {
+      attestPossession: body.attestPossession,
+      attestRightToSell: body.attestRightToSell,
+      confirmAccuracy: body.confirmAccuracy
+    });
+    if (typeof marketplaceService.ensureSellerProfile === "function") marketplaceService.ensureSellerProfile(identity);
+    return sendJson(response, 200, { listing }, method, securityHeaders);
   }
 
   if (route.kind === "listing" && route.action === "withdraw" && method === "POST") {
