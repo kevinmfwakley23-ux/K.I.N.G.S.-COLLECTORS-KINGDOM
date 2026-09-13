@@ -31,7 +31,7 @@ function cleanSelection(input = {}) {
   }
   const collectionId = cleanId(input.collectionId, "collection_id");
   const includeArchived = cleanBoolean(input.includeArchived, "include_archived");
-  let treasureIds = [];
+  const treasureIds = [];
   if (input.treasureIds !== undefined && input.treasureIds !== null) {
     if (!Array.isArray(input.treasureIds)) throw new VaultError("invalid_report_treasure_ids", "treasureIds must be an array.");
     if (input.treasureIds.length > MAX_SELECTED_TREASURES) {
@@ -91,7 +91,11 @@ function sumByCurrency(entries, amountKey = "amountCents") {
     const currency = entry?.currency;
     const amount = entry?.[amountKey];
     if (!currency || !Number.isSafeInteger(amount) || amount < 0) continue;
-    totals.set(currency, (totals.get(currency) ?? 0) + amount);
+    const next = (totals.get(currency) ?? 0) + amount;
+    if (!Number.isSafeInteger(next) || next < 0) {
+      throw new VaultError("report_total_overflow", `The ${currency} report total exceeds the safe integer range.`, 422);
+    }
+    totals.set(currency, next);
   }
   return Object.freeze([...totals.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([currency, totalCents]) => Object.freeze({ currency, totalCents })));
 }
@@ -308,7 +312,11 @@ export function createVaultReportService({
       scope: Object.freeze({ ...scopeDescriptor, includeArchived: scope.includeArchived }),
       summary: Object.freeze({
         treasureCount: reportTreasures.length,
-        unitCount: reportTreasures.reduce((sum, treasure) => sum + treasure.quantity, 0),
+        unitCount: reportTreasures.reduce((sum, treasure) => {
+          const next = sum + treasure.quantity;
+          if (!Number.isSafeInteger(next) || next < 0) throw new VaultError("report_unit_count_overflow", "The report unit count exceeds the safe integer range.", 422);
+          return next;
+        }, 0),
         treasuresWithMedia: reportTreasures.filter((treasure) => treasure.media.length > 0).length,
         treasuresWithProvenance: reportTreasures.filter((treasure) => treasure.provenance.length > 0).length,
         treasuresWithRecordedAcquisitionCost: reportTreasures.filter((treasure) => treasure.recordedFinancialFacts.acquisition).length,
