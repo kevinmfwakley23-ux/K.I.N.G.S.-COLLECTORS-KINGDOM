@@ -1,0 +1,130 @@
+.marketplace-watchlist,
+.marketplace-storefront-editor {
+  display: grid;
+  gap: .8rem;
+  margin: 1rem 0 1.2rem;
+  padding: 1rem;
+  background: rgba(255,255,255,.72);
+  border: 1px solid var(--market-border);
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px rgba(28,22,13,.08);
+}
+
+.marketplace-watchlist-list {
+  display: grid;
+  gap: .65rem;
+}
+
+.marketplace-watch-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .8rem;
+  padding: .8rem;
+  background: rgba(255,255,255,.82);
+  border: 1px solid var(--market-border);
+  border-radius: .75rem;
+}
+
+.marketplace-watch-card > div,
+.marketplace-storefront-heading > div {
+  display: grid;
+  gap: .2rem;
+}
+
+.marketplace-watch-card small,
+.marketplace-storefront-trust small {
+  color: var(--market-muted);
+}
+
+.marketplace-watch-card-unavailable {
+  background: rgba(239,236,228,.72);
+}
+
+.marketplace-profile-form {
+  display: grid;
+  gap: .75rem;
+}
+
+.marketplace-profile-form label {
+  display: grid;
+  gap: .35rem;
+  font-weight: 750;
+}
+
+.marketplace-profile-form input,
+.marketplace-profile-form textarea {
+  width: 100%;
+  padding: .65rem .75rem;
+  color: inherit;
+  background: #fff;
+  border: 1px solid #9b927f;
+  border-radius: .55rem;
+  font: inherit;
+}
+
+.marketplace-secondary-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: .55rem .8rem;
+  color: inherit;
+  text-decoration: none;
+  background: rgba(255,255,255,.8);
+  border: 1px solid var(--market-border);
+  border-radius: .6rem;
+  font-weight: 750;
+}
+
+.marketplace-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin: .65rem 0;
+}
+
+.marketplace-card .marketplace-meta a,
+.marketplace-watch-card a,
+.marketplace-storefront-page a {
+  color: var(--market-gold-dark);
+  font-weight: 800;
+}
+
+.marketplace-storefront-shell {
+  width: min(1180px,calc(100% - 2rem));
+  margin: 2rem auto 4rem;
+}
+
+.marketplace-storefront-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.marketplace-storefront-trust {
+  display: grid;
+  gap: .45rem;
+  padding: 1rem;
+  background: rgba(207,169,88,.12);
+  border: 1px solid rgba(157,117,40,.3);
+  border-radius: .9rem;
+}
+
+.marketplace-storefront-inventory {
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 620px) {
+  .marketplace-watch-card,
+  .marketplace-storefront-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .marketplace-watch-card button,
+  .marketplace-secondary-link {
+    width: 100%;
+    justify-content: center;
+  }
+}
