@@ -5,15 +5,12 @@ K.I.N.G.S. Collector's Kingdom is a collector-first system for cataloging, locat
 ## Engineering status
 
 **Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Active implementation:** **PR #28 — Licensed Valuation Observations + Evidence-Cited Keeper**  
-**Branch:** `imp-005-provider-observations-keeper-evidence`  
-**First complete implementation head:** `d6ef4b62907f9bd9c54cfba8d9f2070602c1c1ce`  
-**Verified implementation gate:** **Kingdom Quality Gates #674** — run `34731699236` — **PASS**  
-**Current production baseline on `main`:** PR #26 — Live Vault Bootstrap + Evidence-Backed Portfolio Intelligence.
+**Latest integrated production slice:** **PR #28 — Licensed Valuation Observations + Evidence-Cited Keeper**  
+**Final PR head:** `7dcb7d62be793d08ac44c9ff3d0abee28bc2ce16`  
+**Final pre-merge verification:** **Kingdom Quality Gates #679** — run `34731859320` — **PASS**  
+**Merged production commit:** `e2105bcae637228ed39de55cb22d0045d5b9c568`
 
-PR #28 adds the next trust-first valuation layer: a provider-neutral observation contract, an official eBay Browse active-listing adapter, immutable provider evidence metadata, deterministic Keeper explanations with exact valuation evidence/source IDs, exact realized-sale provenance IDs, and a real production composition root that wires configured providers into the running app.
-
-The final PR head must still pass the canonical Kingdom Quality Gates after the acceptance-gap/documentation commits before merge.
+PR #28 is integrated on `main`. It adds the next trust-first valuation layer: a provider-neutral observation contract, an official eBay Browse active-listing adapter, immutable provider evidence metadata, deterministic Keeper explanations with exact valuation evidence/source IDs, exact realized-sale provenance IDs, and a real production composition root that wires configured providers into the running app.
 
 ## Permanent truth boundary
 
@@ -57,9 +54,11 @@ The current verified system includes:
 - append-only market-comparable evidence and transparent advisory valuation;
 - derived realized-sale/value-history linkage with exact source-record references;
 - production-wired advanced Vault UI modules;
-- evidence-backed collection portfolio coverage and separate per-currency rollups.
+- evidence-backed collection portfolio coverage and separate per-currency rollups;
+- provider-originated valuation observations with explicit provider/policy/retrieval identity;
+- exact evidence-cited Keeper valuation explanations.
 
-## Provider-neutral valuation observations — PR #28
+## Provider-neutral valuation observations — integrated in PR #28
 
 ### Normalized observation contract
 
@@ -258,7 +257,7 @@ npm run build
 npm run start:prod
 ```
 
-The production build manifest now identifies `apps/web/runtime.mjs` as the real wired entrypoint.
+The production build manifest identifies `apps/web/runtime.mjs` as the real wired entrypoint.
 
 ## Durable engineering records
 
@@ -279,7 +278,7 @@ Documentation is part of implementation. After substantial verified build batche
 - External evidence must surface uncertainty instead of silently inventing identity, variant, condition, grade, authenticity, provenance or value.
 - Mobile, Android, Chromebook, tablet and desktop workflows are first-class.
 
-## Exact next engineering target after PR #28 merges
+## Current next engineering target
 
 **Persistent Collection Value History + Portfolio/History Keeper Intelligence**
 
