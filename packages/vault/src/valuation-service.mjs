@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { VaultError } from "./service.mjs";
 import { buildVaultValueHistory } from "./value-history.mjs";
+import { normalizeValuationObservation } from "./valuation-observation.mjs";
 
 const EVIDENCE_TYPES = Object.freeze(["sold-comparable", "asking-listing"]);
 const ITEM_STATES = Object.freeze(["raw", "graded", "sealed", "other"]);
@@ -8,6 +9,8 @@ const FRESHNESS_WINDOW_DAYS = 180;
 const MINIMUM_RECENT_SOLD_COMPARABLES = 3;
 const MAX_ESTIMATE_COMPARABLES = 20;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const COLLECTOR_EVIDENCE_CLASS = "collector-recorded-comparable";
+const PROVIDER_EVIDENCE_CLASS = "provider-originated-observation";
 
 function requireCollector(identity) {
   if (!identity?.id) throw new VaultError("unauthorized", "Authentication is required.", 401);
@@ -97,7 +100,7 @@ function cleanSourceUrl(value) {
 }
 
 function digestPayload(evidence) {
-  return JSON.stringify({
+  const base = {
     id: evidence.id,
     ownerAccountId: evidence.ownerAccountId,
     treasureId: evidence.treasureId,
@@ -114,9 +117,19 @@ function digestPayload(evidence) {
     gradeLabel: evidence.gradeLabel,
     notes: evidence.notes,
     correctsEvidenceId: evidence.correctsEvidenceId,
-    evidenceClass: evidence.evidenceClass,
-    createdAt: evidence.createdAt
-  });
+    evidenceClass: evidence.evidenceClass
+  };
+  if (evidence.evidenceClass === PROVIDER_EVIDENCE_CLASS) {
+    return JSON.stringify({
+      ...base,
+      providerId: evidence.providerId,
+      providerObservationId: evidence.providerObservationId,
+      providerPolicyId: evidence.providerPolicyId,
+      retrievedAt: evidence.retrievedAt,
+      createdAt: evidence.createdAt
+    });
+  }
+  return JSON.stringify({ ...base, createdAt: evidence.createdAt });
 }
 
 export function valuationEvidenceSha256(evidence) {
@@ -151,6 +164,11 @@ function publicEvidence(evidence, correctedIds) {
     correctsEvidenceId: evidence.correctsEvidenceId,
     corrected: correctedIds.has(evidence.id),
     evidenceClass: evidence.evidenceClass,
+    providerId: evidence.providerId ?? null,
+    providerObservationId: evidence.providerObservationId ?? null,
+    providerPolicyId: evidence.providerPolicyId ?? null,
+    retrievedAt: evidence.retrievedAt ?? null,
+    providerOriginated: evidence.evidenceClass === PROVIDER_EVIDENCE_CLASS,
     independentlyVerified: false,
     evidenceSha256: evidence.evidenceSha256,
     createdAt: evidence.createdAt
@@ -256,14 +274,45 @@ function buildBucketSnapshot(records, now) {
   });
 }
 
-export function createVaultValuationService({ vaultStore, valuationRepository, now = () => new Date() } = {}) {
+function providerDescriptor(provider) {
+  return Object.freeze({
+    id: provider.id,
+    policyId: provider.policyId,
+    observationTypes: Object.freeze([...(provider.observationTypes ?? [])])
+  });
+}
+
+function moneyLabel(amountCents, currency) {
+  return `${currency} ${(amountCents / 100).toFixed(2)}`;
+}
+
+export function createVaultValuationService({
+  vaultStore,
+  valuationRepository,
+  observationProviders = [],
+  now = () => new Date()
+} = {}) {
   if (!vaultStore || typeof vaultStore.findTreasureById !== "function" || typeof vaultStore.writeEvent !== "function") {
     throw new TypeError("Vault valuation service requires the Vault store boundary.");
   }
   if (!valuationRepository || typeof valuationRepository.create !== "function" || typeof valuationRepository.listForTreasure !== "function") {
     throw new TypeError("Vault valuation service requires a valuation repository.");
   }
+  if (!Array.isArray(observationProviders)) throw new TypeError("Vault valuation observationProviders must be an array.");
+  if (observationProviders.length && typeof valuationRepository.findByProviderObservation !== "function") {
+    throw new TypeError("Provider valuation observations require repository provider-observation lookup support.");
+  }
   if (typeof now !== "function") throw new TypeError("Vault valuation service now must be a function.");
+
+  const providers = new Map();
+  for (const provider of observationProviders) {
+    if (!provider || typeof provider.id !== "string" || !provider.id.trim() || typeof provider.policyId !== "string" || !provider.policyId.trim() || typeof provider.observeTreasure !== "function") {
+      throw new TypeError("Each valuation observation provider requires id, policyId, and observeTreasure.");
+    }
+    const id = provider.id.trim().toLowerCase();
+    if (providers.has(id)) throw new TypeError(`Duplicate valuation observation provider '${id}'.`);
+    providers.set(id, provider);
+  }
 
   function requireTreasure(ownerAccountId, treasureId) {
     const treasure = vaultStore.findTreasureById(ownerAccountId, treasureId, { includeArchived: true });
@@ -309,6 +358,9 @@ export function createVaultValuationService({ vaultStore, valuationRepository, n
       if (!target || target.treasureId !== treasureId) {
         throw new VaultError("valuation_correction_target_not_found", "The valuation evidence being corrected does not exist on this treasure.", 404);
       }
+      if (target.evidenceClass === PROVIDER_EVIDENCE_CLASS) {
+        throw new VaultError("valuation_provider_evidence_correction_forbidden", "Provider-originated observations cannot be rewritten by a collector correction. Refresh the provider source instead.");
+      }
       if (valuationRepository.findCorrection(collector.id, treasureId, correctsEvidenceId)) {
         throw new VaultError("valuation_evidence_already_corrected", "That valuation evidence already has a correction. Correct the latest active record instead.");
       }
@@ -332,7 +384,11 @@ export function createVaultValuationService({ vaultStore, valuationRepository, n
       gradeLabel,
       notes: cleanOptionalText(input.notes, "valuation_notes", 4000),
       correctsEvidenceId,
-      evidenceClass: "collector-recorded-comparable",
+      evidenceClass: COLLECTOR_EVIDENCE_CLASS,
+      providerId: null,
+      providerObservationId: null,
+      providerPolicyId: null,
+      retrievedAt: null,
       createdAt
     };
     evidence.evidenceSha256 = valuationEvidenceSha256(evidence);
@@ -356,6 +412,101 @@ export function createVaultValuationService({ vaultStore, valuationRepository, n
 
     const correctedIds = new Set(recordsFor(collector.id, treasureId).map((record) => record.correctsEvidenceId).filter(Boolean));
     return publicEvidence(created, correctedIds);
+  }
+
+  async function refreshProviderObservations(identity, treasureIdValue, input = {}) {
+    const collector = requireCollector(identity);
+    const treasureId = cleanReference(treasureIdValue, "treasure_id", { required: true });
+    const treasure = requireTreasure(collector.id, treasureId);
+    if (!providers.size) {
+      throw new VaultError("valuation_provider_unavailable", "No licensed valuation observation provider is configured for this Kingdom runtime.", 503);
+    }
+
+    const requestedProviderId = input?.providerId ? cleanRequiredText(input.providerId, "valuation_provider_id", 120).toLowerCase() : null;
+    const provider = requestedProviderId ? providers.get(requestedProviderId) : providers.size === 1 ? [...providers.values()][0] : null;
+    if (!provider) {
+      throw new VaultError("valuation_provider_required", "Select a configured valuation observation provider.", 400, {
+        providers: [...providers.keys()]
+      });
+    }
+
+    const result = await provider.observeTreasure({ treasure, limit: input?.limit ?? 10 });
+    if (!result || result.providerId !== provider.id || result.providerPolicyId !== provider.policyId || !Array.isArray(result.observations)) {
+      throw new VaultError("valuation_provider_contract_failure", "The valuation provider returned an invalid observation envelope.", 502);
+    }
+
+    const createdEvidence = [];
+    let skippedExistingCount = 0;
+    const serviceNow = now();
+    for (const rawObservation of result.observations) {
+      const observation = normalizeValuationObservation(rawObservation);
+      if (observation.providerId !== provider.id || observation.providerPolicyId !== provider.policyId) {
+        throw new VaultError("valuation_provider_contract_failure", "The valuation provider returned mismatched provider or policy identity.", 502);
+      }
+      if (observation.observedDate > serviceNow.toISOString().slice(0, 10)) {
+        throw new VaultError("valuation_provider_contract_failure", "The valuation provider returned a future observation date.", 502);
+      }
+      if (valuationRepository.findByProviderObservation(collector.id, treasureId, observation.providerId, observation.providerObservationId)) {
+        skippedExistingCount += 1;
+        continue;
+      }
+
+      const createdAt = now().toISOString();
+      const evidence = {
+        id: randomUUID(),
+        ownerAccountId: collector.id,
+        treasureId,
+        evidenceType: observation.observationType,
+        sourceName: observation.sourceName,
+        sourceUrl: observation.sourceUrl,
+        sourceReference: observation.sourceReference,
+        observedDate: observation.observedDate,
+        amountCents: observation.amountCents,
+        currency: observation.currency,
+        itemState: observation.itemState,
+        conditionLabel: observation.conditionLabel,
+        gradingCompany: observation.gradingCompany,
+        gradeLabel: observation.gradeLabel,
+        notes: observation.notes,
+        correctsEvidenceId: null,
+        evidenceClass: PROVIDER_EVIDENCE_CLASS,
+        providerId: observation.providerId,
+        providerObservationId: observation.providerObservationId,
+        providerPolicyId: observation.providerPolicyId,
+        retrievedAt: observation.retrievedAt,
+        createdAt
+      };
+      evidence.evidenceSha256 = valuationEvidenceSha256(evidence);
+      const created = valuationRepository.create(evidence);
+      createdEvidence.push(created);
+
+      vaultStore.writeEvent({
+        id: randomUUID(),
+        ownerAccountId: collector.id,
+        treasureId,
+        eventType: "vault.valuation_provider_observation_appended",
+        metadata: {
+          valuationEvidenceId: created.id,
+          providerId: created.providerId,
+          providerObservationId: created.providerObservationId,
+          providerPolicyId: created.providerPolicyId,
+          evidenceType: created.evidenceType,
+          observedDate: created.observedDate,
+          retrievedAt: created.retrievedAt
+        },
+        createdAt
+      });
+    }
+
+    const correctedIds = new Set(recordsFor(collector.id, treasureId).map((record) => record.correctsEvidenceId).filter(Boolean));
+    return Object.freeze({
+      provider: providerDescriptor(provider),
+      retrievedAt: result.retrievedAt ?? null,
+      createdCount: createdEvidence.length,
+      skippedExistingCount,
+      rejectedByProviderCount: Number(result.rejectedCount ?? 0),
+      evidence: Object.freeze(createdEvidence.map((record) => publicEvidence(record, correctedIds)))
+    });
   }
 
   function list(identity, treasureIdValue) {
@@ -401,11 +552,14 @@ export function createVaultValuationService({ vaultStore, valuationRepository, n
       evidenceCount: records.length,
       activeEvidenceCount: active.length,
       correctedEvidenceCount: correctedIds.size,
+      providerOriginatedEvidenceCount: active.filter((record) => record.evidenceClass === PROVIDER_EVIDENCE_CLASS).length,
       bucketCount: buckets.length,
       buckets: Object.freeze(buckets),
       history,
+      observationProviders: Object.freeze([...providers.values()].map(providerDescriptor)),
       policy: Object.freeze({
-        evidenceClass: "collector-recorded-comparable",
+        evidenceClass: COLLECTOR_EVIDENCE_CLASS,
+        providerEvidenceClass: PROVIDER_EVIDENCE_CLASS,
         appendOnly: true,
         ordinaryUpdateAvailable: false,
         ordinaryDeleteAvailable: false,
@@ -417,8 +571,78 @@ export function createVaultValuationService({ vaultStore, valuationRepository, n
         freshnessWindowDays: FRESHNESS_WINDOW_DAYS,
         estimateIsAppraisal: false,
         marketValueFieldMutated: false,
-        valueHistoryDerivedFromImmutableRecords: true
+        valueHistoryDerivedFromImmutableRecords: true,
+        providerObservationsRequireExplicitPolicyId: true,
+        automaticFxConversion: false
       })
+    });
+  }
+
+  function explain(identity, treasureIdValue, input = {}) {
+    const collector = requireCollector(identity);
+    const treasureId = cleanReference(treasureIdValue, "treasure_id", { required: true });
+    const treasure = requireTreasure(collector.id, treasureId);
+    const current = snapshot(collector, treasureId);
+    const records = recordsFor(collector.id, treasureId);
+    const correctedIds = new Set(records.map((record) => record.correctsEvidenceId).filter(Boolean));
+    const active = records.filter((record) => !correctedIds.has(record.id));
+    const requestedBucketKey = typeof input?.bucketKey === "string" && input.bucketKey ? input.bucketKey : null;
+    const bucket = requestedBucketKey
+      ? current.buckets.find((candidate) => candidate.key === requestedBucketKey) ?? null
+      : current.buckets.find((candidate) => candidate.estimateAvailable) ?? current.buckets[0] ?? null;
+
+    if (!bucket) {
+      return Object.freeze({
+        treasureId,
+        treasureTitle: treasure.title,
+        generatedAt: now().toISOString(),
+        text: "The Keeper cannot explain a market value yet because this treasure has no valuation evidence. The Kingdom will not invent a price.",
+        citations: Object.freeze([]),
+        bucket: null
+      });
+    }
+
+    const evidenceIds = bucket.estimate?.evidenceIds ?? active.filter((record) => bucketKey(record) === bucket.key).map((record) => record.id);
+    const evidenceById = new Map(active.map((record) => [record.id, record]));
+    const citations = evidenceIds.map((id) => evidenceById.get(id)).filter(Boolean).map((record) => Object.freeze({
+      evidenceId: record.id,
+      evidenceType: record.evidenceType,
+      sourceName: record.sourceName,
+      sourceRecordId: record.providerObservationId ?? record.sourceReference ?? null,
+      sourceUrl: record.sourceUrl,
+      providerId: record.providerId ?? null,
+      providerPolicyId: record.providerPolicyId ?? null,
+      observedDate: record.observedDate,
+      amountCents: record.amountCents,
+      currency: record.currency,
+      itemState: record.itemState,
+      conditionLabel: record.conditionLabel,
+      gradingCompany: record.gradingCompany,
+      gradeLabel: record.gradeLabel
+    }));
+
+    const contextParts = [bucket.context.itemState, bucket.context.conditionLabel, bucket.context.gradingCompany, bucket.context.gradeLabel].filter(Boolean);
+    const contextLabel = `${bucket.context.currency} ${contextParts.join(" • ") || "market evidence"}`;
+    const lines = [`Keeper evidence explanation for ${treasure.title}: ${contextLabel}.`];
+    if (bucket.estimateAvailable) {
+      lines.push(`Advisory estimate ${moneyLabel(bucket.estimate.medianCents, bucket.estimate.currency)} from ${bucket.estimate.sampleCount} recent sold comparables; observed range ${moneyLabel(bucket.estimate.lowCents, bucket.estimate.currency)}–${moneyLabel(bucket.estimate.highCents, bucket.estimate.currency)}.`);
+      lines.push(`The estimate cites valuation evidence IDs ${bucket.estimate.evidenceIds.join(", ")}. Asking listings are excluded from the calculation.`);
+    } else {
+      lines.push(`No estimate is available: ${bucket.recentSoldComparableCount} recent sold comparables are recorded and at least ${bucket.minimumRecentSoldComparables} are required in the same bucket.`);
+      if (citations.length) lines.push(`Current evidence IDs: ${citations.map((citation) => citation.evidenceId).join(", ")}.`);
+    }
+    const sourceIds = citations.filter((citation) => citation.sourceRecordId).map((citation) => citation.sourceRecordId);
+    if (sourceIds.length) lines.push(`Auditable source record IDs: ${sourceIds.join(", ")}.`);
+    if (citations.some((citation) => !citation.sourceRecordId)) lines.push("Some collector-recorded evidence has a source URL but no source record ID; the Keeper will not invent one.");
+    lines.push("This is evidence-backed collector guidance, not an appraisal, guaranteed sale price, or cross-currency conversion.");
+
+    return Object.freeze({
+      treasureId,
+      treasureTitle: treasure.title,
+      generatedAt: now().toISOString(),
+      text: lines.join(" "),
+      citations: Object.freeze(citations),
+      bucket
     });
   }
 
@@ -434,8 +658,10 @@ export function createVaultValuationService({ vaultStore, valuationRepository, n
     evidenceTypes: EVIDENCE_TYPES,
     itemStates: ITEM_STATES,
     append,
+    refreshProviderObservations,
     list,
     snapshot,
+    explain,
     exportAll
   });
 }
