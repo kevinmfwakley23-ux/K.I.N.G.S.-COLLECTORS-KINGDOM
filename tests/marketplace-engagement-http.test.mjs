@@ -82,7 +82,7 @@ async function withServer(run) {
   }
 }
 
-test("Marketplace seller storefront and buyer watchlist are wired end to end without fake reputation", async () => {
+test("Marketplace seller storefront requires explicit public opt-in and buyer watchlist stays private", async () => {
   await withServer(async (baseUrl) => {
     const sellerCookie = await registerAndSignIn(baseUrl, {
       email: "seller-storefront@example.com",
@@ -130,37 +130,64 @@ test("Marketplace seller storefront and buyer watchlist are wired end to end wit
     });
     assert.equal(published.response.status, 200);
 
-    const mine = await requestJson(baseUrl, "/api/marketplace/seller-profile", { headers: { cookie: sellerCookie } });
-    assert.equal(mine.response.status, 200);
-    assert.equal(mine.body.seller.shopName, "Royal Card Seller");
-    assert.equal(mine.body.seller.verifiedPurchaseFeedbackAvailable, false);
-    assert.equal(mine.body.seller.feedbackRating, null);
-    const sellerPublicId = mine.body.seller.id;
+    const beforeProfile = await requestJson(baseUrl, "/api/marketplace/seller-profile", { headers: { cookie: sellerCookie } });
+    assert.equal(beforeProfile.response.status, 200);
+    assert.equal(beforeProfile.body.seller, null);
 
-    const updated = await requestJson(baseUrl, "/api/marketplace/seller-profile", {
+    const marketBeforeProfile = await requestJson(baseUrl, "/api/marketplace/listings?pageSize=24");
+    assert.equal(marketBeforeProfile.response.status, 200);
+    assert.equal(marketBeforeProfile.body.listings[0].seller, null);
+    assert.equal(marketBeforeProfile.body.listings[0].sellerStorefrontAvailable, false);
+
+    const privateProfile = await requestJson(baseUrl, "/api/marketplace/seller-profile", {
       method: "PATCH",
       headers: { cookie: sellerCookie },
       body: JSON.stringify({
+        publicId: "royal-card-vault",
         shopName: "Royal Card Vault",
-        bio: "Collector duplicates and vintage trading cards."
+        bio: "Collector duplicates and vintage trading cards.",
+        published: false
       })
     });
-    assert.equal(updated.response.status, 200);
-    assert.equal(updated.body.seller.shopName, "Royal Card Vault");
+    assert.equal(privateProfile.response.status, 200);
+    assert.equal(privateProfile.body.seller.id, "royal-card-vault");
+    assert.equal(privateProfile.body.seller.isPublic, false);
+    assert.equal(privateProfile.body.seller.publicUrl, null);
+
+    const hiddenStorefront = await requestJson(baseUrl, "/api/marketplace/sellers/royal-card-vault/listings?limit=24");
+    assert.equal(hiddenStorefront.response.status, 404);
+    assert.equal(hiddenStorefront.body.error, "marketplace_seller_not_found");
+
+    const marketWhilePrivate = await requestJson(baseUrl, "/api/marketplace/listings?pageSize=24");
+    assert.equal(marketWhilePrivate.body.listings[0].seller, null);
+
+    const publishProfile = await requestJson(baseUrl, "/api/marketplace/seller-profile", {
+      method: "PATCH",
+      headers: { cookie: sellerCookie },
+      body: JSON.stringify({ published: true })
+    });
+    assert.equal(publishProfile.response.status, 200);
+    assert.equal(publishProfile.body.seller.isPublic, true);
+    assert.ok(publishProfile.body.seller.publishedAt);
+    assert.equal(publishProfile.body.seller.verifiedPurchaseFeedbackAvailable, false);
+    assert.equal(publishProfile.body.seller.feedbackRating, null);
 
     const market = await requestJson(baseUrl, "/api/marketplace/listings?pageSize=24");
     assert.equal(market.response.status, 200);
     assert.equal(market.body.listings.length, 1);
-    assert.equal(market.body.listings[0].seller.id, sellerPublicId);
+    assert.equal(market.body.listings[0].seller.id, "royal-card-vault");
     assert.equal(market.body.listings[0].seller.shopName, "Royal Card Vault");
     assert.equal(market.body.listings[0].seller.verifiedPurchaseFeedbackAvailable, false);
+    assert.equal("sellerAccountId" in market.body.listings[0], false);
+    assert.equal("treasureId" in market.body.listings[0], false);
 
-    const storefront = await requestJson(baseUrl, `/api/marketplace/sellers/${encodeURIComponent(sellerPublicId)}/listings?limit=24`);
+    const storefront = await requestJson(baseUrl, "/api/marketplace/sellers/royal-card-vault/listings?limit=24");
     assert.equal(storefront.response.status, 200);
     assert.equal(storefront.body.seller.shopName, "Royal Card Vault");
     assert.equal(storefront.body.seller.activeListingCount, 1);
     assert.equal(storefront.body.seller.identityVerificationAvailable, false);
     assert.equal(storefront.body.seller.verifiedPurchaseFeedbackCount, 0);
+    assert.equal(storefront.body.seller.transactionCheckoutAvailable, false);
     assert.equal(storefront.body.listings[0].title, "1999 Pokémon Charizard 4/102 Holo");
 
     const ownWatch = await requestJson(baseUrl, "/api/marketplace/watchlist", {
@@ -193,6 +220,7 @@ test("Marketplace seller storefront and buyer watchlist are wired end to end wit
     assert.equal(privateList.body.count, 1);
     assert.equal(privateList.body.items[0].available, true);
     assert.equal(privateList.body.notificationsAvailable, false);
+    assert.equal(privateList.body.purchaseCommitmentCreated, false);
 
     const unauthenticatedWatchlist = await requestJson(baseUrl, "/api/marketplace/watchlist");
     assert.equal(unauthenticatedWatchlist.response.status, 401);
@@ -214,5 +242,15 @@ test("Marketplace seller storefront and buyer watchlist are wired end to end wit
     });
     assert.equal(removed.response.status, 200);
     assert.equal(removed.body.result.removed, true);
+
+    const unpublish = await requestJson(baseUrl, "/api/marketplace/seller-profile", {
+      method: "PATCH",
+      headers: { cookie: sellerCookie },
+      body: JSON.stringify({ published: false })
+    });
+    assert.equal(unpublish.response.status, 200);
+    assert.equal(unpublish.body.seller.isPublic, false);
+    const afterUnpublish = await requestJson(baseUrl, "/api/marketplace/sellers/royal-card-vault");
+    assert.equal(afterUnpublish.response.status, 404);
   });
 });
