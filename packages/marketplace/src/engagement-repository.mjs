@@ -37,6 +37,7 @@ function mapProfile(row) {
 }
 
 function mapWatch(row) {
+  if (!row) return null;
   return Object.freeze({
     ownerAccountId: row.owner_account_id,
     listingId: row.listing_id,
