@@ -13,6 +13,9 @@ const required = [
   "dist/apps/web/vault-media-http.mjs",
   "dist/apps/web/vault-provenance-http.mjs",
   "dist/apps/web/vault-valuation-http.mjs",
+  "dist/apps/web/vault-portfolio-history-http.mjs",
+  "dist/apps/web/vault-report-http.mjs",
+  "dist/apps/web/vault-report-html.mjs",
   "dist/apps/web/vault-query-http.mjs",
   "dist/apps/web/vault-reorganization-http.mjs",
   "dist/apps/web/public/index.html",
@@ -29,6 +32,10 @@ const required = [
   "dist/apps/web/public/vault-bootstrap.js",
   "dist/apps/web/public/vault.css",
   "dist/apps/web/public/vault-metadata-ui.js",
+  "dist/apps/web/public/vault-report-ui.js",
+  "dist/apps/web/public/vault-report-ui.css",
+  "dist/apps/web/public/vault-report.css",
+  "dist/apps/web/public/vault-report.js",
   "dist/apps/web/public/vault-import-core.js",
   "dist/apps/web/public/vault-catalog-core.js",
   "dist/apps/web/public/vault-intake-core.js",
@@ -112,6 +119,7 @@ const required = [
   "dist/packages/vault/src/service.mjs",
   "dist/packages/vault/src/metadata-repository.mjs",
   "dist/packages/vault/src/metadata-service.mjs",
+  "dist/packages/vault/src/report-service.mjs",
   "dist/packages/vault/src/import-repository.mjs",
   "dist/packages/vault/src/import-service.mjs",
   "dist/packages/vault/src/intake-repository.mjs",
@@ -125,6 +133,9 @@ const required = [
   "dist/packages/vault/src/ebay-browse-valuation-provider.mjs",
   "dist/packages/vault/src/valuation-repository.mjs",
   "dist/packages/vault/src/valuation-service.mjs",
+  "dist/packages/vault/src/portfolio-history-repository.mjs",
+  "dist/packages/vault/src/portfolio-history-service.mjs",
+  "dist/packages/vault/src/portfolio-rollup.mjs",
   "dist/packages/vault/src/query-repository.mjs",
   "dist/packages/vault/src/query-service.mjs",
   "dist/packages/vault/src/reorganization-repository.mjs",
@@ -136,4 +147,4 @@ for (const relative of required) await access(resolve(root, relative));
 const manifest = JSON.parse(await readFile(resolve(root, "dist/build-manifest.json"), "utf8"));
 if (manifest.phase !== "IMP-005-ROYAL-VAULT-PHASE-1") throw new Error("Unexpected build phase in manifest.");
 if (manifest.entrypoint !== "apps/web/runtime.mjs") throw new Error("Production build must use the wired runtime composition entrypoint.");
-console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 including Year/Tags metadata authority and collector UI, official provider valuation-observation contracts with explicit policy identity, provider evidence integrity/deduplication, evidence-cited Keeper valuation explanations, AI card pre-grading profiles, centering, capture-quality/card-geometry/contour/macro-corner-edge/paired-raking-light surface/color analysis, macro-aware explainable dimension completeness, web-backed autograph visual similarity with authenticated Commons search/proxy, SHA-linked detector coverage, append-only hashed pre-grade persistence, read-only server-derived Kingdom advisory range, deterministic finding identity, normalized defect extent, explainable front/back dimension summaries, append-only finding-review/report service and responsive report/review UI, catalog/cert evidence, provenance, evidence-backed valuation, live advanced-Vault bootstrap, evidence-backed collection portfolio rollups with coverage and separate currencies, saved views, bulk reorganization, transactional import, Royal Intake, scanner, secure media and Kingdom voice output.");
+console.log("Production artifact verification passed for IMP-005 Royal Vault Phase 1 including collector-owned insurance-preparation evidence reporting, Year/Tags metadata authority and collector UI, official provider valuation-observation contracts with explicit policy identity, provider evidence integrity/deduplication, evidence-cited Keeper valuation explanations, AI card pre-grading profiles, centering, capture-quality/card-geometry/contour/macro-corner-edge/paired-raking-light surface/color analysis, macro-aware explainable dimension completeness, web-backed autograph visual similarity with authenticated Commons search/proxy, SHA-linked detector coverage, append-only hashed pre-grade persistence, read-only server-derived Kingdom advisory range, deterministic finding identity, normalized defect extent, explainable front/back dimension summaries, append-only finding-review/report service and responsive report/review UI, catalog/cert evidence, provenance, evidence-backed valuation, live advanced-Vault bootstrap, evidence-backed collection portfolio rollups with coverage and separate currencies, saved views, bulk reorganization, transactional import, Royal Intake, scanner, secure media and Kingdom voice output.");
