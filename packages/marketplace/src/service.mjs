@@ -242,6 +242,12 @@ function cleanBrowseFilters(input = {}) {
   if (!BROWSE_SORTS.includes(sort)) {
     throw new MarketplaceError("invalid_marketplace_sort", "Unsupported Marketplace sort order.", 400, { allowed: BROWSE_SORTS });
   }
+  if ((sort === "price-asc" || sort === "price-desc") && !currency) {
+    throw new MarketplaceError(
+      "marketplace_price_sort_currency_required",
+      "Choose a currency before sorting Marketplace offers by price so unlike currencies are never ranked as if they were equivalent."
+    );
+  }
   const limit = input.limit === undefined || input.limit === null || input.limit === "" ? 50 : Number(input.limit);
   if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
     throw new MarketplaceError("invalid_marketplace_limit", "Marketplace result limit must be between 1 and 100.");
