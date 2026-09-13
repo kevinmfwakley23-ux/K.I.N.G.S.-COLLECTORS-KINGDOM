@@ -1,3 +1,5 @@
+import { canonicalTagKey, createVaultMetadataRepository } from "./metadata-repository.mjs";
+
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS vault_import_batches (
   id TEXT PRIMARY KEY,
@@ -129,6 +131,26 @@ function insertTreasure(database, treasure) {
     treasure.updatedAt,
     null
   );
+
+  const tags = Array.isArray(treasure.tags) ? treasure.tags : [];
+  database.prepare(`
+    INSERT INTO vault_treasure_metadata (treasure_id,owner_account_id,year,tags_json,updated_at)
+    VALUES (?,?,?,?,?)
+  `).run(
+    treasure.id,
+    treasure.ownerAccountId,
+    treasure.year ?? null,
+    JSON.stringify(tags),
+    treasure.updatedAt
+  );
+  const insertTag = database.prepare(`
+    INSERT INTO vault_treasure_tags (owner_account_id,treasure_id,tag_key,tag_label)
+    VALUES (?,?,?,?)
+  `);
+  for (const label of tags) {
+    const key = canonicalTagKey(label);
+    if (key) insertTag.run(treasure.ownerAccountId, treasure.id, key, label);
+  }
 }
 
 function insertEvent(database, event) {
@@ -147,6 +169,7 @@ function insertEvent(database, event) {
 
 export function createVaultImportRepository({ vaultStore } = {}) {
   const database = requireDatabase(vaultStore);
+  createVaultMetadataRepository({ vaultStore });
   database.exec(SCHEMA);
 
   function createBatch(batch, rows) {
