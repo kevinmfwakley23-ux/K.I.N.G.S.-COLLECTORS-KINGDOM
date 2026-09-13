@@ -109,10 +109,13 @@ export function createVaultPortfolioHistoryRepository({ vaultStore } = {}) {
     }
     values.push(boundedLimit(limit));
     return database.prepare(`
-      SELECT * FROM vault_portfolio_snapshots
-      WHERE ${where.join(" AND ")}
+      SELECT * FROM (
+        SELECT * FROM vault_portfolio_snapshots
+        WHERE ${where.join(" AND ")}
+        ORDER BY generated_at DESC, id DESC
+        LIMIT ?
+      ) AS recent_snapshots
       ORDER BY generated_at ASC, id ASC
-      LIMIT ?
     `).all(...values).map(mapSnapshot).filter(Boolean);
   }
 
