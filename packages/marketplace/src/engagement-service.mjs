@@ -79,7 +79,7 @@ function privateProfile(profile, activeListingCount) {
   return Object.freeze({
     ...publicProfile(profile, activeListingCount),
     isPublic: profile.isPublic,
-    publicUrl: profile.isPublic ? `/marketplace-storefront.html?store=${encodeURIComponent(profile.publicId)}` : null
+    publicUrl: profile.isPublic ? `/marketplace-seller.html?id=${encodeURIComponent(profile.publicId)}` : null
   });
 }
 
