@@ -87,6 +87,20 @@ function hashSnapshot(snapshot) {
   return createHash("sha256").update(JSON.stringify(snapshot), "utf8").digest("hex");
 }
 
+function assertPublicationIntegrity(listing) {
+  if (!listing?.publishedSnapshot && !listing?.publishedSnapshotSha256) return;
+  const expected = listing.publishedSnapshotSha256;
+  const actual = listing.publishedSnapshot ? hashSnapshot(listing.publishedSnapshot) : null;
+  if (!expected || !/^[a-f0-9]{64}$/.test(expected) || !actual || actual !== expected) {
+    throw new MarketplaceError(
+      "marketplace_representation_integrity_failure",
+      "The published Marketplace representation failed integrity verification and cannot be served.",
+      500,
+      { listingId: listing?.id ?? null }
+    );
+  }
+}
+
 function publicationSnapshot(treasure, listing) {
   return Object.freeze({
     schemaVersion: 1,
@@ -107,6 +121,7 @@ function publicationSnapshot(treasure, listing) {
 
 function publicListing(listing) {
   if (!listing?.publishedSnapshot || listing.state !== "active") return null;
+  assertPublicationIntegrity(listing);
   return Object.freeze({
     id: listing.id,
     state: listing.state,
@@ -120,6 +135,7 @@ function publicListing(listing) {
 }
 
 function sellerListing(listing, events = undefined) {
+  assertPublicationIntegrity(listing);
   return Object.freeze({
     id: listing.id,
     treasureId: listing.treasureId,
@@ -308,7 +324,8 @@ export function createMarketplaceService({ vaultStore, marketplaceRepository, no
     const seller = requireSeller(identity);
     const listingId = cleanId(listingIdValue, "marketplace_listing_id");
     const current = requireOwnedListing(marketplaceRepository, seller.id, listingId);
-    if (!['draft', 'active'].includes(current.state)) {
+    assertPublicationIntegrity(current);
+    if (!["draft", "active"].includes(current.state)) {
       throw new MarketplaceError("marketplace_listing_not_withdrawable", "Only a draft or active listing can be withdrawn.", 409);
     }
     const withdrawnAt = now().toISOString();
