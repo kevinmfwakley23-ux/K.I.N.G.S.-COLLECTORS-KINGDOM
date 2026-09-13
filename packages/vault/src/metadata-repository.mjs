@@ -90,10 +90,10 @@ export function createVaultMetadataRepository({ vaultStore } = {}) {
     if (!Array.isArray(treasureIds) || !treasureIds.length) return new Map();
     const ids = [...new Set(treasureIds.filter((id) => typeof id === "string" && id))];
     if (!ids.length) return new Map();
-    const placeholders = ids.map(() => "?").join(",");
+    const parameterSlots = ids.map(() => "?").join(",");
     const rows = database.prepare(`
       SELECT * FROM vault_treasure_metadata
-      WHERE owner_account_id = ? AND treasure_id IN (${placeholders})
+      WHERE owner_account_id = ? AND treasure_id IN (${parameterSlots})
     `).all(ownerAccountId, ...ids);
     return new Map(rows.map((row) => {
       const metadata = mapMetadata(row);
