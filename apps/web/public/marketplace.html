@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f3eee2">
+  <title>Kingdom Street Market · K.I.N.G.S. Collector's Kingdom</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/marketplace.css">
+</head>
+<body class="marketplace-page">
+  <header class="marketplace-header">
+    <a class="marketplace-brand" href="/great-hall.html" aria-label="Return to the Great Hall">
+      <img src="/assets/marketplace.svg" alt="" width="58" height="58">
+      <span><strong>K.I.N.G.S.</strong><small>Kingdom Street Market</small></span>
+    </a>
+    <nav aria-label="Marketplace navigation">
+      <a href="/great-hall.html">Great Hall</a>
+      <a href="/vault.html">Royal Vault</a>
+      <a href="#seller-stall">My Stall</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="marketplace-hero" aria-labelledby="marketplace-title">
+      <div>
+        <p class="marketplace-kicker">Outside the castle gates</p>
+        <h1 id="marketplace-title">The Kingdom Street Market</h1>
+        <p>Vault-linked collector offers with evidence-locked publication. Sellers publish exactly what they represent; buyers can inspect active offers without exposing private Vault records.</p>
+      </div>
+      <aside class="marketplace-trust-card" aria-label="Current commerce status">
+        <strong>Listing market now open</strong>
+        <p>Fixed-price publication and discovery are live. Checkout, payment, settlement, shipping protection, disputes, and ownership transfer are intentionally not enabled in this foundation.</p>
+      </aside>
+    </section>
+
+    <section class="marketplace-section" aria-labelledby="active-market-title">
+      <div class="marketplace-section-heading">
+        <div>
+          <p class="marketplace-kicker">Public market</p>
+          <h2 id="active-market-title">Active offers</h2>
+        </div>
+        <button id="refresh-market" type="button">Refresh market</button>
+      </div>
+      <p id="market-status" class="marketplace-status" role="status" aria-live="polite">Loading active offers…</p>
+      <div id="market-listings" class="marketplace-grid" aria-live="polite"></div>
+    </section>
+
+    <section id="seller-stall" class="marketplace-section marketplace-stall" aria-labelledby="seller-stall-title">
+      <div class="marketplace-section-heading">
+        <div>
+          <p class="marketplace-kicker">Collector-controlled selling</p>
+          <h2 id="seller-stall-title">My merchant stall</h2>
+        </div>
+      </div>
+      <div id="seller-auth-state" class="marketplace-status" role="status" aria-live="polite">Checking your Kingdom session…</div>
+
+      <form id="listing-form" class="marketplace-form" hidden>
+        <fieldset>
+          <legend>Create a draft from your Royal Vault</legend>
+          <label>Vault treasure
+            <select id="listing-treasure" name="treasureId" required></select>
+          </label>
+          <div class="marketplace-form-row">
+            <label>Price
+              <input id="listing-price" name="price" inputmode="decimal" placeholder="125.00" required>
+            </label>
+            <label>Currency
+              <input id="listing-currency" name="currency" value="USD" maxlength="3" pattern="[A-Za-z]{3}" required>
+            </label>
+            <label>Quantity
+              <input id="listing-quantity" name="quantity" type="number" min="1" step="1" value="1" required>
+            </label>
+          </div>
+          <label>Fulfillment
+            <select id="listing-fulfillment" name="fulfillmentMethod" required>
+              <option value="shipping">Shipping</option>
+              <option value="local-pickup">Local pickup</option>
+              <option value="shipping-or-pickup">Shipping or local pickup</option>
+            </select>
+          </label>
+          <label>Seller description
+            <textarea id="listing-description" name="sellerDescription" maxlength="4000" rows="4" placeholder="Describe included items, visible flaws, accessories, or other buyer-relevant details."></textarea>
+          </label>
+          <p class="marketplace-form-note">Creating a draft does not publish the item. Publication requires three explicit seller attestations and rechecks the current Vault quantity.</p>
+          <button type="submit">Create private draft</button>
+        </fieldset>
+      </form>
+
+      <div id="seller-listings" class="marketplace-seller-listings"></div>
+    </section>
+  </main>
+
+  <footer class="marketplace-footer">
+    <p>K.I.N.G.S. Collector's Kingdom · Marketplace representation is evidence, not authentication or an appraisal.</p>
+  </footer>
+  <script type="module" src="/marketplace.js"></script>
+</body>
+</html>
