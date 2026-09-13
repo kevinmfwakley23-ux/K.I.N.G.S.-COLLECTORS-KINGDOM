@@ -1,0 +1,15 @@
+.vault-report-panel { margin: 1rem 0; padding: 1rem; border: 1px solid rgba(177, 137, 45, .5); border-radius: 16px; background: linear-gradient(145deg, rgba(255,255,255,.96), rgba(246,241,225,.92)); box-shadow: 0 12px 28px rgba(0,0,0,.08); }
+.vault-report-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.vault-report-heading h3 { margin: .2rem 0 .4rem; }
+.vault-report-badge { display: inline-flex; align-items: center; min-height: 2rem; padding: .35rem .7rem; border: 1px solid rgba(177,137,45,.65); border-radius: 999px; font-size: .82rem; font-weight: 800; letter-spacing: .02em; background: rgba(255,248,220,.82); color: #17130b; }
+.vault-report-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: .8rem; margin-top: 1rem; align-items: end; }
+.vault-report-controls label:not(.vault-report-check) { display: grid; gap: .35rem; font-weight: 700; }
+.vault-report-controls select { width: 100%; min-height: 2.8rem; padding: .55rem .7rem; border: 1px solid rgba(27,27,27,.35); border-radius: 10px; background: #fff; color: #111; font: inherit; }
+.vault-report-check { display: flex; align-items: center; gap: .55rem; min-height: 2.8rem; font-weight: 700; }
+.vault-report-check input { width: 1.15rem; height: 1.15rem; }
+.vault-report-actions { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+.vault-report-actions a { text-decoration: none; text-align: center; }
+.vault-report-actions a[aria-disabled="true"] { opacity: .5; pointer-events: none; }
+.vault-report-panel .form-status { margin: .8rem 0 0; min-height: 1.5rem; }
+@media (max-width: 640px) { .vault-report-panel { border-radius: 12px; padding: .8rem; } .vault-report-actions { display: grid; grid-template-columns: 1fr; } .vault-report-actions a { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .vault-report-panel *, .vault-report-panel *::before, .vault-report-panel *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }

@@ -17,239 +17,220 @@ This file is the durable engineering recovery ledger. Read it before substantial
 ## Current checkpoint
 
 **Date:** 2026-09-13 (America/Denver)  
-**Active milestone:** **IMP-005 — Royal Vault, Phase 1**  
-**Latest verified implementation slice:** **First-Class Year + Collector Tags**  
-**Pull request:** **#32 — `Complete Royal Vault Phase 1 year and tag metadata`**  
-**Implementation verification:** **Kingdom Quality Gates #708** — run `34760201763` — **PASS** before documentation closeout
+**Production main:** `cbaf9663d0066ee7b91118e40595cfe68c7c43ae`  
+**Production baseline gate:** Kingdom Quality Gates #718 — PASS  
+**Active pull request:** #34 — `Add collector-owned insurance preparation reporting`  
+**PR branch:** `imp-005-insurance-reporting-sync`  
+**Verified implementation head:** `1dd07abfe4536cd34024fc8011b2d423549e691e`  
+**Implementation verification:** Kingdom Quality Gates #720 / run `34761273273` — PASS before documentation closeout  
+**Milestone status:** IMP-005 Royal Vault Phase 1 — completion candidate pending documented-head re-verification + merge
 
-PR #32 closes the remaining locked Royal Vault metadata gap with first-class Year and collector Tags while preserving the already-verified Vault core. The implementation head passed the canonical Node.js 22 workflow with exact dependency installation, lint, type contracts, the complete test suite, production build/artifact verification and the production dependency audit. README, research and this recovery ledger are being advanced on the same branch; the final documented head must pass the same complete workflow again before merge.
+PR #34 was rebuilt directly on the current Marketplace-enabled `main`, so the reporting closeout does not overwrite the parallel Street Market work. The synced branch was exactly one commit ahead and zero behind before documentation closeout.
 
-### Exact recovery point
+Quality Gates #720 proved the combined Marketplace + reporting baseline using Node.js 22, exact dependency installation, lint, type contracts, the complete 336-test suite, production build, production artifact verification, Marketplace discovery verification and the production dependency audit. The dependency audit reported zero vulnerabilities.
 
-Do **not** rebuild these verified production IMP-005 slices:
-
-- permanent owner-scoped treasure UUIDs and SQLite persistence;
-- treasure create/read/update/archive, with archive as the safe collector removal path;
-- collections and arbitrary-depth physical storage locations;
-- first-class validated Year metadata tied to permanent treasure identity;
-- normalized, owner-scoped, indexed collector Tags;
-- exact Year/Tag filtering, Year sorting and Year/Tag text discovery;
-- Year/Tag-aware Saved Vault Views and deterministic keyset pagination;
-- transactional import and portable export preservation of Year/Tags;
-- compatibility for older treasures without metadata rows;
-- secure private media and SHA-256 integrity linkage;
-- voice navigation/talk-to-text where browser speech APIs exist;
-- transactional JSON/CSV migration;
-- Royal Intake Queue and progressive native barcode scanning;
-- review-only Open Library ISBN evidence;
-- review-only UPCitemdb UPC/EAN/GTIN evidence;
-- append-only Provenance & Ownership Ledger;
-- cycle-safe individual and previewed atomic bulk reorganization;
-- review-only Pokémon exact-card evidence;
-- review-only Magic exact-printing evidence via Scryfall;
-- review-only PSA certification-number database evidence;
-- review-only exact sports-card catalog evidence via The Card API;
-- AI pre-grading profiles, centering and capture-quality analysis;
-- whole-card geometry/crop/perspective detection;
-- contour and macro corner/edge anomaly review signals;
-- paired raking-light surface anomaly analysis;
-- same-printing color/fade comparison;
-- authenticated Wikimedia Commons autograph reference discovery/proxy;
-- append-only hashed pre-grade analysis persistence;
-- detector-completion coverage evidence;
-- fail-closed server-computed advisory grade range;
-- deterministic grading-finding SHA-256 identities;
-- explainable front/back grading dimensions and append-only collector finding reviews;
-- private authenticated/no-store grading report/review routes;
-- official owner-approved Collector's Kingdom crest throughout core surfaces;
-- installable PWA manifest and static-only service worker with API/document exclusions;
-- calibrated same-plane physical-scale evidence and perspective-aware measurements;
-- macro corner/edge refinement linked to exact private media;
-- append-only evidence-backed market valuation with transparent estimate rules;
-- realized-sale/value-history linkage derived from immutable valuation and provenance records;
-- production-wired advanced Royal Vault UI enhancement stack;
-- evidence-backed collection portfolio coverage, per-currency totals, category/collection rollups and exact contribution evidence IDs;
-- normalized provider-originated valuation observation contract;
-- official eBay Browse asking-listing observation adapter with server-side OAuth;
-- explicit provider-policy gating before network market observations can be enabled;
-- immutable provider evidence metadata and deduplication;
-- exact valuation evidence/source-record citations in Keeper explanations;
-- exact realized-sale provenance record IDs/correction history in Keeper explanations;
-- wired production runtime composition for optional valuation providers;
-- owner-scoped immutable portfolio valuation snapshots with SHA-256 integrity;
-- exact sold-evidence IDs preserved inside historical portfolio snapshots;
-- same-day unchanged snapshot deduplication with changed-state immediate capture;
-- separate per-currency historical value series with no automatic FX conversion;
-- collection-scoped and bounded time-range history queries returning the latest chronological window;
-- unsupported historical valuation periods represented as evidence gaps rather than zero;
-- cause-aware portfolio changes for quantity, collection membership, active/support state, evidence changes and corrections;
-- Keeper portfolio-history explanations citing snapshot IDs/hashes, changed treasure IDs, valuation evidence IDs and realized-sale provenance IDs;
-- persisted-server-authority Vault portfolio UI with 30D/90D/1Y/All history, accessible charts and textual audit points.
+README and this ledger have now been advanced on the same PR. The documented head must pass the same complete workflow again before merge.
 
 ---
 
-## Latest verified slice — First-Class Year + Collector Tags
+## Latest verified slice — Collector-Owned Insurance / Evidence Reporting
 
-### Why this slice was prioritized
+### Why this slice exists
 
-The Royal Vault completion audit found a concrete locked-spec gap rather than a need for another speculative feature. Treasure removal already existed as safe archive behavior, preserving permanent identity and evidence history, but Year and Tags were not dedicated metadata fields across storage, query, saved views, import/export and the collector UI.
+The Royal Vault completion audit identified one important collector portability/protection workflow that had not yet been closed: a collector-controlled report that can organize the collection's own recorded facts and evidence for insurance-preparation/documentation purposes without pretending the Kingdom is an appraiser or insurer.
 
-The implementation therefore closes the gap without rewriting the proven treasure/provenance/valuation schema.
+The design keeps authoritative facts, advisory estimates and external acceptance boundaries separate.
 
-### Research
+Research record: `docs/research/2026-09-13-IMP-005-INSURANCE-REPORTING.md`.
 
-Current collection-management behavior was reviewed across **iCollect Everything**, **Ludex** and **hobbyDB**. The useful market pattern is consistent: collectors expect important descriptive metadata such as Year to participate in search/filter/sort and expect collection metadata to remain portable in exports.
+### Production implementation
 
-Kingdom improvement: Year/Tags are not generic decorative fields. They are owner-scoped, indexed, auditable, queryable and tied to the permanent Kingdom treasure UUID while remaining independent of external provider identity.
+Core files:
 
-Research record: `docs/research/2026-09-13-IMP-005-VAULT-YEAR-TAGS.md`.
+- `packages/vault/src/report-service.mjs`
+- `apps/web/vault-report-http.mjs`
+- `apps/web/vault-report-html.mjs`
+- `apps/web/public/vault-report-ui.js`
+- `apps/web/public/vault-report-ui.css`
+- `apps/web/public/vault-report.js`
+- `apps/web/public/vault-report.css`
+- production runtime composition through the existing valuation/Vault HTTP boundary
 
-### Metadata authority
+Verified behavior:
 
-The slice introduces indexed metadata persistence:
-
-- `vault_treasure_metadata` — treasure UUID, owner ID, validated Year, normalized tag document and update timestamp;
-- `vault_treasure_tags` — owner ID, treasure UUID, canonical tag key and collector-facing label.
-
-Policy:
-
-- Year is an integer from 1 through 9999 or null;
-- Tags are collector-owned text labels;
-- Unicode and whitespace are normalized;
-- tag comparison is case-insensitive;
-- duplicate labels collapse by canonical key;
-- maximum 40 tags per treasure;
-- maximum 60 characters per tag;
-- metadata never replaces or mutates permanent treasure identity.
-
-Metadata changes append Vault audit events rather than silently rewriting history without a trace.
-
-### Query and saved-view behavior
-
-The canonical paged query boundary now supports:
-
-- exact Year filter;
-- exact canonical Tag filter;
-- Year sort;
-- Year and Tag text discovery;
-- Year/Tag query fingerprinting so cursors cannot be reused against a different query;
-- saved views that capture Year and Tag as filter definitions, not frozen result sets.
-
-Older treasures with no metadata row remain readable and paginatable with `year: null` and an empty tag set.
-
-### Import/export behavior
-
-Bulk migration preserves the existing review-first and atomic guarantees:
-
-- invalid Year/Tags reject only the affected preview row;
-- no treasure is written during preview;
-- selected rows commit treasure + Year/Tags atomically;
-- metadata survives idempotent replay;
-- Year/Tags participate in persisted search text;
-- owner-scoped metadata can be exported and merged into the existing versioned Vault JSON package;
-- provenance and valuation data remain separate and are not lost.
-
-### Royal Vault UX
-
-A modular Vault enhancement adds:
-
-- Year editor control;
-- comma-separated collector Tags editor with normalization guidance;
-- exact Year filter;
-- owner-scoped Tag filter with treasure counts;
-- Year sorting;
-- Year/Tag summaries on treasure cards;
-- Year/Tag-aware saved-view application;
-- metadata-complete JSON export.
-
-The module loads before dependent Vault enhancements rather than replacing the stable base page.
-
-### Regression repairs found by CI
-
-The branch was not merged around failures. CI exposed and the implementation repaired:
-
-- anti-placeholder production lint collisions from ordinary source wording;
-- an import path that initially aborted the whole preview for one invalid metadata row;
-- missing Year/Tag capture in the browser saved-view helper;
-- legacy treasure-route interception in isolated runtimes without the query service;
-- a null metadata-row mapper error for older treasures;
-- enhancement-loader tests that had not yet included the new metadata module.
+- authenticated owner-scoped report generation;
+- JSON evidence-package download;
+- print-friendly HTML report;
+- entire active Vault, one collection or selected-treasure scope;
+- archived treasures require explicit opt-in;
+- permanent treasure UUID, Year/Tags, quantity, condition, collection/storage context and acquisition facts;
+- private media references with SHA-256 integrity metadata while private storage keys remain hidden;
+- exact provenance event IDs and lifecycle facts;
+- current advisory valuation contribution with exact valuation evidence IDs;
+- exact portfolio snapshot ID, timestamp and SHA-256 citation;
+- recorded acquisition/disposition facts separated from advisory estimates;
+- totals remain per-currency with no automatic FX or cross-currency grand total;
+- unsupported value remains unavailable rather than becoming zero;
+- deterministic report SHA-256 integrity digest;
+- explicit non-appraisal, non-guaranteed insurer acceptance and non-guaranteed replacement/sale value language;
+- private report responses use `no-store`;
+- report generation performs no destructive mutation;
+- invalid formats are rejected before report generation/capture;
+- accessible mobile, focus, reduced-motion and print behavior;
+- browser Print / Save as PDF is the supported printable-document workflow in this slice.
 
 ### Verification coverage
 
-Real SQLite/browser-contract tests prove:
+Focused report coverage proves:
 
-- metadata validation and tag deduplication;
 - owner isolation;
-- exact Year/Tag filters;
-- Year sorting;
-- Year/Tag text search;
-- current-data saved-view behavior;
-- metadata updates and audit history;
-- query/index durability;
-- transactional import preservation and idempotency;
-- invalid-row rejection without partial writes;
-- UI controls and export wiring;
-- compatibility with legacy treasure records/routes;
-- production artifact inclusion.
+- archive opt-in behavior;
+- mixed currencies remain separate;
+- unsupported valuation support remains explicit;
+- exact valuation evidence IDs are preserved;
+- exact provenance event IDs are preserved;
+- private media integrity hashes are preserved without exposing storage keys;
+- report integrity hashes are deterministic;
+- collector-controlled text is HTML escaped;
+- JSON and HTML routes are authenticated and no-store;
+- unsupported formats are rejected before capture;
+- report routes reject mutation methods;
+- production runtime and artifact include the reporting authority/UI;
+- existing Marketplace and Royal Vault behavior remains intact.
 
-Implementation head `01b31c14659ee4835796f267c2049bec044660c0` passed **Kingdom Quality Gates #708 / run `34760201763`**, including the production dependency audit. Documentation closeout follows on the same PR; final documented head re-verification is required before merge.
-
----
-
-## Previous integrated slice — Persistent Evidence-Cited Collection Value History
-
-PR #30 added owner-scoped immutable valuation snapshots with SHA-256 integrity, exact sold-evidence IDs, separate currencies, collection/time-range history, evidence gaps rather than fake zeroes, cause-aware deltas and Keeper explanations with snapshot/evidence/provenance citations.
-
-The browser portfolio view now uses the persisted server snapshot as authority and provides 30D/90D/1Y/All history, one chart per currency, accessible textual chart descriptions, exact evidence previews and an explicit Keeper “why did it change?” action.
-
-The change model distinguishes valuation support gained/lost, archive/activity changes, quantity changes, collection movement, valuation corrections and supporting-evidence changes instead of labeling every delta as market movement.
-
-Research: `docs/research/2026-09-13-IMP-005-COLLECTION-VALUE-HISTORY.md`.
-
-Final documented PR #30 head `a7d522ae...` passed **Kingdom Quality Gates #685** and was merged to production as `dc9d5a3b180df6fa5c04c115a53a5b105b48b8a4`.
+Implementation head `1dd07abfe4536cd34024fc8011b2d423549e691e` passed Kingdom Quality Gates #720 / run `34761273273`.
 
 ---
 
-## Previous integrated slice — Provider-Neutral Valuation Observations + Evidence-Cited Keeper
+## Integrated production baseline — Kingdom Street Market
 
-PR #28 introduced the provider-originated observation contract and first official eBay Browse asking-listing adapter.
+The current `main` already contains two verified Marketplace slices that were deliberately reconciled after the Royal Vault metadata merge.
 
-Provider observations preserve provider ID, provider source-record ID, reviewed policy ID, source/reference, observed/retrieved times, integer minor-unit amount, currency and item-state context. They are immutable, deduplicated and protected from collector correction. The eBay adapter uses application OAuth, treats every Browse result as `asking-listing`, and never lets active asking listings affect the sold-comparable median.
+### Marketplace listing foundation
 
-Keeper explanations expose exact valuation evidence IDs, provider/source-record identity and exact realized-sale provenance/correction IDs without manufacturing missing references.
+Production commit `1f1b6b42cb8782e111a86f08d3500ce2e993c01b` — Quality Gates #716 PASS.
 
-Research: `docs/research/2026-09-12-IMP-005-PROVIDER-OBSERVATIONS-KEEPER-EVIDENCE.md`.
+Implemented behavior:
 
-Final PR #28 head `7dcb7d62be793d08ac44c9ff3d0abee28bc2ce16` passed **Kingdom Quality Gates #679 / run `34731859320`**; squash-merged production commit `e2105bcae637228ed39de55cb22d0045d5b9c568`.
+- Vault-linked private seller drafts;
+- one open draft/active listing per permanent treasure UUID;
+- fixed-price offer model with integer minor currency units;
+- quantity validation against current Vault possession;
+- explicit possession/right-to-sell/representation attestations;
+- immutable published representation plus SHA-256 digest;
+- sanitized public active offers;
+- seller withdrawal as append-only Marketplace history;
+- no automatic Vault ownership transfer;
+- stale/archived/under-quantity offers suppressed from public discovery;
+- Great Hall/Keeper Marketplace availability;
+- real My Stall workflows without fake checkout controls.
+
+### Marketplace searchable discovery
+
+Production commit `cbaf9663d0066ee7b91118e40595cfe68c7c43ae` — Quality Gates #718 PASS.
+
+Implemented behavior:
+
+- accent-insensitive multi-field keyword search;
+- AND semantics across search terms;
+- live category/currency/fulfillment facets;
+- currency-scoped min/max price filtering;
+- currency-scoped price sorting;
+- deterministic newest/title sorting;
+- shareable responsive filter state;
+- public discovery HTTP coverage;
+- production artifact verification.
+
+Intentionally not yet live:
+
+- carts/checkout;
+- payment authorization/capture;
+- escrow/settlement;
+- seller payouts;
+- KYC approval;
+- tax calculation/reporting;
+- order lifecycle;
+- shipping labels/tracking;
+- buyer protection;
+- returns/refunds/disputes;
+- fraud/risk scoring;
+- auctions/offers/trades/bundles;
+- Marketplace-driven authoritative Vault ownership transfer.
+
+Marketplace recovery ledger: `docs/MARKETPLACE-PROGRESS.md`.
 
 ---
 
-## Previous integrated slice — Live Vault Bootstrap + Portfolio Intelligence
+## Royal Vault Phase 1 verified capability inventory
 
-PR #26 made `/vault-bootstrap.js` the real Royal Vault browser entry point and explicitly loaded the advanced Vault module stack. It added evidence-backed collection valuation coverage, separate per-currency portfolio totals, category/collection rollups, exact supporting sold-evidence IDs, quantity-aware safe-integer totals, explicit exclusions and non-appraisal language.
+Do **not** rebuild these verified slices unless regression evidence requires repair:
 
-Final PR #26 head `88487686375d6a0648fd96616a69ecf1c43a7c0f` passed **Kingdom Quality Gates #670 / run `34718684431`**; squash-merged production commit `82624118f88d367c687ba2aee5499287bf19a5a6`.
-
-Research: `docs/research/2026-09-12-IMP-005-LIVE-VAULT-PORTFOLIO.md`.
+- permanent owner-scoped treasure UUIDs and SQLite persistence;
+- treasure create/read/update/archive;
+- collections and arbitrary-depth physical storage locations;
+- cycle-safe individual reorganization;
+- previewed atomic bulk treasure movement;
+- first-class Year metadata and normalized collector Tags;
+- Year/Tag filtering, sorting, search and Saved Vault View integration;
+- deterministic keyset pagination with verified SQLite indexes;
+- private Saved Vault Views storing query/filter/sort intent rather than frozen results;
+- secure private media and SHA-256 integrity linkage;
+- transactional JSON/CSV migration;
+- portable versioned Vault export;
+- Royal Intake Queue;
+- progressive native barcode scanner support;
+- Open Library ISBN evidence;
+- UPCitemdb UPC/EAN/GTIN evidence;
+- Pokémon exact-card evidence;
+- Magic/Scryfall exact-printing evidence;
+- PSA certification database evidence;
+- The Card API exact sports-card evidence;
+- append-only Provenance & Ownership Ledger;
+- AI pre-grading profiles and capture-quality analysis;
+- geometry/crop/perspective detection;
+- contour and macro corner/edge review evidence;
+- paired raking-light surface analysis;
+- same-printing color/fade comparison;
+- Wikimedia Commons autograph reference discovery/proxy;
+- append-only hashed pre-grade persistence;
+- fail-closed advisory grade-range authority;
+- deterministic grading-finding SHA-256 identities;
+- explainable front/back grading dimensions;
+- append-only finding reviews;
+- calibrated physical measurement evidence;
+- append-only evidence-backed market valuation;
+- strict sold-vs-asking separation;
+- realized-sale/value-history linkage;
+- provider-neutral valuation observation contract;
+- eBay Browse asking-listing adapter with server-side OAuth;
+- provider-policy gating and immutable provider evidence metadata;
+- evidence-backed collection portfolio coverage;
+- immutable portfolio valuation snapshots;
+- per-currency historical value series;
+- bounded collection/time-range history;
+- cause-aware portfolio changes;
+- exact evidence-cited Keeper valuation/history explanations;
+- 30D/90D/1Y/All accessible portfolio charts;
+- official owner-approved crest throughout core product surfaces;
+- installable PWA with API/document cache exclusions;
+- voice navigation, Keeper questions, Vault search and talk-to-text where supported;
+- collector-owned insurance/evidence reporting as verified on PR #34 implementation head.
 
 ---
 
-## Previous integrated slice — Realized-Sale / Value-History Linkage
+## Truth and safety boundaries that remain locked
 
-PR #24 provides the derived value-history read model. Valuation evidence is projected with exact evidence IDs; collector-recorded `sold` provenance events are projected with exact provenance IDs; corrections remain append-only; unpriced sales do not receive manufactured amounts; realized owner sales do not influence the current sold-comparable estimate; and cross-currency aggregation remains disabled.
-
-Final PR #24 head `56e95a7658e4c2ae3cbaac055f28e7add88e412e` passed **Quality Gates #664 / run `34682718156`**; implementation commit `061e29ab129ec5ee8e09a240afb8018ae408c996`; production recovery closure PR #25 merged as `30b6a4cd55fc577d1218c112389244aeb06a9f15`.
-
-Research: `docs/research/2026-09-12-IMP-005-VALUATION-SOURCE-AND-HISTORY.md`.
-
----
-
-## Production valuation foundation — PR #22
-
-Verified production behavior includes append-only owner-scoped valuation evidence, sold-vs-asking separation, SHA-256 integrity, linked corrections, strict currency/condition/grade buckets, 180-day freshness, minimum three compatible recent sold comparables, median/range estimates, authenticated Vault API/UI, portable export and explicit non-appraisal/non-mutation boundaries.
-
-Merged implementation `5addf3d483e978c79028ff00812d8beca08b9661`; merged baseline gate #658 passed.
+- Provider identity is evidence, never permanent physical-item identity.
+- AI grading is advisory and never an official grader result.
+- Autograph similarity is not authentication.
+- Collector provenance is collector-recorded unless separately verified.
+- Asking listings never become sold comparables.
+- Realized owner sales remain lifecycle evidence and do not silently become market comparables.
+- No cross-currency total is created without a separately governed FX policy.
+- Insurance-preparation output is documentation, not an appraisal or insurer guarantee.
+- Marketplace publication is not a sale.
+- Marketplace withdrawal is not ownership transfer.
+- Vault ownership changes only after an explicitly authorized, independently verified transaction state in a future transaction foundation.
 
 ---
 
@@ -262,74 +243,62 @@ Merged implementation `5addf3d483e978c79028ff00812d8beca08b9661`; merged baselin
 - UPC/EAN/GTIN candidates — #396 — PASS.
 - Provenance & Ownership Ledger — #416 — PASS.
 - Reorganization domain/API/UI — #422 through #444 — PASS.
-- Previewed Atomic Bulk Treasure Reorganization — final #460 — PASS.
-- Saved Vault Views + Large-Collection Retrieval — final planner/index gate #475 — PASS.
-- Pokémon TCG Category Catalog Intelligence — #480 — PASS.
+- Previewed Atomic Bulk Treasure Reorganization — #460 — PASS.
+- Saved Vault Views + Large-Collection Retrieval — #475 — PASS.
+- Pokémon TCG Catalog Intelligence — #480 — PASS.
 - Magic / Scryfall Catalog Intelligence — #485 and later regression gates — PASS.
 - PSA Certification-Database Evidence — #490 — PASS.
 - Exact Sports-Card Catalog Evidence / The Card API — #495 — PASS.
-- AI Card Pre-Grading Foundation + SHA-Linked Evidence + Advisory Range Engine — #598 — PASS.
-- Explainable Grading Report + Dimension Evidence — #619 and combined baseline #630 — PASS.
-- Official Kingdom Brand + Installable PWA Surface — #624 — PASS.
-- Calibrated Physical Measurement + Capture Scale — PR #20 / #637 — PASS and merged.
+- AI Card Pre-Grading Foundation — #598 — PASS.
+- Explainable Grading Report + Dimension Evidence — #619 and combined #630 — PASS.
+- Official Kingdom Brand + Installable PWA — #624 — PASS.
+- Calibrated Physical Measurement — PR #20 / #637 — PASS and merged.
 - Macro Corner/Edge Evidence Refinement — PR #21 — PASS and merged.
 - Evidence-Backed Valuation Foundation — PR #22 / #658 — PASS and merged.
 - Realized-Sale / Value-History Linkage — PR #24 / #664 — PASS and merged.
-- Live Vault Bootstrap + Evidence-Backed Portfolio Intelligence — PR #26 / #670 — PASS and merged.
+- Live Vault Bootstrap + Portfolio Intelligence — PR #26 / #670 — PASS and merged.
 - Provider-Neutral Valuation Observations + Evidence-Cited Keeper — PR #28 / #679 — PASS and merged.
-- Persistent Evidence-Cited Collection Value History — PR #30 / final gate #685 — PASS and merged as `dc9d5a3b180df6fa5c04c115a53a5b105b48b8a4`.
-- First-Class Year + Collector Tags — PR #32 / implementation gate #708 — PASS; final documented-head re-verification required before merge.
+- Persistent Evidence-Cited Collection Value History — PR #30 / final #685 — PASS and merged.
+- First-Class Year + Collector Tags — PR #32 — merged production commit `62d1e56b2d13c74d3a1d71da1dcb5a8f630d799b`; final documented production gate passed before Marketplace reconciliation.
+- Marketplace Vault-Linked Listing Foundation — production commit `1f1b6b42cb8782e111a86f08d3500ce2e993c01b`; Quality Gates #716 — PASS.
+- Marketplace Searchable Discovery + Live Facets — production commit `cbaf9663d0066ee7b91118e40595cfe68c7c43ae`; Quality Gates #718 — PASS.
+- Collector-Owned Insurance Preparation Reporting — PR #34 implementation head `1dd07abfe4536cd34024fc8011b2d423549e691e`; Quality Gates #720 / run `34761273273` — PASS before documentation closeout.
 
 ---
 
-## Exact next engineering target
+## Exact recovery instructions
 
-**IMP-005 Royal Vault Completion Audit + Collector-Owned Reporting / Insurance Preparation Foundation**
+If work is interrupted now:
 
-Build in this order:
-
-1. map every locked IMP-005 Royal Vault functional deliverable, backend/frontend deliverable, Keeper requirement, test requirement and definition-of-done item to the current production implementation and evidence;
-2. identify any remaining real Vault gap before declaring Royal Vault Phase 1 complete instead of adding redundant code;
-3. research current collector inventory/insurance-report workflows and data requirements from reputable insurance/documentation providers;
-4. build an owner-controlled export/report boundary that can package treasure identity, quantity, Year/Tags, condition context, acquisition data, media references/integrity, provenance references and evidence-backed valuation snapshot data without calling the result an appraisal;
-5. keep estimated value visibly separate from confirmed acquisition/disposition financial records;
-6. preserve exact snapshot/evidence/provenance identifiers in exported valuation history where included;
-7. keep automatic FX conversion disabled until a separately governed FX policy exists;
-8. maintain accessible print/mobile behavior and collector data portability;
-9. pass full Kingdom Quality Gates and update README/this ledger.
-
-Current research direction already identifies recurring insurance-documentation needs: proof of ownership, inventory records, clear photographs, receipts/acquisition records, condition, provenance, storage location and defensible value documentation. The Kingdom report must package those records honestly and must never label an advisory Kingdom estimate as a professional appraisal.
-
-After the IMP-005 completion audit closes Royal Vault Phase 1, continue the locked construction sequence rather than keeping the Vault milestone open indefinitely.
+1. Resume from PR #34 / branch `imp-005-insurance-reporting-sync`.
+2. Do not rewrite the report implementation unless CI or review exposes a real defect.
+3. Verify that README and this ledger are present on the PR head.
+4. Run/observe the complete Kingdom Quality Gate on the documented head.
+5. Merge PR #34 only if every repository gate and the production dependency audit pass.
+6. Confirm `main` includes both the Marketplace discovery baseline and reporting closeout after merge.
+7. Treat Royal Vault Phase 1 as complete unless that final reconciliation exposes an actual locked-spec gap.
+8. Continue the Street Market at private saved searches + bounded cursor pagination before transaction work.
 
 ---
 
-## Known unfinished IMP-005 / later work
+## Exact next engineering target after PR #34
 
-Do not represent these as live until separately implemented and verified:
+**Marketplace Discovery Durability — Private Saved Searches + Bounded Cursor Pagination**
 
-- licensed automatic **sold-comparable** provider adapters;
-- additional market observation providers beyond the first eBay Browse asking-listing adapter;
-- automatic currency conversion/FX policy;
-- review-aware overall grading advisory estimate;
-- reliable manufacturing-vs-handling defect classification;
-- alternate-light/UV/spectral analysis;
-- official grading-provider integrations beyond current PSA certification database evidence;
-- physical slab/card authentication;
-- professional autograph authentication;
-- broader image-based collectible identification;
-- multi-provider Pokémon reconciliation/fallback;
-- fuzzy card/set/parallel discovery;
-- comic/video-game/vinyl provider candidates;
-- insurance/reporting expansion beyond portable JSON export;
-- universal camera scanning where browser native APIs are absent;
-- universal speech recognition where browser speech APIs are absent;
-- native Android APK packaging/signing/device verification and technically correct adaptive launcher assets;
-- destructive bulk archive/delete;
-- Marketplace ownership transfer/settlement.
+Build order:
 
-### Permanent truthfulness boundary
+1. refresh current competitor/marketplace search and saved-search research before implementation;
+2. preserve the current live Marketplace search/facet truth model rather than creating a second query authority;
+3. introduce bounded deterministic cursor pagination for public active-offer discovery;
+4. make cursors query-bound so they cannot be replayed against changed filters/sorts;
+5. store private owner-scoped saved-search definitions rather than frozen results;
+6. rerun saved searches against current market state;
+7. keep saved-search deletion/private management owner-scoped and auditable as appropriate;
+8. expose no notification promise until a real delivery service exists;
+9. keep currency-safe filtering/sorting and publication-integrity verification intact;
+10. add real service/HTTP/UI/pagination tests plus production artifact verification;
+11. update `docs/MARKETPLACE-PROGRESS.md`, README and this ledger after the verified batch.
 
-A catalog result, AI pre-grade, photograph, autograph similarity result, barcode, title match, grading label, cert number, collector statement, sold comparable, asking listing, provider observation, portfolio estimate, portfolio-history point or realized owner sale is not silently promoted into an authoritative independent claim.
+Only after durable discovery/retrieval is verified should the Kingdom begin the **Safeguarded Transaction Foundation**. That future slice must separately govern seller eligibility/KYC boundaries, order state, idempotency, payment-provider/webhook authority, taxes, shipment evidence, cancellation/refund/dispute handling, fraud controls, settlement and the exact verified condition that may append provenance + transfer authoritative Vault ownership.
 
-AI grading is estimated condition evidence; professional grading and authentication remain separate authorities. Valuation/portfolio estimates and their history are evidence-derived advisory read models, not appraisals, guaranteed sale prices or predictions. Realized sales are lifecycle evidence and remain separate from current market-comparable estimation. Permanent Kingdom treasure UUIDs remain provider-independent physical-item identities. Collector ownership/provenance records remain distinct from valuation evidence.
+The governing Marketplace rule remains: **a click is never a sale.**

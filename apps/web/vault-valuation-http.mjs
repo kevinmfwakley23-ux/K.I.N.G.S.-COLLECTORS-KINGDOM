@@ -2,6 +2,7 @@ import { parseCookies } from "../../packages/identity/src/tokens.mjs";
 import { IdentityError } from "../../packages/identity/src/service.mjs";
 import { VaultError } from "../../packages/vault/src/service.mjs";
 import { handleVaultPortfolioHistoryRoute } from "./vault-portfolio-history-http.mjs";
+import { handleVaultReportRoute } from "./vault-report-http.mjs";
 
 const MAX_VALUATION_JSON_BYTES = 16 * 1024;
 
@@ -113,6 +114,17 @@ export async function handleVaultValuationRoute({
   vaultValuationService,
   securityHeaders
 } = {}) {
+  if (requestUrl.pathname === "/api/vault/reports/insurance-preparation") {
+    return handleVaultReportRoute({
+      request,
+      response,
+      requestUrl,
+      identityService,
+      vaultReportService: vaultValuationService?.reportService ?? null,
+      securityHeaders
+    });
+  }
+
   if (requestUrl.pathname === "/api/vault/portfolio-history" || requestUrl.pathname.startsWith("/api/vault/portfolio-history/")) {
     return handleVaultPortfolioHistoryRoute({
       request,
