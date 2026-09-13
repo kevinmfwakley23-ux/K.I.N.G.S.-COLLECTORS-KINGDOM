@@ -1,14 +1,16 @@
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS marketplace_seller_profiles (
   seller_account_id TEXT PRIMARY KEY,
-  public_id TEXT NOT NULL UNIQUE,
+  public_id TEXT NOT NULL UNIQUE COLLATE NOCASE,
   shop_name TEXT NOT NULL,
   bio TEXT,
+  is_public INTEGER NOT NULL DEFAULT 0 CHECK(is_public IN (0,1)),
+  published_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS marketplace_seller_profiles_public_idx
-  ON marketplace_seller_profiles(public_id);
+  ON marketplace_seller_profiles(is_public,public_id COLLATE NOCASE);
 
 CREATE TABLE IF NOT EXISTS marketplace_watchlist (
   owner_account_id TEXT NOT NULL,
@@ -27,6 +29,8 @@ function mapProfile(row) {
     publicId: row.public_id,
     shopName: row.shop_name,
     bio: row.bio,
+    isPublic: Boolean(row.is_public),
+    publishedAt: row.published_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   });
@@ -47,6 +51,16 @@ export function createMarketplaceEngagementRepository({ vaultStore } = {}) {
   const database = vaultStore.database;
   database.exec(SCHEMA);
 
+  const sellerProfileColumns = database.prepare("PRAGMA table_info(marketplace_seller_profiles)").all();
+  if (!sellerProfileColumns.some((column) => column.name === "is_public")) {
+    database.exec("ALTER TABLE marketplace_seller_profiles ADD COLUMN is_public INTEGER NOT NULL DEFAULT 0 CHECK(is_public IN (0,1));");
+  }
+  if (!sellerProfileColumns.some((column) => column.name === "published_at")) {
+    database.exec("ALTER TABLE marketplace_seller_profiles ADD COLUMN published_at TEXT;");
+  }
+  database.exec(`CREATE INDEX IF NOT EXISTS marketplace_seller_profiles_public_idx
+    ON marketplace_seller_profiles(is_public,public_id COLLATE NOCASE);`);
+
   function findSellerProfileByAccountId(sellerAccountId) {
     return mapProfile(database.prepare(`
       SELECT * FROM marketplace_seller_profiles WHERE seller_account_id = ?
@@ -55,22 +69,23 @@ export function createMarketplaceEngagementRepository({ vaultStore } = {}) {
 
   function findSellerProfileByPublicId(publicId) {
     return mapProfile(database.prepare(`
-      SELECT * FROM marketplace_seller_profiles WHERE public_id = ?
+      SELECT * FROM marketplace_seller_profiles
+      WHERE public_id = ? COLLATE NOCASE AND is_public = 1
     `).get(publicId));
   }
 
-  function ensureSellerProfile(profile) {
-    const existing = findSellerProfileByAccountId(profile.sellerAccountId);
-    if (existing) return existing;
+  function createSellerProfile(profile) {
     database.prepare(`
       INSERT INTO marketplace_seller_profiles (
-        seller_account_id,public_id,shop_name,bio,created_at,updated_at
-      ) VALUES (?,?,?,?,?,?)
+        seller_account_id,public_id,shop_name,bio,is_public,published_at,created_at,updated_at
+      ) VALUES (?,?,?,?,?,?,?,?)
     `).run(
       profile.sellerAccountId,
       profile.publicId,
       profile.shopName,
       profile.bio ?? null,
+      profile.isPublic ? 1 : 0,
+      profile.publishedAt ?? null,
       profile.createdAt,
       profile.updatedAt
     );
@@ -80,9 +95,16 @@ export function createMarketplaceEngagementRepository({ vaultStore } = {}) {
   function updateSellerProfile(profile) {
     const result = database.prepare(`
       UPDATE marketplace_seller_profiles
-      SET shop_name = ?, bio = ?, updated_at = ?
+      SET shop_name = ?, bio = ?, is_public = ?, published_at = ?, updated_at = ?
       WHERE seller_account_id = ?
-    `).run(profile.shopName, profile.bio ?? null, profile.updatedAt, profile.sellerAccountId);
+    `).run(
+      profile.shopName,
+      profile.bio ?? null,
+      profile.isPublic ? 1 : 0,
+      profile.publishedAt ?? null,
+      profile.updatedAt,
+      profile.sellerAccountId
+    );
     return Number(result.changes) === 1 ? findSellerProfileByAccountId(profile.sellerAccountId) : null;
   }
 
@@ -139,7 +161,7 @@ export function createMarketplaceEngagementRepository({ vaultStore } = {}) {
   }
 
   function listWatchlist(ownerAccountId, { limit = 100 } = {}) {
-    const bounded = Math.min(Math.max(Number(limit) || 100, 1), 500);
+    const bounded = Math.min(Math.max(Number(limit) || 100, 1), 300);
     return database.prepare(`
       SELECT * FROM marketplace_watchlist
       WHERE owner_account_id = ?
@@ -157,7 +179,7 @@ export function createMarketplaceEngagementRepository({ vaultStore } = {}) {
   return Object.freeze({
     findSellerProfileByAccountId,
     findSellerProfileByPublicId,
-    ensureSellerProfile,
+    createSellerProfile,
     updateSellerProfile,
     listActiveListingIdsForSellerAccount,
     countActiveListingsForSellerAccount,
