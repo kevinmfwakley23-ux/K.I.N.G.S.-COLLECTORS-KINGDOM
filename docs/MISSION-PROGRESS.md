@@ -9,7 +9,7 @@ This file is the durable engineering recovery ledger. Read it before substantial
 - Adopt improvements only when they strengthen rather than silently replace product intent.
 - Do not call functionality complete until it is real, wired and verified through the strongest relevant repository gates.
 - Preserve permanent Kingdom treasure identity across organization, provenance, grading, Marketplace, insurance, valuation and legacy expansion.
-- Never manufacture market values, identification certainty, grading certainty, physical authenticity, provenance verification or successful mutations.
+- Never manufacture market values, identification certainty, grading certainty, physical authenticity, provenance verification, seller reputation, transaction completion or successful mutations.
 - Collector data ownership, exportability and authoritative human control remain first-class.
 
 ---
@@ -17,208 +17,144 @@ This file is the durable engineering recovery ledger. Read it before substantial
 ## Current checkpoint
 
 **Date:** 2026-09-13 (America/Denver)  
-**Production main:** `cbaf9663d0066ee7b91118e40595cfe68c7c43ae`  
-**Production baseline gate:** Kingdom Quality Gates #718 — PASS  
-**Active pull request:** #34 — `Add collector-owned insurance preparation reporting`  
-**PR branch:** `imp-005-insurance-reporting-sync`  
-**Verified implementation head:** `1dd07abfe4536cd34024fc8011b2d423549e691e`  
-**Implementation verification:** Kingdom Quality Gates #720 / run `34761273273` — PASS before documentation closeout  
-**Milestone status:** IMP-005 Royal Vault Phase 1 — completion candidate pending documented-head re-verification + merge
-
-PR #34 was rebuilt directly on the current Marketplace-enabled `main`, so the reporting closeout does not overwrite the parallel Street Market work. The synced branch was exactly one commit ahead and zero behind before documentation closeout.
-
-Quality Gates #720 proved the combined Marketplace + reporting baseline using Node.js 22, exact dependency installation, lint, type contracts, the complete 336-test suite, production build, production artifact verification, Marketplace discovery verification and the production dependency audit. The dependency audit reported zero vulnerabilities.
-
-README and this ledger have now been advanced on the same PR. The documented head must pass the same complete workflow again before merge.
+**Production `main`:** `08a743abda8aaee14e3f7a852069964df119c7f2`  
+**Production Marketplace state:** listing foundation + searchable discovery + bounded query-bound pagination + private saved searches  
+**Royal Vault Phase 1:** integrated, including collector-owned insurance-preparation reporting  
+**Active pull request:** #36 — private Marketplace watchlists + explicit opt-in seller storefronts  
+**PR branch:** `marketplace/watchlist-seller-storefront`  
+**Verified implementation head:** `2224ed115cff86fa0513b2a56ff8932fcd8fd651`  
+**Implementation verification:** Kingdom Quality Gates #737 / run `34762428847` — PASS, including the production dependency audit  
+**Closeout state:** README + recovery ledgers are being updated; final documented-head CI still required before merge.
 
 ---
 
-## Latest verified slice — Collector-Owned Insurance / Evidence Reporting
+## Integrated Royal Vault Phase 1
 
-### Why this slice exists
-
-The Royal Vault completion audit identified one important collector portability/protection workflow that had not yet been closed: a collector-controlled report that can organize the collection's own recorded facts and evidence for insurance-preparation/documentation purposes without pretending the Kingdom is an appraiser or insurer.
-
-The design keeps authoritative facts, advisory estimates and external acceptance boundaries separate.
-
-Research record: `docs/research/2026-09-13-IMP-005-INSURANCE-REPORTING.md`.
-
-### Production implementation
-
-Core files:
-
-- `packages/vault/src/report-service.mjs`
-- `apps/web/vault-report-http.mjs`
-- `apps/web/vault-report-html.mjs`
-- `apps/web/public/vault-report-ui.js`
-- `apps/web/public/vault-report-ui.css`
-- `apps/web/public/vault-report.js`
-- `apps/web/public/vault-report.css`
-- production runtime composition through the existing valuation/Vault HTTP boundary
-
-Verified behavior:
-
-- authenticated owner-scoped report generation;
-- JSON evidence-package download;
-- print-friendly HTML report;
-- entire active Vault, one collection or selected-treasure scope;
-- archived treasures require explicit opt-in;
-- permanent treasure UUID, Year/Tags, quantity, condition, collection/storage context and acquisition facts;
-- private media references with SHA-256 integrity metadata while private storage keys remain hidden;
-- exact provenance event IDs and lifecycle facts;
-- current advisory valuation contribution with exact valuation evidence IDs;
-- exact portfolio snapshot ID, timestamp and SHA-256 citation;
-- recorded acquisition/disposition facts separated from advisory estimates;
-- totals remain per-currency with no automatic FX or cross-currency grand total;
-- unsupported value remains unavailable rather than becoming zero;
-- deterministic report SHA-256 integrity digest;
-- explicit non-appraisal, non-guaranteed insurer acceptance and non-guaranteed replacement/sale value language;
-- private report responses use `no-store`;
-- report generation performs no destructive mutation;
-- invalid formats are rejected before report generation/capture;
-- accessible mobile, focus, reduced-motion and print behavior;
-- browser Print / Save as PDF is the supported printable-document workflow in this slice.
-
-### Verification coverage
-
-Focused report coverage proves:
-
-- owner isolation;
-- archive opt-in behavior;
-- mixed currencies remain separate;
-- unsupported valuation support remains explicit;
-- exact valuation evidence IDs are preserved;
-- exact provenance event IDs are preserved;
-- private media integrity hashes are preserved without exposing storage keys;
-- report integrity hashes are deterministic;
-- collector-controlled text is HTML escaped;
-- JSON and HTML routes are authenticated and no-store;
-- unsupported formats are rejected before capture;
-- report routes reject mutation methods;
-- production runtime and artifact include the reporting authority/UI;
-- existing Marketplace and Royal Vault behavior remains intact.
-
-Implementation head `1dd07abfe4536cd34024fc8011b2d423549e691e` passed Kingdom Quality Gates #720 / run `34761273273`.
-
----
-
-## Integrated production baseline — Kingdom Street Market
-
-The current `main` already contains two verified Marketplace slices that were deliberately reconciled after the Royal Vault metadata merge.
-
-### Marketplace listing foundation
-
-Production commit `1f1b6b42cb8782e111a86f08d3500ce2e993c01b` — Quality Gates #716 PASS.
-
-Implemented behavior:
-
-- Vault-linked private seller drafts;
-- one open draft/active listing per permanent treasure UUID;
-- fixed-price offer model with integer minor currency units;
-- quantity validation against current Vault possession;
-- explicit possession/right-to-sell/representation attestations;
-- immutable published representation plus SHA-256 digest;
-- sanitized public active offers;
-- seller withdrawal as append-only Marketplace history;
-- no automatic Vault ownership transfer;
-- stale/archived/under-quantity offers suppressed from public discovery;
-- Great Hall/Keeper Marketplace availability;
-- real My Stall workflows without fake checkout controls.
-
-### Marketplace searchable discovery
-
-Production commit `cbaf9663d0066ee7b91118e40595cfe68c7c43ae` — Quality Gates #718 PASS.
-
-Implemented behavior:
-
-- accent-insensitive multi-field keyword search;
-- AND semantics across search terms;
-- live category/currency/fulfillment facets;
-- currency-scoped min/max price filtering;
-- currency-scoped price sorting;
-- deterministic newest/title sorting;
-- shareable responsive filter state;
-- public discovery HTTP coverage;
-- production artifact verification.
-
-Intentionally not yet live:
-
-- carts/checkout;
-- payment authorization/capture;
-- escrow/settlement;
-- seller payouts;
-- KYC approval;
-- tax calculation/reporting;
-- order lifecycle;
-- shipping labels/tracking;
-- buyer protection;
-- returns/refunds/disputes;
-- fraud/risk scoring;
-- auctions/offers/trades/bundles;
-- Marketplace-driven authoritative Vault ownership transfer.
-
-Marketplace recovery ledger: `docs/MARKETPLACE-PROGRESS.md`.
-
----
-
-## Royal Vault Phase 1 verified capability inventory
-
-Do **not** rebuild these verified slices unless regression evidence requires repair:
+Do not rebuild these verified capabilities unless regression evidence requires repair:
 
 - permanent owner-scoped treasure UUIDs and SQLite persistence;
 - treasure create/read/update/archive;
 - collections and arbitrary-depth physical storage locations;
-- cycle-safe individual reorganization;
-- previewed atomic bulk treasure movement;
+- cycle-safe individual reorganization and previewed atomic bulk movement;
 - first-class Year metadata and normalized collector Tags;
-- Year/Tag filtering, sorting, search and Saved Vault View integration;
-- deterministic keyset pagination with verified SQLite indexes;
-- private Saved Vault Views storing query/filter/sort intent rather than frozen results;
-- secure private media and SHA-256 integrity linkage;
-- transactional JSON/CSV migration;
-- portable versioned Vault export;
-- Royal Intake Queue;
-- progressive native barcode scanner support;
-- Open Library ISBN evidence;
-- UPCitemdb UPC/EAN/GTIN evidence;
-- Pokémon exact-card evidence;
-- Magic/Scryfall exact-printing evidence;
-- PSA certification database evidence;
-- The Card API exact sports-card evidence;
+- deterministic keyset pagination and private Saved Vault Views;
+- secure private media with SHA-256 integrity linkage;
+- transactional JSON/CSV migration and portable versioned export;
+- Royal Intake Queue and progressive native barcode scanner support;
+- review-only catalog/certification evidence from supported providers;
 - append-only Provenance & Ownership Ledger;
-- AI pre-grading profiles and capture-quality analysis;
-- geometry/crop/perspective detection;
-- contour and macro corner/edge review evidence;
-- paired raking-light surface analysis;
-- same-printing color/fade comparison;
-- Wikimedia Commons autograph reference discovery/proxy;
-- append-only hashed pre-grade persistence;
-- fail-closed advisory grade-range authority;
-- deterministic grading-finding SHA-256 identities;
-- explainable front/back grading dimensions;
-- append-only finding reviews;
-- calibrated physical measurement evidence;
+- AI pre-grading, explainable grading dimensions, calibrated measurements, macro evidence, paired-surface analysis, color comparison and autograph reference workflows;
 - append-only evidence-backed market valuation;
-- strict sold-vs-asking separation;
 - realized-sale/value-history linkage;
-- provider-neutral valuation observation contract;
-- eBay Browse asking-listing adapter with server-side OAuth;
-- provider-policy gating and immutable provider evidence metadata;
-- evidence-backed collection portfolio coverage;
-- immutable portfolio valuation snapshots;
-- per-currency historical value series;
-- bounded collection/time-range history;
-- cause-aware portfolio changes;
-- exact evidence-cited Keeper valuation/history explanations;
-- 30D/90D/1Y/All accessible portfolio charts;
-- official owner-approved crest throughout core product surfaces;
-- installable PWA with API/document cache exclusions;
-- voice navigation, Keeper questions, Vault search and talk-to-text where supported;
-- collector-owned insurance/evidence reporting as verified on PR #34 implementation head.
+- provider-neutral valuation observations and eBay Browse asking evidence;
+- evidence-backed collection portfolio snapshots/history and Keeper evidence explanations;
+- collector-owned insurance-preparation JSON/print reporting with exact evidence, provenance, portfolio-snapshot and integrity references;
+- official brand/PWA/voice surfaces.
+
+Royal Vault insurance-preparation reports remain documentation, not professional appraisals or insurer guarantees.
 
 ---
 
-## Truth and safety boundaries that remain locked
+## Integrated Kingdom Street Market production baseline
+
+### Listing foundation
+
+Verified production behavior:
+
+- private Vault-linked drafts;
+- fixed-price integer-minor-unit offers;
+- quantity validation and revalidation against current Vault state;
+- explicit possession/right-to-sell/accuracy attestations;
+- immutable sanitized publication snapshots and SHA-256 integrity hashes;
+- fail-closed public representation integrity;
+- stale/archive/under-quantity public suppression;
+- private seller history and append-only withdrawal;
+- no ownership transfer from publication or withdrawal.
+
+### Searchable discovery
+
+Verified production behavior:
+
+- accent-insensitive multi-field search;
+- AND semantics across terms;
+- category/currency/fulfillment filters;
+- currency-safe price filtering and ordering;
+- deterministic newest/title sorting;
+- live facets and shareable filter state.
+
+### Discovery durability — PR #35 integrated
+
+Production `main` `08a743abda8aaee14e3f7a852069964df119c7f2` includes:
+
+- bounded deterministic cursor pagination;
+- query-bound cursors that cannot be replayed against changed search/filter/sort state;
+- private owner-scoped saved searches;
+- saved definitions rather than stale/frozen result snapshots;
+- rerun against current supported Marketplace state;
+- private create/list/delete management;
+- explicit no-notification state until a real delivery service exists.
+
+---
+
+## Active verified slice — PR #36 Marketplace engagement
+
+Research: `docs/research/2026-09-13-MARKETPLACE-WATCHLIST-SELLER-STOREFRONT.md`.
+
+### Private watchlists
+
+Implemented and verified on the branch:
+
+- authenticated owner isolation;
+- idempotent add;
+- 300-entry bound;
+- own-listing rejection;
+- sanitized public-listing integrity boundary reused for active watch items;
+- withdrawn/unsupported offer preserved only as unavailable private tombstone;
+- integrity failure remains a hard failure and is not hidden as an unavailable item;
+- authenticated removal;
+- no seller notification/public watcher count;
+- `notificationsAvailable: false`;
+- `purchaseCommitmentCreated: false`.
+
+### Explicit opt-in seller storefronts
+
+Implemented and verified on the branch:
+
+- no auto-created public seller identity;
+- seller must explicitly choose a stable public ID and storefront name;
+- storefront is private by default;
+- explicit publish/unpublish control;
+- public ID validation, reserved-route blocking, case-insensitive uniqueness and immutability;
+- bounded optional bio;
+- current active inventory derived through the existing Marketplace + live Vault support authority;
+- public listing representations remain sanitized and hash-verified;
+- no public account IDs, email, Vault treasure UUIDs, acquisition costs, storage data or private collection data;
+- no identity-verification claim;
+- no verified-purchase feedback/rating claim;
+- no sales-count reputation;
+- no checkout/payment/buyer-protection claim.
+
+### Verification
+
+PR #36 implementation head `2224ed115cff86fa0513b2a56ff8932fcd8fd651` passed Kingdom Quality Gates #737 with:
+
+- Node.js 22;
+- exact dependency installation;
+- lint/placeholder policy;
+- module/type contracts;
+- full Node test suite;
+- production build;
+- base production artifact verification;
+- Marketplace discovery verification;
+- saved-search/pagination verification;
+- Marketplace engagement artifact verification;
+- production dependency audit.
+
+Final merge remains blocked until the updated documentation head passes the complete workflow again.
+
+---
+
+## Locked truth boundaries
 
 - Provider identity is evidence, never permanent physical-item identity.
 - AI grading is advisory and never an official grader result.
@@ -226,31 +162,25 @@ Do **not** rebuild these verified slices unless regression evidence requires rep
 - Collector provenance is collector-recorded unless separately verified.
 - Asking listings never become sold comparables.
 - Realized owner sales remain lifecycle evidence and do not silently become market comparables.
-- No cross-currency total is created without a separately governed FX policy.
+- No cross-currency portfolio/market total is created without a separately governed FX policy.
 - Insurance-preparation output is documentation, not an appraisal or insurer guarantee.
 - Marketplace publication is not a sale.
+- Saved search is not a reservation or price lock.
+- Watchlist state is not an offer/order/purchase commitment.
+- Seller storefront publication is not identity verification, KYC approval or reputation evidence.
 - Marketplace withdrawal is not ownership transfer.
-- Vault ownership changes only after an explicitly authorized, independently verified transaction state in a future transaction foundation.
+- Vault ownership changes only after an explicitly authorized, independently verified transaction terminal state in the future Safeguarded Transaction Foundation.
 
 ---
 
-## Historical verified IMP-005 checkpoints
+## Major verified checkpoints
 
-- Transactional migration — Quality Gates #328 — PASS.
+- Transactional Vault migration — Quality Gates #328 — PASS.
 - Royal Intake Queue — #347 — PASS.
 - Progressive barcode scanner — #361 — PASS.
-- ISBN catalog candidates — #379 — PASS.
-- UPC/EAN/GTIN candidates — #396 — PASS.
-- Provenance & Ownership Ledger — #416 — PASS.
-- Reorganization domain/API/UI — #422 through #444 — PASS.
-- Previewed Atomic Bulk Treasure Reorganization — #460 — PASS.
-- Saved Vault Views + Large-Collection Retrieval — #475 — PASS.
-- Pokémon TCG Catalog Intelligence — #480 — PASS.
-- Magic / Scryfall Catalog Intelligence — #485 and later regression gates — PASS.
-- PSA Certification-Database Evidence — #490 — PASS.
-- Exact Sports-Card Catalog Evidence / The Card API — #495 — PASS.
+- ISBN / UPC / Pokémon / Magic / PSA / sports-card catalog evidence — verified across #379 through #495 and later regression gates.
 - AI Card Pre-Grading Foundation — #598 — PASS.
-- Explainable Grading Report + Dimension Evidence — #619 and combined #630 — PASS.
+- Explainable Grading Report + Dimension Evidence — #619 / #630 — PASS.
 - Official Kingdom Brand + Installable PWA — #624 — PASS.
 - Calibrated Physical Measurement — PR #20 / #637 — PASS and merged.
 - Macro Corner/Edge Evidence Refinement — PR #21 — PASS and merged.
@@ -258,11 +188,13 @@ Do **not** rebuild these verified slices unless regression evidence requires rep
 - Realized-Sale / Value-History Linkage — PR #24 / #664 — PASS and merged.
 - Live Vault Bootstrap + Portfolio Intelligence — PR #26 / #670 — PASS and merged.
 - Provider-Neutral Valuation Observations + Evidence-Cited Keeper — PR #28 / #679 — PASS and merged.
-- Persistent Evidence-Cited Collection Value History — PR #30 / final #685 — PASS and merged.
-- First-Class Year + Collector Tags — PR #32 — merged production commit `62d1e56b2d13c74d3a1d71da1dcb5a8f630d799b`; final documented production gate passed before Marketplace reconciliation.
+- Persistent Evidence-Cited Collection Value History — PR #30 / #685 — PASS and merged.
+- First-Class Year + Collector Tags — PR #32 — merged.
 - Marketplace Vault-Linked Listing Foundation — production commit `1f1b6b42cb8782e111a86f08d3500ce2e993c01b`; Quality Gates #716 — PASS.
 - Marketplace Searchable Discovery + Live Facets — production commit `cbaf9663d0066ee7b91118e40595cfe68c7c43ae`; Quality Gates #718 — PASS.
-- Collector-Owned Insurance Preparation Reporting — PR #34 implementation head `1dd07abfe4536cd34024fc8011b2d423549e691e`; Quality Gates #720 / run `34761273273` — PASS before documentation closeout.
+- Collector-Owned Insurance Preparation Reporting — PR #34 — merged after final documented-head verification; Royal Vault Phase 1 closed.
+- Marketplace Private Saved Searches + Bounded Query-Bound Pagination — PR #35 — merged to production `08a743abda8aaee14e3f7a852069964df119c7f2`; verified before merge.
+- Marketplace Private Watchlists + Explicit Seller Storefronts — PR #36 implementation head `2224ed115cff86fa0513b2a56ff8932fcd8fd651`; Quality Gates #737 — PASS before documentation closeout.
 
 ---
 
@@ -270,35 +202,33 @@ Do **not** rebuild these verified slices unless regression evidence requires rep
 
 If work is interrupted now:
 
-1. Resume from PR #34 / branch `imp-005-insurance-reporting-sync`.
-2. Do not rewrite the report implementation unless CI or review exposes a real defect.
-3. Verify that README and this ledger are present on the PR head.
-4. Run/observe the complete Kingdom Quality Gate on the documented head.
-5. Merge PR #34 only if every repository gate and the production dependency audit pass.
-6. Confirm `main` includes both the Marketplace discovery baseline and reporting closeout after merge.
-7. Treat Royal Vault Phase 1 as complete unless that final reconciliation exposes an actual locked-spec gap.
-8. Continue the Street Market at private saved searches + bounded cursor pagination before transaction work.
+1. Resume PR #36 / branch `marketplace/watchlist-seller-storefront`.
+2. Treat `2224ed115cff86fa0513b2a56ff8932fcd8fd651` as the verified implementation checkpoint, not necessarily the final documented head.
+3. Do not rewrite watchlist/storefront code unless CI/review exposes a real defect.
+4. Confirm README, `docs/MARKETPLACE-PROGRESS.md` and this ledger describe the current production baseline and PR #36 accurately.
+5. Run the complete Kingdom Quality Gate on the final documented head.
+6. Merge PR #36 only if every repository verifier plus the production dependency audit passes.
+7. Confirm `main` includes listing/discovery, query-bound pagination, private saved searches, private watchlists and explicit seller storefront publication.
+8. Begin fresh research for the Safeguarded Transaction Foundation before implementing checkout/payment controls.
 
 ---
 
-## Exact next engineering target after PR #34
+## Exact next engineering target — Safeguarded Transaction Foundation
 
-**Marketplace Discovery Durability — Private Saved Searches + Bounded Cursor Pagination**
+Build this as a new governed transaction authority, not as an extension of watch state or a cosmetic checkout page.
 
-Build order:
+Research/design order:
 
-1. refresh current competitor/marketplace search and saved-search research before implementation;
-2. preserve the current live Marketplace search/facet truth model rather than creating a second query authority;
-3. introduce bounded deterministic cursor pagination for public active-offer discovery;
-4. make cursors query-bound so they cannot be replayed against changed filters/sorts;
-5. store private owner-scoped saved-search definitions rather than frozen results;
-6. rerun saved searches against current market state;
-7. keep saved-search deletion/private management owner-scoped and auditable as appropriate;
-8. expose no notification promise until a real delivery service exists;
-9. keep currency-safe filtering/sorting and publication-integrity verification intact;
-10. add real service/HTTP/UI/pagination tests plus production artifact verification;
-11. update `docs/MARKETPLACE-PROGRESS.md`, README and this ledger after the verified batch.
+1. compare current marketplace transaction, payment, seller-eligibility, shipping and buyer-protection patterns using official provider/platform documentation;
+2. choose the initial payment/provider boundary only after its server-side API/webhook/idempotency requirements are understood;
+3. define an authoritative append-only order state machine before implementing a Buy control;
+4. define immutable buyer/seller/listing/price/currency snapshots at order creation;
+5. define inventory reservation, expiry and release behavior separately from ownership transfer;
+6. define idempotency for order/payment/refund/webhook mutations;
+7. make payment-provider webhook evidence authoritative only for the events the provider can actually prove;
+8. preserve explicit tax, shipment, delivery, cancellation, refund, dispute, fraud/risk and payout states;
+9. define the exact verified terminal condition that may append provenance and transfer authoritative Vault ownership;
+10. test replay, duplicate webhook, stale listing, insufficient inventory, payment failure, cancellation/refund/dispute and cross-owner isolation paths before any production transaction claim;
+11. keep Buy/Checkout/Pay controls unavailable until the underlying authority is real and verified end to end.
 
-Only after durable discovery/retrieval is verified should the Kingdom begin the **Safeguarded Transaction Foundation**. That future slice must separately govern seller eligibility/KYC boundaries, order state, idempotency, payment-provider/webhook authority, taxes, shipment evidence, cancellation/refund/dispute handling, fraud controls, settlement and the exact verified condition that may append provenance + transfer authoritative Vault ownership.
-
-The governing Marketplace rule remains: **a click is never a sale.**
+The governing rule remains: **a click, listing, saved search, watch or storefront view is never a sale.**
