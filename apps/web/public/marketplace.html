@@ -26,7 +26,7 @@
       <div>
         <p class="marketplace-kicker">Outside the castle gates</p>
         <h1 id="marketplace-title">The Kingdom Street Market</h1>
-        <p>Vault-linked collector offers with evidence-locked publication. Sellers publish exactly what they represent; buyers can inspect active offers without exposing private Vault records.</p>
+        <p>Vault-linked collector offers with evidence-locked publication. Search the active market by the exact representation sellers published without exposing private Vault records.</p>
       </div>
       <aside class="marketplace-trust-card" aria-label="Current commerce status">
         <strong>Listing market now open</strong>
@@ -42,6 +42,53 @@
         </div>
         <button id="refresh-market" type="button">Refresh market</button>
       </div>
+
+      <form id="market-discovery-form" class="marketplace-discovery" role="search">
+        <div class="marketplace-discovery-primary">
+          <label class="marketplace-search-field">Search active offers
+            <input id="market-query" name="q" type="search" maxlength="160" placeholder="Jordan Fleer, Charizard Base Set, Venom…" autocomplete="off">
+          </label>
+          <button type="submit">Search market</button>
+          <button id="clear-market-filters" type="button" class="marketplace-secondary">Clear</button>
+        </div>
+        <details id="market-refine-panel" class="marketplace-refine-panel">
+          <summary>Refine market</summary>
+          <div class="marketplace-refine-grid">
+            <label>Category
+              <select id="market-category" name="category">
+                <option value="">All categories</option>
+              </select>
+            </label>
+            <label>Currency
+              <select id="market-currency" name="currency">
+                <option value="">All currencies</option>
+              </select>
+            </label>
+            <label>Fulfillment
+              <select id="market-fulfillment" name="fulfillment">
+                <option value="">Any fulfillment</option>
+              </select>
+            </label>
+            <label>Sort
+              <select id="market-sort" name="sort">
+                <option value="newest">Newest listed</option>
+                <option value="title">Title A–Z</option>
+                <option value="price-asc">Price low to high</option>
+                <option value="price-desc">Price high to low</option>
+              </select>
+            </label>
+            <label>Minimum price
+              <input id="market-min-price" name="minPrice" inputmode="decimal" placeholder="25.00" disabled>
+            </label>
+            <label>Maximum price
+              <input id="market-max-price" name="maxPrice" inputmode="decimal" placeholder="500.00" disabled>
+            </label>
+          </div>
+          <p id="market-price-guidance" class="marketplace-form-note">Choose a currency to filter or sort by price. The Kingdom never ranks unlike currencies as though they were equivalent.</p>
+        </details>
+      </form>
+
+      <div id="market-active-filters" class="marketplace-active-filters" aria-label="Active market filters"></div>
       <p id="market-status" class="marketplace-status" role="status" aria-live="polite">Loading active offers…</p>
       <div id="market-listings" class="marketplace-grid" aria-live="polite"></div>
     </section>
