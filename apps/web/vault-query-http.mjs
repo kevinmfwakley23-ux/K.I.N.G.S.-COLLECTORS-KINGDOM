@@ -2,7 +2,7 @@ import { parseCookies } from "../../packages/identity/src/tokens.mjs";
 import { IdentityError } from "../../packages/identity/src/service.mjs";
 import { VaultError } from "../../packages/vault/src/service.mjs";
 
-const MAX_QUERY_JSON_BYTES = 16 * 1024;
+const MAX_JSON_BYTES = 64 * 1024;
 
 function requireIdentity(identityService, request) {
   const token = parseCookies(request.headers.cookie ?? "").kingdom_session ?? null;
@@ -30,12 +30,12 @@ async function readJson(request) {
   let size = 0;
   for await (const chunk of request) {
     size += chunk.length;
-    if (size > MAX_QUERY_JSON_BYTES) throw new VaultError("payload_too_large", "Vault query request body may not exceed 16 KiB.", 413);
+    if (size > MAX_JSON_BYTES) throw new VaultError("payload_too_large", "Vault JSON request body may not exceed 64 KiB.", 413);
     chunks.push(chunk);
   }
   try {
     const parsed = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new VaultError("invalid_saved_view", "Saved view data must be an object.");
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new VaultError("invalid_request", "Vault request data must be an object.");
     return parsed;
   } catch (error) {
     if (error instanceof VaultError) throw error;
@@ -43,11 +43,11 @@ async function readJson(request) {
   }
 }
 
-function decodePathValue(value) {
+function decodePathValue(value, code = "invalid_saved_view_id") {
   try {
     return decodeURIComponent(value);
   } catch {
-    throw new VaultError("invalid_saved_view_id", "The saved Vault view identifier is invalid.");
+    throw new VaultError(code, "The requested Vault identifier is invalid.");
   }
 }
 
@@ -86,6 +86,12 @@ function parseViewRoute(pathname) {
   return Object.freeze({ action: match[2] ?? "item", id: decodePathValue(match[1]) });
 }
 
+function parseTreasureRoute(pathname) {
+  const match = pathname.match(/^\/api\/vault\/treasures\/([^/]+)(?:\/(metadata))?$/);
+  if (!match) return null;
+  return Object.freeze({ id: decodePathValue(match[1], "invalid_treasure_id"), action: match[2] ?? "item" });
+}
+
 export async function handleVaultQueryRoute({
   request,
   response,
@@ -96,12 +102,52 @@ export async function handleVaultQueryRoute({
 } = {}) {
   const pathname = requestUrl.pathname;
   const isQuery = pathname === "/api/vault/query";
-  const viewRoute = isQuery ? null : parseViewRoute(pathname);
-  if (!isQuery && !viewRoute) return null;
+  const isTagCollection = pathname === "/api/vault/tags";
+  const isTreasureCollection = pathname === "/api/vault/treasures";
+  const treasureRoute = parseTreasureRoute(pathname);
+  const viewRoute = isQuery || isTagCollection || isTreasureCollection || treasureRoute ? null : parseViewRoute(pathname);
+  if (!isQuery && !isTagCollection && !isTreasureCollection && !treasureRoute && !viewRoute) return null;
   if (!vaultQueryService) throw new VaultError("vault_query_unavailable", "Saved Vault views and paged retrieval are unavailable.", 503);
 
   const method = request.method ?? "GET";
   const identity = requireIdentity(identityService, request);
+
+  if (isTagCollection) {
+    if (method !== "GET" && method !== "HEAD") return false;
+    return sendJson(response, 200, { tags: vaultQueryService.listTags(identity) }, method, securityHeaders);
+  }
+
+  if (isTreasureCollection && method === "POST") {
+    const treasure = vaultQueryService.createTreasure(identity, await readJson(request));
+    return sendJson(response, 201, { treasure }, method, securityHeaders);
+  }
+  if (isTreasureCollection) return null;
+
+  if (treasureRoute?.action === "metadata") {
+    if (method === "GET" || method === "HEAD") {
+      return sendJson(response, 200, { metadata: vaultQueryService.getTreasureMetadata(identity, treasureRoute.id) }, method, securityHeaders);
+    }
+    if (method === "PATCH" || method === "PUT") {
+      const metadata = vaultQueryService.setTreasureMetadata(identity, treasureRoute.id, await readJson(request));
+      return sendJson(response, 200, { metadata }, method, securityHeaders);
+    }
+    return false;
+  }
+
+  if (treasureRoute?.action === "item") {
+    if (method === "GET" || method === "HEAD") {
+      return sendJson(response, 200, { treasure: vaultQueryService.getTreasure(identity, treasureRoute.id) }, method, securityHeaders);
+    }
+    if (method === "PATCH") {
+      const treasure = vaultQueryService.updateTreasure(identity, treasureRoute.id, await readJson(request));
+      return sendJson(response, 200, { treasure }, method, securityHeaders);
+    }
+    if (method === "DELETE") {
+      const treasure = vaultQueryService.archiveTreasure(identity, treasureRoute.id);
+      return sendJson(response, 200, { treasure }, method, securityHeaders);
+    }
+    return false;
+  }
 
   if (isQuery) {
     if (method !== "GET" && method !== "HEAD") return false;
