@@ -262,15 +262,30 @@ export function createMarketplaceRepository({ vaultStore } = {}) {
 
   function listActive({ limit = 50 } = {}) {
     return database.prepare(`
-      SELECT * FROM marketplace_listings
-      WHERE state = 'active'
-      ORDER BY published_at DESC,id ASC
+      SELECT l.*
+      FROM marketplace_listings l
+      INNER JOIN vault_treasures t
+        ON t.id = l.treasure_id
+       AND t.owner_account_id = l.seller_account_id
+       AND t.archived_at IS NULL
+       AND t.quantity >= l.quantity
+      WHERE l.state = 'active'
+      ORDER BY l.published_at DESC,l.id ASC
       LIMIT ?
     `).all(Math.min(Math.max(Number(limit) || 50, 1), 100)).map(mapListing);
   }
 
   function findActiveById(id) {
-    return mapListing(database.prepare("SELECT * FROM marketplace_listings WHERE id = ? AND state = 'active'").get(id));
+    return mapListing(database.prepare(`
+      SELECT l.*
+      FROM marketplace_listings l
+      INNER JOIN vault_treasures t
+        ON t.id = l.treasure_id
+       AND t.owner_account_id = l.seller_account_id
+       AND t.archived_at IS NULL
+       AND t.quantity >= l.quantity
+      WHERE l.id = ? AND l.state = 'active'
+    `).get(id));
   }
 
   function listEvents(listingId) {
