@@ -18,6 +18,8 @@ import { createVaultIntakeService } from "../../packages/vault/src/intake-servic
 import { createVaultMediaRepository } from "../../packages/vault/src/media-repository.mjs";
 import { createVaultMediaService } from "../../packages/vault/src/media-service.mjs";
 import { LocalVaultMediaStorage } from "../../packages/vault/src/media-storage.mjs";
+import { createVaultPortfolioHistoryRepository } from "../../packages/vault/src/portfolio-history-repository.mjs";
+import { createVaultPortfolioHistoryService } from "../../packages/vault/src/portfolio-history-service.mjs";
 import { createVaultProvenanceRepository } from "../../packages/vault/src/provenance-repository.mjs";
 import { createVaultProvenanceService } from "../../packages/vault/src/provenance-service.mjs";
 import { createVaultQueryRepository } from "../../packages/vault/src/query-repository.mjs";
@@ -86,10 +88,21 @@ export async function runKingdomRuntime() {
         timeoutMs: config.ebayTimeoutMs
       })]
     : [];
-  const vaultValuationService = createVaultValuationService({
+  const vaultValuationCoreService = createVaultValuationService({
     vaultStore,
     valuationRepository: vaultValuationRepository,
     observationProviders
+  });
+  const vaultPortfolioHistoryRepository = createVaultPortfolioHistoryRepository({ vaultStore });
+  const vaultPortfolioHistoryService = createVaultPortfolioHistoryService({
+    vaultStore,
+    valuationRepository: vaultValuationRepository,
+    historyRepository: vaultPortfolioHistoryRepository,
+    valuationService: vaultValuationCoreService
+  });
+  const vaultValuationService = Object.freeze({
+    ...vaultValuationCoreService,
+    portfolioHistoryService: vaultPortfolioHistoryService
   });
   const vaultReorganizationRepository = createVaultReorganizationRepository({ vaultStore });
   const vaultReorganizationService = createVaultReorganizationService({
