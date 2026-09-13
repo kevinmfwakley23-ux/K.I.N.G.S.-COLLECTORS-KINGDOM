@@ -31,7 +31,9 @@ test("Street Market discovery UI exposes real searchable facets and currency-saf
   assert.match(script, /history\.replaceState/);
   assert.match(script, /facets\?\.categories/);
   assert.match(script, /facets\?\.currencies/);
-  assert.match(script, /cross-currency/i);
+  assert.match(script, /never ranks unlike currencies as though they were equivalent/i);
+  assert.match(script, /option\.disabled = !hasCurrency/);
+  assert.match(script, /Other currencies are excluded whenever a price range or price sort is used/i);
   assert.match(script, /currencyFractionDigits/);
   assert.match(script, /parseMoneyToMinorUnits/);
 
