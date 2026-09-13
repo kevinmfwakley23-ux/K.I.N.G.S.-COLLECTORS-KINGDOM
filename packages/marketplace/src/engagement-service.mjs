@@ -1,8 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { MarketplaceError } from "./service.mjs";
 
-const MAX_WATCHLIST = 500;
+const MAX_WATCHLIST = 300;
 const MAX_STOREFRONT_LISTINGS = 100;
+const RESERVED_PUBLIC_IDS = new Set([
+  "api", "auth", "great-hall", "marketplace", "seller", "sellers", "storefront", "storefronts",
+  "watchlist", "saved-searches", "listings", "my-listings", "vault", "kings", "admin", "support"
+]);
 
 function requireCollector(identity) {
   if (!identity?.id) throw new MarketplaceError("unauthorized", "Authentication is required.", 401);
@@ -13,6 +17,18 @@ function cleanId(value, code = "marketplace_identifier") {
   if (typeof value !== "string") throw new MarketplaceError(`invalid_${code}`, "Marketplace identifier is required.");
   const cleaned = value.trim();
   if (!cleaned || cleaned.length > 100) throw new MarketplaceError(`invalid_${code}`, "Marketplace identifier is invalid.");
+  return cleaned;
+}
+
+function cleanPublicId(value) {
+  if (typeof value !== "string") throw new MarketplaceError("invalid_marketplace_storefront_id", "A public storefront ID is required.");
+  const cleaned = value.trim().toLowerCase();
+  if (!/^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/.test(cleaned) || cleaned.includes("--") || RESERVED_PUBLIC_IDS.has(cleaned)) {
+    throw new MarketplaceError(
+      "invalid_marketplace_storefront_id",
+      "Public storefront ID must contain 3 to 40 lowercase letters, numbers, or single hyphens, cannot begin/end with a hyphen, and cannot use a reserved Kingdom route."
+    );
+  }
   return cleaned;
 }
 
@@ -34,20 +50,41 @@ function cleanBio(value) {
   return cleaned;
 }
 
+function cleanPublished(value) {
+  if (value === undefined) return undefined;
+  if (typeof value !== "boolean") throw new MarketplaceError("invalid_marketplace_storefront_publication", "Storefront published must be true or false.");
+  return value;
+}
+
 function publicProfile(profile, activeListingCount) {
   return Object.freeze({
     id: profile.publicId,
     shopName: profile.shopName,
     bio: profile.bio,
     activeListingCount,
+    publishedAt: profile.publishedAt,
     storefrontCreatedAt: profile.createdAt,
     storefrontUpdatedAt: profile.updatedAt,
     identityVerificationAvailable: false,
     verifiedPurchaseFeedbackAvailable: false,
     feedbackRating: null,
     verifiedPurchaseFeedbackCount: 0,
+    transactionCheckoutAvailable: false,
     reputationMessage: "Seller ratings are not available until the Kingdom has verified completed transaction and delivery evidence."
   });
+}
+
+function privateProfile(profile, activeListingCount) {
+  if (!profile) return null;
+  return Object.freeze({
+    ...publicProfile(profile, activeListingCount),
+    isPublic: profile.isPublic,
+    publicUrl: profile.isPublic ? `/marketplace-storefront.html?store=${encodeURIComponent(profile.publicId)}` : null
+  });
+}
+
+function uniqueConstraint(error) {
+  return String(error?.message ?? "").includes("UNIQUE");
 }
 
 export function createMarketplaceEngagementService({
@@ -60,7 +97,7 @@ export function createMarketplaceEngagementService({
   if (!vaultStore?.writeEvent) throw new TypeError("Marketplace engagement service requires the Vault event boundary.");
   if (!marketplaceRepository?.findActiveById) throw new TypeError("Marketplace engagement service requires Marketplace listing reads.");
   if (!marketplaceService?.getPublic) throw new TypeError("Marketplace engagement service requires the public Marketplace integrity boundary.");
-  if (!engagementRepository?.ensureSellerProfile) throw new TypeError("Marketplace engagement service requires engagement persistence.");
+  if (!engagementRepository?.createSellerProfile) throw new TypeError("Marketplace engagement service requires engagement persistence.");
   if (typeof now !== "function") throw new TypeError("Marketplace engagement service now must be a function.");
 
   function audit(ownerAccountId, eventType, metadata) {
@@ -74,27 +111,10 @@ export function createMarketplaceEngagementService({
     });
   }
 
-  function ensureSellerProfile(identity) {
-    const seller = requireCollector(identity);
-    const existing = engagementRepository.findSellerProfileByAccountId(seller.id);
-    if (existing) return existing;
-    const createdAt = now().toISOString();
-    const profile = engagementRepository.ensureSellerProfile({
-      sellerAccountId: seller.id,
-      publicId: randomUUID(),
-      shopName: cleanShopName(seller.displayName ?? "Collector"),
-      bio: null,
-      createdAt,
-      updatedAt: createdAt
-    });
-    audit(seller.id, "marketplace.seller_profile_created", { sellerPublicId: profile.publicId });
-    return profile;
-  }
-
   function getMySellerProfile(identity) {
     const seller = requireCollector(identity);
-    const profile = ensureSellerProfile(seller);
-    return publicProfile(profile, engagementRepository.countActiveListingsForSellerAccount(seller.id));
+    const profile = engagementRepository.findSellerProfileByAccountId(seller.id);
+    return privateProfile(profile, profile ? engagementRepository.countActiveListingsForSellerAccount(seller.id) : 0);
   }
 
   function updateMySellerProfile(identity, input = {}) {
@@ -102,29 +122,76 @@ export function createMarketplaceEngagementService({
     if (!input || typeof input !== "object" || Array.isArray(input)) {
       throw new MarketplaceError("invalid_marketplace_seller_profile", "Storefront update must be an object.");
     }
-    const unsupported = Object.keys(input).filter((key) => !["shopName", "bio"].includes(key));
+    const unsupported = Object.keys(input).filter((key) => !["publicId", "shopName", "bio", "published"].includes(key));
     if (unsupported.length) {
       throw new MarketplaceError("unsupported_marketplace_seller_profile_field", `Unsupported storefront field${unsupported.length === 1 ? "" : "s"}: ${unsupported.join(", ")}.`);
     }
-    if (!Object.prototype.hasOwnProperty.call(input, "shopName") && !Object.prototype.hasOwnProperty.call(input, "bio")) {
-      throw new MarketplaceError("empty_marketplace_seller_profile_update", "Storefront update requires shopName and/or bio.");
+    const existing = engagementRepository.findSellerProfileByAccountId(seller.id);
+    const published = cleanPublished(input.published);
+    const timestamp = now().toISOString();
+
+    if (!existing) {
+      if (!Object.prototype.hasOwnProperty.call(input, "publicId") || !Object.prototype.hasOwnProperty.call(input, "shopName")) {
+        throw new MarketplaceError("marketplace_storefront_creation_fields_required", "Creating a storefront requires an explicit publicId and shopName.");
+      }
+      const isPublic = published === true;
+      const next = {
+        sellerAccountId: seller.id,
+        publicId: cleanPublicId(input.publicId),
+        shopName: cleanShopName(input.shopName),
+        bio: cleanBio(input.bio),
+        isPublic,
+        publishedAt: isPublic ? timestamp : null,
+        createdAt: timestamp,
+        updatedAt: timestamp
+      };
+      try {
+        const created = engagementRepository.createSellerProfile(next);
+        audit(seller.id, "marketplace.seller_profile_created", {
+          sellerPublicId: created.publicId,
+          published: created.isPublic
+        });
+        return privateProfile(created, engagementRepository.countActiveListingsForSellerAccount(seller.id));
+      } catch (error) {
+        if (uniqueConstraint(error)) throw new MarketplaceError("marketplace_storefront_id_unavailable", "That public storefront ID is already in use.", 409);
+        throw error;
+      }
     }
-    const current = ensureSellerProfile(seller);
-    const updated = engagementRepository.updateSellerProfile({
-      ...current,
-      shopName: Object.prototype.hasOwnProperty.call(input, "shopName") ? cleanShopName(input.shopName) : current.shopName,
-      bio: Object.prototype.hasOwnProperty.call(input, "bio") ? cleanBio(input.bio) : current.bio,
-      updatedAt: now().toISOString()
-    });
+
+    if (Object.prototype.hasOwnProperty.call(input, "publicId") && cleanPublicId(input.publicId) !== existing.publicId) {
+      throw new MarketplaceError("marketplace_storefront_id_immutable", "A storefront public ID cannot be changed after creation. Create no public links until the ID is final.", 409);
+    }
+    if (
+      !Object.prototype.hasOwnProperty.call(input, "shopName") &&
+      !Object.prototype.hasOwnProperty.call(input, "bio") &&
+      published === undefined
+    ) {
+      throw new MarketplaceError("empty_marketplace_seller_profile_update", "Storefront update requires shopName, bio, and/or published.");
+    }
+
+    const nextPublic = published === undefined ? existing.isPublic : published;
+    const next = {
+      ...existing,
+      shopName: Object.prototype.hasOwnProperty.call(input, "shopName") ? cleanShopName(input.shopName) : existing.shopName,
+      bio: Object.prototype.hasOwnProperty.call(input, "bio") ? cleanBio(input.bio) : existing.bio,
+      isPublic: nextPublic,
+      publishedAt: nextPublic ? (existing.isPublic ? existing.publishedAt : timestamp) : null,
+      updatedAt: timestamp
+    };
+    const updated = engagementRepository.updateSellerProfile(next);
     if (!updated) throw new MarketplaceError("marketplace_seller_profile_not_found", "Marketplace seller profile was not found.", 404);
-    audit(seller.id, "marketplace.seller_profile_updated", { sellerPublicId: updated.publicId });
-    return publicProfile(updated, engagementRepository.countActiveListingsForSellerAccount(seller.id));
+    audit(seller.id, "marketplace.seller_profile_updated", {
+      sellerPublicId: updated.publicId,
+      published: updated.isPublic,
+      publicationChanged: existing.isPublic !== updated.isPublic
+    });
+    return privateProfile(updated, engagementRepository.countActiveListingsForSellerAccount(seller.id));
   }
 
   function getPublicSeller(publicIdValue) {
-    const publicId = cleanId(publicIdValue, "marketplace_seller_id");
+    const publicId = cleanPublicId(publicIdValue);
     const profile = engagementRepository.findSellerProfileByPublicId(publicId);
-    if (!profile) throw new MarketplaceError("marketplace_seller_not_found", "The requested Marketplace seller storefront was not found.", 404);
+    if (!profile) throw new MarketplaceError("marketplace_seller_not_found", "The requested public Marketplace storefront was not found.", 404);
     return publicProfile(profile, engagementRepository.countActiveListingsForSellerAccount(profile.sellerAccountId));
   }
 
@@ -133,7 +200,7 @@ export function createMarketplaceEngagementService({
     const source = marketplaceRepository.findActiveById(listing.id);
     if (!source) return listing;
     const profile = engagementRepository.findSellerProfileByAccountId(source.sellerAccountId);
-    if (!profile) {
+    if (!profile?.isPublic) {
       return Object.freeze({ ...listing, seller: null, sellerStorefrontAvailable: false });
     }
     return Object.freeze({
@@ -156,15 +223,22 @@ export function createMarketplaceEngagementService({
   }
 
   function listPublicSellerListings(publicIdValue, { limit = 24 } = {}) {
-    const publicId = cleanId(publicIdValue, "marketplace_seller_id");
+    const publicId = cleanPublicId(publicIdValue);
     const profile = engagementRepository.findSellerProfileByPublicId(publicId);
-    if (!profile) throw new MarketplaceError("marketplace_seller_not_found", "The requested Marketplace seller storefront was not found.", 404);
+    if (!profile) throw new MarketplaceError("marketplace_seller_not_found", "The requested public Marketplace storefront was not found.", 404);
     const bounded = Number(limit);
     if (!Number.isInteger(bounded) || bounded < 1 || bounded > MAX_STOREFRONT_LISTINGS) {
       throw new MarketplaceError("invalid_marketplace_storefront_limit", `Storefront listing limit must be between 1 and ${MAX_STOREFRONT_LISTINGS}.`);
     }
     const listingIds = engagementRepository.listActiveListingIdsForSellerAccount(profile.sellerAccountId, { limit: bounded });
-    const listings = listingIds.map((id) => decoratePublicListing(marketplaceService.getPublic(id)));
+    const listings = [];
+    for (const id of listingIds) {
+      try {
+        listings.push(decoratePublicListing(marketplaceService.getPublic(id)));
+      } catch (error) {
+        if (!(error instanceof MarketplaceError) || error.code !== "marketplace_listing_not_found") throw error;
+      }
+    }
     const activeListingCount = engagementRepository.countActiveListingsForSellerAccount(profile.sellerAccountId);
     return Object.freeze({
       seller: publicProfile(profile, activeListingCount),
@@ -224,7 +298,8 @@ export function createMarketplaceEngagementService({
       items: Object.freeze(items),
       count: engagementRepository.countWatchlist(collector.id),
       maxWatchlist: MAX_WATCHLIST,
-      notificationsAvailable: false
+      notificationsAvailable: false,
+      purchaseCommitmentCreated: false
     });
   }
 
@@ -240,7 +315,6 @@ export function createMarketplaceEngagementService({
     maxWatchlist: MAX_WATCHLIST,
     maxStorefrontListings: MAX_STOREFRONT_LISTINGS,
     verifiedPurchaseFeedbackAvailable: false,
-    ensureSellerProfile,
     getMySellerProfile,
     updateMySellerProfile,
     getPublicSeller,
