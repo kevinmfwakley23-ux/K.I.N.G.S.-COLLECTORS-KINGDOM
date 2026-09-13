@@ -65,10 +65,11 @@ export async function handleVaultReportRoute({
   if (!["GET", "HEAD"].includes(method)) return false;
   if (!vaultReportService) throw new VaultError("vault_report_unavailable", "Collection evidence reporting is unavailable.", 503);
 
-  const identity = requireIdentity(identityService, request);
-  const report = vaultReportService.generate(identity, reportInput(requestUrl.searchParams));
   const format = String(requestUrl.searchParams.get("format") ?? "json").toLowerCase();
   if (!new Set(["json", "html"]).has(format)) throw new VaultError("invalid_report_format", "format must be json or html.");
+  const input = reportInput(requestUrl.searchParams);
+  const identity = requireIdentity(identityService, request);
+  const report = vaultReportService.generate(identity, input);
   if (format === "html") return sendHtml(response, method, report, securityHeaders);
   return sendJson(response, method, report, securityHeaders, { download: requestUrl.searchParams.get("download") === "true" });
 }
