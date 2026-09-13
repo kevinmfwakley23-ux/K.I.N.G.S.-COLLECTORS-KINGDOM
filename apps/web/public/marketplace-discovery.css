@@ -1,0 +1,92 @@
+.marketplace-discovery {
+  display: grid;
+  gap: .8rem;
+  margin: 1rem 0 1.1rem;
+  padding: 1rem;
+  background: rgba(255,255,255,.72);
+  border: 1px solid var(--market-border);
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px rgba(28,22,13,.08);
+}
+
+.marketplace-discovery-primary {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto auto;
+  gap: .7rem;
+  align-items: end;
+}
+
+.marketplace-search-field,
+.marketplace-refine-grid label {
+  display: grid;
+  gap: .35rem;
+  font-weight: 750;
+}
+
+.marketplace-discovery input,
+.marketplace-discovery select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: .65rem .75rem;
+  color: inherit;
+  background: #fff;
+  border: 1px solid #9b927f;
+  border-radius: .55rem;
+  font: inherit;
+}
+
+.marketplace-discovery input:disabled,
+.marketplace-discovery select:disabled {
+  background: rgba(236,232,222,.8);
+  cursor: not-allowed;
+}
+
+.marketplace-refine-panel {
+  border-top: 1px solid var(--market-border);
+  padding-top: .75rem;
+}
+
+.marketplace-refine-panel summary {
+  width: fit-content;
+  color: var(--market-gold-dark);
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.marketplace-refine-grid {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: .8rem;
+  margin: 1rem 0 .7rem;
+}
+
+.marketplace-active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  min-height: .1rem;
+  margin-bottom: .35rem;
+}
+
+.marketplace-active-filters span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.8rem;
+  padding: .24rem .55rem;
+  color: #4f3b12;
+  background: rgba(207,169,88,.14);
+  border: 1px solid rgba(157,117,40,.28);
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 750;
+}
+
+@media (max-width: 820px) {
+  .marketplace-refine-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+
+@media (max-width: 620px) {
+  .marketplace-discovery-primary,
+  .marketplace-refine-grid { grid-template-columns: 1fr; }
+  .marketplace-discovery-primary button { width: 100%; }
+}
