@@ -3,9 +3,13 @@ const watchStatus = document.querySelector("#market-watchlist-status");
 const watchList = document.querySelector("#market-watchlist-list");
 const sellerProfileForm = document.querySelector("#seller-profile-form");
 const sellerProfileStatus = document.querySelector("#seller-profile-status");
+const sellerPublicId = document.querySelector("#seller-public-id");
+const sellerPublicIdNote = document.querySelector("#seller-public-id-note");
 const sellerShopName = document.querySelector("#seller-shop-name");
 const sellerBio = document.querySelector("#seller-bio");
+const sellerPublished = document.querySelector("#seller-published");
 const sellerPublicLink = document.querySelector("#seller-public-link");
+let currentSellerProfile = null;
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>'"]/g, (character) => ({
@@ -52,7 +56,7 @@ function money(amountCents, currency) {
 }
 
 function sellerLink(listing) {
-  if (!listing?.sellerStorefrontAvailable || !listing.seller?.id) return "Seller storefront unavailable";
+  if (!listing?.sellerStorefrontAvailable || !listing.seller?.id) return "Seller storefront not published";
   const href = `/marketplace-seller.html?id=${encodeURIComponent(listing.seller.id)}`;
   return `<a href="${escapeHtml(href)}">${escapeHtml(listing.seller.shopName)}</a>`;
 }
@@ -75,7 +79,7 @@ function renderWatchlist(payload) {
     <article class="marketplace-watch-card marketplace-watch-card-unavailable">
       <div>
         <strong>Offer no longer active</strong>
-        <small>This private bookmark remains only as an unavailable tombstone; withdrawn offer details are not republished.</small>
+        <small>This private bookmark remains only as an unavailable tombstone; withdrawn or unsupported offer details are not republished.</small>
       </div>
       <button type="button" class="marketplace-secondary" data-unwatch-listing-id="${escapeHtml(item.listingId)}">Remove</button>
     </article>
@@ -88,7 +92,7 @@ async function loadWatchlist() {
   try {
     const payload = await requestJson("/api/marketplace/watchlist?limit=100");
     renderWatchlist(payload);
-    watchStatus.textContent = `${payload.count ?? 0} watched listing${Number(payload.count) === 1 ? "" : "s"}. Watchlist alerts are not enabled yet.`;
+    watchStatus.textContent = `${payload.count ?? 0} watched listing${Number(payload.count) === 1 ? "" : "s"}. Watching creates no purchase commitment; alerts are not enabled yet.`;
   } catch (error) {
     watchList.replaceChildren();
     if (error.code === "unauthorized") {
@@ -99,23 +103,47 @@ async function loadWatchlist() {
   }
 }
 
+function renderSellerProfile(seller) {
+  currentSellerProfile = seller;
+  sellerProfileForm.hidden = false;
+  if (!seller) {
+    sellerPublicId.disabled = false;
+    sellerPublicId.required = true;
+    sellerPublicId.value = "";
+    sellerPublicIdNote.textContent = "Choose this once. It becomes part of your public storefront link and cannot be changed after creation.";
+    sellerShopName.value = "";
+    sellerBio.value = "";
+    sellerPublished.checked = false;
+    sellerPublicLink.hidden = true;
+    sellerProfileStatus.textContent = "No Marketplace storefront profile exists yet. Create one privately, then publish only when you want it visible.";
+    return;
+  }
+
+  sellerPublicId.value = seller.id ?? "";
+  sellerPublicId.disabled = true;
+  sellerPublicId.required = false;
+  sellerPublicIdNote.textContent = "This public storefront ID is permanent so saved links remain stable.";
+  sellerShopName.value = seller.shopName ?? "";
+  sellerBio.value = seller.bio ?? "";
+  sellerPublished.checked = seller.isPublic === true;
+  sellerPublicLink.hidden = !seller.isPublic;
+  if (seller.isPublic && seller.publicUrl) sellerPublicLink.href = seller.publicUrl;
+  sellerProfileStatus.textContent = seller.isPublic
+    ? `${seller.activeListingCount} active storefront listing${seller.activeListingCount === 1 ? "" : "s"}. Your seller-selected profile is public; verified-purchase ratings are not enabled yet.`
+    : `Storefront profile saved privately with ${seller.activeListingCount} active listing${seller.activeListingCount === 1 ? "" : "s"}. Check “Publish” and save when you want this profile connected publicly.`;
+}
+
 async function loadSellerProfile() {
   if (!sellerProfileForm || !sellerProfileStatus) return;
-  sellerProfileStatus.textContent = "Checking your public storefront profile…";
+  sellerProfileStatus.textContent = "Checking your storefront profile…";
   try {
     const payload = await requestJson("/api/marketplace/seller-profile");
-    const seller = payload.seller;
-    sellerShopName.value = seller.shopName ?? "";
-    sellerBio.value = seller.bio ?? "";
-    sellerProfileForm.hidden = false;
-    sellerPublicLink.hidden = false;
-    sellerPublicLink.href = `/marketplace-seller.html?id=${encodeURIComponent(seller.id)}`;
-    sellerProfileStatus.textContent = `${seller.activeListingCount} active storefront listing${seller.activeListingCount === 1 ? "" : "s"}. Verified-purchase ratings are not enabled until real completed transaction and delivery evidence exists.`;
+    renderSellerProfile(payload.seller ?? null);
   } catch (error) {
     sellerProfileForm.hidden = true;
     sellerPublicLink.hidden = true;
     if (error.code === "unauthorized") {
-      sellerProfileStatus.textContent = "Sign in to configure your public Marketplace storefront.";
+      sellerProfileStatus.textContent = "Sign in to create or manage an optional public Marketplace storefront.";
       return;
     }
     sellerProfileStatus.textContent = `Storefront profile could not be loaded: ${error.message}`;
@@ -161,17 +189,24 @@ sellerProfileForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = sellerProfileForm.querySelector("button[type='submit']");
   button.disabled = true;
-  sellerProfileStatus.textContent = "Saving storefront profile…";
+  sellerProfileStatus.textContent = "Saving storefront settings…";
   try {
+    const body = {
+      shopName: sellerShopName.value,
+      bio: sellerBio.value,
+      published: sellerPublished.checked
+    };
+    if (!currentSellerProfile) body.publicId = sellerPublicId.value;
     const payload = await requestJson("/api/marketplace/seller-profile", {
       method: "PATCH",
-      body: JSON.stringify({ shopName: sellerShopName.value, bio: sellerBio.value })
+      body: JSON.stringify(body)
     });
-    const seller = payload.seller;
-    sellerPublicLink.href = `/marketplace-seller.html?id=${encodeURIComponent(seller.id)}`;
-    sellerProfileStatus.textContent = "Storefront profile saved. Reputation remains unavailable until verified completed Marketplace transactions exist.";
+    renderSellerProfile(payload.seller);
+    sellerProfileStatus.textContent = payload.seller.isPublic
+      ? "Storefront settings saved and explicitly published. Seller verification, ratings, checkout, and ownership transfer are not implied."
+      : "Storefront settings saved privately. Nothing from this profile is public until you explicitly publish it.";
   } catch (error) {
-    sellerProfileStatus.textContent = `Storefront profile was not saved: ${error.message}`;
+    sellerProfileStatus.textContent = `Storefront settings were not saved: ${error.message}`;
   } finally {
     button.disabled = false;
   }
