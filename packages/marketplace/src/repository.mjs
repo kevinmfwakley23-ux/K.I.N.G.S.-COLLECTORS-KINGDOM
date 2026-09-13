@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS marketplace_listings (
   manufacturer_snapshot TEXT,
   series_snapshot TEXT,
   seller_description TEXT,
+  search_text TEXT NOT NULL DEFAULT '',
   amount_cents INTEGER NOT NULL CHECK(amount_cents > 0),
   currency TEXT NOT NULL,
   quantity INTEGER NOT NULL CHECK(quantity > 0),
@@ -67,6 +68,27 @@ function parseJson(value, fallback) {
   } catch {
     return fallback;
   }
+}
+
+function normalizeSearchText(value) {
+  return String(value ?? "")
+    .normalize("NFKD")
+    .replace(/\p{M}+/gu, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+function searchTextFromFields(fields) {
+  return normalizeSearchText([
+    fields.titleSnapshot ?? fields.title_snapshot,
+    fields.categorySnapshot ?? fields.category_snapshot,
+    fields.manufacturerSnapshot ?? fields.manufacturer_snapshot,
+    fields.seriesSnapshot ?? fields.series_snapshot,
+    fields.variantSnapshot ?? fields.variant_snapshot,
+    fields.conditionSnapshot ?? fields.condition_snapshot,
+    fields.sellerDescription ?? fields.seller_description
+  ].filter(Boolean).join(" "));
 }
 
 function mapListing(row) {
@@ -145,14 +167,8 @@ function activeWhere(filters = {}) {
   const values = [];
 
   for (const token of filters.queryTokens ?? []) {
-    const pattern = `%${token}%`;
-    where.push(`(
-      LOWER(l.title_snapshot) LIKE ? OR LOWER(l.category_snapshot) LIKE ? OR
-      LOWER(COALESCE(l.manufacturer_snapshot,'')) LIKE ? OR LOWER(COALESCE(l.series_snapshot,'')) LIKE ? OR
-      LOWER(COALESCE(l.variant_snapshot,'')) LIKE ? OR LOWER(COALESCE(l.condition_snapshot,'')) LIKE ? OR
-      LOWER(COALESCE(l.seller_description,'')) LIKE ?
-    )`);
-    values.push(pattern, pattern, pattern, pattern, pattern, pattern, pattern);
+    where.push("l.search_text LIKE ?");
+    values.push(`%${token}%`);
   }
   if (filters.category) {
     where.push("l.category_snapshot = ? COLLATE NOCASE");
@@ -193,6 +209,22 @@ export function createMarketplaceRepository({ vaultStore } = {}) {
   const database = vaultStore.database;
   database.exec(SCHEMA);
 
+  const columns = database.prepare("PRAGMA table_info(marketplace_listings)").all();
+  if (!columns.some((column) => column.name === "search_text")) {
+    database.exec("ALTER TABLE marketplace_listings ADD COLUMN search_text TEXT NOT NULL DEFAULT ''; ");
+  }
+  const rowsMissingSearch = database.prepare(`
+    SELECT id,title_snapshot,category_snapshot,condition_snapshot,variant_snapshot,manufacturer_snapshot,series_snapshot,seller_description
+    FROM marketplace_listings
+    WHERE search_text = ''
+  `).all();
+  if (rowsMissingSearch.length) {
+    const updateSearch = database.prepare("UPDATE marketplace_listings SET search_text = ? WHERE id = ?");
+    transaction(database, () => {
+      for (const row of rowsMissingSearch) updateSearch.run(searchTextFromFields(row), row.id);
+    });
+  }
+
   function findById(id) {
     return mapListing(database.prepare("SELECT * FROM marketplace_listings WHERE id = ?").get(id));
   }
@@ -210,9 +242,9 @@ export function createMarketplaceRepository({ vaultStore } = {}) {
       database.prepare(`
         INSERT INTO marketplace_listings (
           id,seller_account_id,treasure_id,state,sale_format,title_snapshot,category_snapshot,
-          condition_snapshot,variant_snapshot,manufacturer_snapshot,series_snapshot,seller_description,
+          condition_snapshot,variant_snapshot,manufacturer_snapshot,series_snapshot,seller_description,search_text,
           amount_cents,currency,quantity,fulfillment_method,created_at,updated_at
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       `).run(
         listing.id,
         listing.sellerAccountId,
@@ -226,6 +258,7 @@ export function createMarketplaceRepository({ vaultStore } = {}) {
         listing.manufacturerSnapshot ?? null,
         listing.seriesSnapshot ?? null,
         listing.sellerDescription ?? null,
+        searchTextFromFields(listing),
         listing.amountCents,
         listing.currency,
         listing.quantity,
@@ -242,10 +275,11 @@ export function createMarketplaceRepository({ vaultStore } = {}) {
     return transaction(database, () => {
       const result = database.prepare(`
         UPDATE marketplace_listings SET
-          seller_description = ?, amount_cents = ?, currency = ?, quantity = ?, fulfillment_method = ?, updated_at = ?
+          seller_description = ?, search_text = ?, amount_cents = ?, currency = ?, quantity = ?, fulfillment_method = ?, updated_at = ?
         WHERE id = ? AND seller_account_id = ? AND state = 'draft'
       `).run(
         listing.sellerDescription ?? null,
+        searchTextFromFields(listing),
         listing.amountCents,
         listing.currency,
         listing.quantity,
@@ -265,7 +299,7 @@ export function createMarketplaceRepository({ vaultStore } = {}) {
       const result = database.prepare(`
         UPDATE marketplace_listings SET
           state = 'active', title_snapshot = ?, category_snapshot = ?, condition_snapshot = ?, variant_snapshot = ?,
-          manufacturer_snapshot = ?, series_snapshot = ?, seller_description = ?, amount_cents = ?, currency = ?, quantity = ?,
+          manufacturer_snapshot = ?, series_snapshot = ?, seller_description = ?, search_text = ?, amount_cents = ?, currency = ?, quantity = ?,
           fulfillment_method = ?, published_snapshot_json = ?, published_snapshot_sha256 = ?, updated_at = ?, published_at = ?,
           possession_attested_at = ?, right_to_sell_attested_at = ?, accuracy_attested_at = ?
         WHERE id = ? AND seller_account_id = ? AND state = 'draft'
@@ -277,6 +311,7 @@ export function createMarketplaceRepository({ vaultStore } = {}) {
         listing.manufacturerSnapshot ?? null,
         listing.seriesSnapshot ?? null,
         listing.sellerDescription ?? null,
+        searchTextFromFields(listing),
         listing.amountCents,
         listing.currency,
         listing.quantity,
