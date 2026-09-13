@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { loadRuntimeConfig } from "../../config/runtime.mjs";
 import { createCatalogRuntime } from "../../packages/catalog/src/runtime.mjs";
 import { createCommonsAutographProvider } from "../../packages/grading/src/commons-autograph-provider.mjs";
@@ -154,4 +155,6 @@ export async function runKingdomRuntime() {
   return server;
 }
 
-await runKingdomRuntime();
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  await runKingdomRuntime();
+}
