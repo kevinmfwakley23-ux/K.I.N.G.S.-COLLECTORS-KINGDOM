@@ -104,7 +104,7 @@ export function createVaultMetadataService({
       updatedAt: now().toISOString()
     });
     if (saved.year !== null || saved.tags.length) {
-      audit(collector.id, treasure.id, "treasure.metadata_recorded", { year: saved.year, tags: saved.tags });
+      audit(collector.id, treasure.id, "vault.treasure_metadata_recorded", { year: saved.year, tags: saved.tags });
     }
     return mergeMetadata(treasure, saved);
   }
@@ -138,7 +138,7 @@ export function createVaultMetadataService({
         })
       : existingMetadata;
     if (metadataChanged) {
-      audit(collector.id, treasureId, "treasure.metadata_updated", {
+      audit(collector.id, treasureId, "vault.treasure_metadata_updated", {
         previous: { year: existingMetadata.year, tags: existingMetadata.tags },
         current: { year: saved.year, tags: saved.tags },
         title: existingTreasure.title
@@ -173,18 +173,33 @@ export function createVaultMetadataService({
   function previewImport(identity, input = {}) {
     const collector = requireCollector(identity);
     const preview = vaultService.previewImport(collector, input);
-    const accepted = preview.accepted.map((entry) => {
+    const accepted = [];
+    const rejected = [...preview.rejected];
+
+    for (const entry of preview.accepted) {
       const source = input.records?.[entry.index] ?? {};
-      return Object.freeze({
-        ...entry,
-        treasure: Object.freeze({
-          ...entry.treasure,
-          year: cleanTreasureYear(source.year),
-          tags: cleanTreasureTags(source.tags)
-        })
-      });
+      try {
+        accepted.push(Object.freeze({
+          ...entry,
+          treasure: Object.freeze({
+            ...entry.treasure,
+            year: cleanTreasureYear(source.year),
+            tags: cleanTreasureTags(source.tags)
+          })
+        }));
+      } catch (error) {
+        if (!(error instanceof VaultError)) throw error;
+        rejected.push(Object.freeze({ index: entry.index, code: error.code, message: error.message }));
+      }
+    }
+
+    accepted.sort((left, right) => left.index - right.index);
+    rejected.sort((left, right) => left.index - right.index);
+    return Object.freeze({
+      ...preview,
+      accepted: Object.freeze(accepted),
+      rejected: Object.freeze(rejected)
     });
-    return Object.freeze({ ...preview, accepted: Object.freeze(accepted) });
   }
 
   function snapshot(identity) {
@@ -224,7 +239,7 @@ export function createVaultMetadataService({
     });
     const changed = next.year !== existing.year || JSON.stringify(next.tags) !== JSON.stringify(existing.tags);
     if (changed) {
-      audit(collector.id, treasureId, "treasure.metadata_updated", {
+      audit(collector.id, treasureId, "vault.treasure_metadata_updated", {
         previous: { year: existing.year, tags: existing.tags },
         current: { year: saved.year, tags: saved.tags },
         title: treasure.title
