@@ -86,7 +86,7 @@ test("seller storefront remains private until explicit publication and exposes n
 
     const published = engagement.updateMySellerProfile(seller, { published: true });
     assert.equal(published.isPublic, true);
-    assert.equal(published.publicUrl, "/marketplace-seller.html?id=card-castle");
+    assert.equal(published.publicUrl, "/marketplace-storefront.html?store=card-castle");
     assert.ok(published.publishedAt);
 
     const publicSeller = engagement.getPublicSeller("card-castle");
