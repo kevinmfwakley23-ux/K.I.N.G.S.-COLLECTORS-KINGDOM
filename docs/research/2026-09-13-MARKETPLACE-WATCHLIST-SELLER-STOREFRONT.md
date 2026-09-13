@@ -12,6 +12,10 @@ Research for the next Kingdom Street Market production slice: private buyer watc
 - eBay keeps active and ended watched listings visible as separate states rather than treating a watch as a purchase.
 - eBay also separates saved searches, saved sellers, purchase history, and seller feedback into distinct buyer capabilities.
 
+Official references:
+- https://pages.ebay.com/make-the-most-of-ebay/
+- https://www.ebay.com/help/selling/selling/ebay-profile-page?id=5185
+
 Kingdom adoption:
 - Watchlist is private buyer intent only.
 - Watching creates no purchase commitment, reservation, ownership change, or checkout state.
@@ -20,9 +24,12 @@ Kingdom adoption:
 
 ### TCGplayer
 
-- TCGplayer upgraded seller pages in 2026 with dedicated seller URLs, seller inventory direction, rating history, and verified-purchase messaging.
-- TCGplayer feedback is order/transaction based. Buyers leave feedback for purchases, and seller reputation is derived from actual transaction history.
-- TCGplayer's Verified/Gold Star seller concepts depend on established selling history and feedback thresholds rather than self-assertion.
+- TCGplayer's Seller Storefront presents a seller's current Marketplace inventory and handles inactive/no-inventory state without presenting stale purchasable inventory.
+- TCGplayer feedback is purchase/transaction based; seller reputation is downstream of real purchase history rather than listing publication.
+
+Official references:
+- https://help.tcgplayer.com/hc/en-us/articles/40238916287895-Seller-Storefront-FAQ
+- https://help.tcgplayer.com/hc/en-us/articles/34838289723927-Leaving-feedback-for-sellers
 
 Kingdom adoption:
 - Seller storefront URLs are stable and seller-selected.
@@ -33,23 +40,27 @@ Kingdom adoption:
 
 ### Whatnot
 
-- Whatnot permits seller ratings/reviews after an order is marked delivered.
-- Ratings therefore sit downstream of real order and delivery state, not merely listing publication.
+- Whatnot exposes seller-selected public profile fields such as profile picture/banner, bio, name and username as a distinct public profile surface.
+- Public seller identity is therefore an explicit publication boundary rather than an accidental leak of private account data.
+
+Official reference:
+- https://help.whatnot.com/hc/en-us/articles/7937283893005-Edit-your-Whatnot-profile
 
 Kingdom adoption:
+- Marketplace storefront identity remains separate from the private Kingdom account record.
 - Reputation remains structurally unavailable in this phase.
 - Future seller ratings must be linked to real Kingdom transaction/delivery evidence and must not be creatable from a listing, watch, or seller profile alone.
 
 ## Kingdom design decisions
 
-1. **Private watchlist** — owner-scoped, idempotent, bounded, no purchase commitment.
+1. **Private watchlist** — owner-scoped, idempotent, bounded to 300 entries, no purchase commitment.
 2. **Unavailable tombstones** — withdrawn/unsupported offers do not leak their old public representation back through a watchlist.
 3. **Explicit storefront publication** — creating/editing a storefront does not make it public until the seller opts in.
 4. **Stable public ID** — public storefront IDs are validated, reserved-route safe, case-insensitively unique, and immutable after creation.
 5. **Data minimization** — public storefronts do not expose account IDs, email, Vault treasure IDs, purchase cost, storage data, private collection data, or private watchlists.
 6. **Live inventory** — storefront inventory uses the same active Marketplace + live Vault support boundary as public discovery.
 7. **No invented reputation** — identity verification, verified-purchase feedback, rating score, sales history, checkout, payment, buyer protection, settlement, and ownership transfer remain unavailable until their real evidence-producing systems exist.
-8. **Stable URL compatibility** — canonical storefront links use `/marketplace-storefront.html?store=<public-id>`; the earlier seller-page URL remains a compatibility alias to the same API-backed storefront workflow.
+8. **Stable URL compatibility** — the seller profile's generated public link uses `/marketplace-seller.html?id=<public-id>`; `/marketplace-storefront.html?store=<public-id>` remains a compatibility alias backed by the same live API and client runtime.
 
 ## Next prerequisites before reputation
 
