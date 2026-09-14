@@ -1,6 +1,7 @@
 import { IdentityError } from "../../packages/identity/src/service.mjs";
 import { MarketplaceError } from "../../packages/marketplace/src/service.mjs";
 import { handleMarketplaceRoute } from "./marketplace-http.mjs";
+import { handleMarketplaceTransactionRoute } from "./marketplace-transaction-http.mjs";
 import { createKingdomServer } from "./server.mjs";
 
 const SECURITY_HEADERS = Object.freeze({
@@ -22,7 +23,7 @@ function sendJson(response, statusCode, payload, method = "GET") {
   response.end(method === "HEAD" ? undefined : body);
 }
 
-export function createMarketplaceAwareKingdomServer({ marketplaceService = null, ...kingdomOptions } = {}) {
+export function createMarketplaceAwareKingdomServer({ marketplaceService = null, marketplaceTransactionService = null, ...kingdomOptions } = {}) {
   const server = createKingdomServer(kingdomOptions);
   const baseHandler = server.listeners("request")[0];
   if (typeof baseHandler !== "function") throw new TypeError("Kingdom server request handler is unavailable.");
@@ -42,6 +43,17 @@ export function createMarketplaceAwareKingdomServer({ marketplaceService = null,
     }
 
     try {
+      const transactionHandled = await handleMarketplaceTransactionRoute({
+        request,
+        response,
+        requestUrl,
+        identityService: kingdomOptions.identityService,
+        transactionService: marketplaceTransactionService,
+        securityHeaders: SECURITY_HEADERS
+      });
+      if (transactionHandled === false) return sendJson(response, 405, { error: "method_not_allowed" }, method);
+      if (transactionHandled !== null) return;
+
       const handled = await handleMarketplaceRoute({
         request,
         response,
