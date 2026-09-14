@@ -1,6 +1,7 @@
 import { MarketplaceError } from "./service.mjs";
 
 const MAX_VERIFIED_LISTINGS = 10_000;
+const PAGE_SIZE = 100;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function freezeArray(items) {
@@ -85,22 +86,13 @@ function currencyStats(currency, listings, nowMs) {
   });
 }
 
-export function createMarketplaceObservatoryService({
-  observatoryRepository,
-  marketplaceService,
-  now = () => new Date()
-} = {}) {
-  if (!observatoryRepository || typeof observatoryRepository.listLiveActiveListingIds !== "function") {
-    throw new TypeError("Marketplace observatory service requires the observatory repository boundary.");
-  }
-  if (!marketplaceService || typeof marketplaceService.getPublic !== "function") {
-    throw new TypeError("Marketplace observatory service requires the public Marketplace listing boundary.");
-  }
-  if (typeof now !== "function") throw new TypeError("Marketplace observatory now must be a function.");
-
-  function observatory() {
-    const ids = observatoryRepository.listLiveActiveListingIds({ limit: MAX_VERIFIED_LISTINGS + 1 });
-    if (ids.length > MAX_VERIFIED_LISTINGS) {
+function readVerifiedListings(marketplaceService) {
+  const listings = [];
+  let cursor = null;
+  do {
+    const page = marketplaceService.browsePage({ pageSize: PAGE_SIZE, cursor: cursor ?? undefined });
+    listings.push(...page.listings);
+    if (listings.length > MAX_VERIFIED_LISTINGS) {
       throw new MarketplaceError(
         "marketplace_observatory_capacity_exceeded",
         "The active market exceeds the Observatory's verified scan capacity. Partial statistics will not be published.",
@@ -108,8 +100,22 @@ export function createMarketplaceObservatoryService({
         { maxVerifiedListings: MAX_VERIFIED_LISTINGS }
       );
     }
+    cursor = page.pageInfo?.hasNext ? page.pageInfo.nextCursor : null;
+  } while (cursor);
+  return Object.freeze(listings);
+}
 
-    const listings = ids.map((id) => marketplaceService.getPublic(id));
+export function createMarketplaceObservatoryService({
+  marketplaceService,
+  now = () => new Date()
+} = {}) {
+  if (!marketplaceService || typeof marketplaceService.browsePage !== "function") {
+    throw new TypeError("Marketplace observatory service requires verified paged Marketplace discovery.");
+  }
+  if (typeof now !== "function") throw new TypeError("Marketplace observatory now must be a function.");
+
+  function observatory() {
+    const listings = readVerifiedListings(marketplaceService);
     const generatedAtDate = now();
     const nowMs = generatedAtDate.getTime();
     if (!Number.isFinite(nowMs)) throw new TypeError("Marketplace observatory now must return a valid date.");
@@ -141,7 +147,8 @@ export function createMarketplaceObservatoryService({
       }),
       capacity: Object.freeze({
         complete: true,
-        maxVerifiedListings: MAX_VERIFIED_LISTINGS
+        maxVerifiedListings: MAX_VERIFIED_LISTINGS,
+        pageSize: PAGE_SIZE
       })
     });
   }
