@@ -215,11 +215,11 @@ export function createMarketplaceTransactionRepository({ vaultStore } = {}) {
       if (listing.published_snapshot_sha256 !== order.listingSnapshotSha256) return Object.freeze({ ok: false, reason: "representation_changed" });
       if (Number(listing.amount_cents) !== order.unitAmountCents || listing.currency !== order.currency) return Object.freeze({ ok: false, reason: "terms_changed" });
 
-      const placeholders = RESERVING_STATES.map(() => "?").join(",");
+      const bindMarks = RESERVING_STATES.map(() => "?").join(",");
       const reserved = Number(database.prepare(`
         SELECT COALESCE(SUM(quantity),0) AS quantity
         FROM marketplace_orders
-        WHERE listing_id = ? AND state IN (${placeholders})
+        WHERE listing_id = ? AND state IN (${bindMarks})
       `).get(order.listingId, ...RESERVING_STATES).quantity);
       const maximum = Math.min(Number(listing.listing_quantity), Number(listing.vault_quantity));
       const available = Math.max(0, maximum - reserved);
