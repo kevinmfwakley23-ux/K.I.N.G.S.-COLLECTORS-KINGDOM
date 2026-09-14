@@ -47,6 +47,22 @@ function safeTotal(unitAmountCents, quantity) {
   return total;
 }
 
+function isLoopbackHost(hostname) {
+  const host = String(hostname ?? "").toLowerCase();
+  return host === "localhost" || host === "127.0.0.1" || host === "::1" || host.endsWith(".localhost");
+}
+
+function cleanPublicBaseUrl(value) {
+  let parsed;
+  try { parsed = new URL(value); } catch { throw new TypeError("Marketplace public base URL must be a valid URL."); }
+  const localHttp = parsed.protocol === "http:" && isLoopbackHost(parsed.hostname);
+  if (parsed.protocol !== "https:" && !localHttp) {
+    throw new TypeError("Marketplace public base URL must use HTTPS except for loopback development.");
+  }
+  if (parsed.username || parsed.password) throw new TypeError("Marketplace public base URL must not contain credentials.");
+  return parsed.origin;
+}
+
 function sellerPaymentStatus(remote) {
   if (!remote) return "onboarding";
   if (remote.disabledReason) return "restricted";
@@ -101,12 +117,24 @@ function event(orderId, eventType, source, createdAt, metadata = {}) {
   return Object.freeze({ id: randomUUID(), orderId, eventType, source, metadata, createdAt });
 }
 
-function assertTransition(current, next) {
-  if (current === next) return false;
-  if (!ALLOWED_TRANSITIONS[current]?.has(next)) {
-    throw new MarketplaceError("marketplace_order_transition_rejected", `Marketplace order cannot transition from ${current} to ${next}.`, 409);
-  }
-  return true;
+function allowedFromStates(nextState) {
+  return Object.freeze(Object.entries(ALLOWED_TRANSITIONS)
+    .filter(([, allowed]) => allowed.has(nextState))
+    .map(([state]) => state));
+}
+
+function providerEventTime(providerEvent, fallbackDate) {
+  const seconds = Number(providerEvent?.created);
+  if (!Number.isFinite(seconds) || seconds < 0) return fallbackDate.toISOString();
+  const date = new Date(seconds * 1000);
+  return Number.isFinite(date.getTime()) ? date.toISOString() : fallbackDate.toISOString();
+}
+
+function isFullChargeRefund(charge) {
+  if (charge?.refunded === true) return true;
+  const amount = Number(charge?.amount);
+  const amountRefunded = Number(charge?.amount_refunded);
+  return Number.isSafeInteger(amount) && amount > 0 && Number.isSafeInteger(amountRefunded) && amountRefunded >= amount;
 }
 
 export function createMarketplaceTransactionService({
@@ -124,14 +152,16 @@ export function createMarketplaceTransactionService({
 } = {}) {
   if (!marketplaceRepository?.findActiveById) throw new TypeError("Marketplace transaction service requires Marketplace listing persistence.");
   if (!marketplaceService?.getPublic) throw new TypeError("Marketplace transaction service requires public listing integrity reads.");
-  if (!transactionRepository?.reserveOrder) throw new TypeError("Marketplace transaction service requires transaction persistence.");
+  if (!transactionRepository?.reserveOrder || !transactionRepository?.applyProviderOrderEventOnce) {
+    throw new TypeError("Marketplace transaction service requires transaction persistence with atomic provider-event handling.");
+  }
   if (typeof now !== "function") throw new TypeError("Marketplace transaction service now must be a function.");
   if (!Number.isInteger(platformFeeBps) || platformFeeBps < 0 || platformFeeBps > 10000) throw new TypeError("Marketplace platform fee basis points must be 0 through 10000.");
   if (!Array.isArray(shippingCountries) || shippingCountries.length < 1 || shippingCountries.some((value) => !/^[A-Z]{2}$/.test(value))) {
     throw new TypeError("Marketplace shipping countries must be uppercase two-letter country codes.");
   }
   const providerAvailable = Boolean(paymentProvider?.enabled && paymentProvider?.id && paymentProvider?.policyId);
-  const safeBaseUrl = new URL(publicBaseUrl).toString().replace(/\/$/, "");
+  const safeBaseUrl = cleanPublicBaseUrl(publicBaseUrl);
   const liveCheckout = checkoutEnabled === true && providerAvailable && automaticTaxEnabled === true && typeof taxPolicyId === "string" && Boolean(taxPolicyId.trim());
 
   function saveRemoteAccount(sellerAccountId, remote, existing = null) {
@@ -303,18 +333,6 @@ export function createMarketplaceTransactionService({
     return publicOrder(order, transactionRepository.listOrderEvents(order.id));
   }
 
-  function transitionFromProvider(order, nextState, providerEvent, paymentIntentId = null) {
-    if (!order) return null;
-    if (order.state === nextState) return order;
-    assertTransition(order.state, nextState);
-    const updatedAt = new Date((providerEvent.created ?? Math.floor(now().getTime() / 1000)) * 1000).toISOString();
-    return transactionRepository.transitionOrder(order.id, nextState, {
-      updatedAt,
-      paymentIntentId,
-      event: event(order.id, `marketplace.provider_${nextState}`, "provider", updatedAt, { providerEventId: providerEvent.id, providerEventType: providerEvent.type })
-    });
-  }
-
   async function handleProviderWebhook(rawBody, signatureHeader) {
     if (!providerAvailable) throw new MarketplaceError("marketplace_payment_provider_unavailable", "Marketplace payment webhooks are unavailable.", 503);
     let providerEvent;
@@ -323,14 +341,15 @@ export function createMarketplaceTransactionService({
     } catch (error) {
       throw new MarketplaceError("marketplace_payment_webhook_invalid", error.message, 400);
     }
+
+    if (transactionRepository.hasProviderEvent(providerEvent.id)) {
+      return Object.freeze({ accepted: true, duplicate: true, eventId: providerEvent.id });
+    }
+
     const object = providerEvent.data.object;
-    if (!transactionRepository.recordProviderEventOnce({
-      providerEventId: providerEvent.id,
-      provider: paymentProvider.id,
-      eventType: providerEvent.type,
-      objectId: object?.id ?? null,
-      processedAt: now().toISOString()
-    })) return Object.freeze({ accepted: true, duplicate: true, eventId: providerEvent.id });
+    const processedDate = now();
+    const processedAt = processedDate.toISOString();
+    const transitionAt = providerEventTime(providerEvent, processedDate);
 
     if (providerEvent.type === "account.updated") {
       const existing = transactionRepository.findSellerPaymentAccountByProviderId(object.id);
@@ -343,16 +362,32 @@ export function createMarketplaceTransactionService({
         requirementsDueCount: Array.isArray(object.requirements?.currently_due) ? object.requirements.currently_due.length : 0,
         disabledReason: object.requirements?.disabled_reason ?? null
       }, existing);
-      return Object.freeze({ accepted: true, duplicate: false, eventId: providerEvent.id, accountUpdated: Boolean(existing) });
+      const recorded = transactionRepository.recordProviderEventOnce({
+        providerEventId: providerEvent.id,
+        provider: paymentProvider.id,
+        eventType: providerEvent.type,
+        objectId: object?.id ?? null,
+        processedAt
+      });
+      return Object.freeze({ accepted: true, duplicate: !recorded, eventId: providerEvent.id, accountUpdated: Boolean(existing) });
     }
 
     let order = null;
     let nextState = null;
     let paymentIntentId = null;
-    if (["checkout.session.completed", "checkout.session.async_payment_succeeded", "checkout.session.async_payment_failed"].includes(providerEvent.type)) {
+    let partialRefund = false;
+    const checkoutEvent = [
+      "checkout.session.completed",
+      "checkout.session.async_payment_succeeded",
+      "checkout.session.async_payment_failed",
+      "checkout.session.expired"
+    ].includes(providerEvent.type);
+
+    if (checkoutEvent) {
       order = object.metadata?.kingdom_order_id ? transactionRepository.findOrderById(object.metadata.kingdom_order_id) : transactionRepository.findOrderByCheckoutSessionId(object.id);
       paymentIntentId = typeof object.payment_intent === "string" ? object.payment_intent : object.payment_intent?.id ?? null;
-      if (providerEvent.type === "checkout.session.async_payment_failed") nextState = "payment_failed";
+      if (providerEvent.type === "checkout.session.expired") nextState = "cancelled";
+      else if (providerEvent.type === "checkout.session.async_payment_failed") nextState = "payment_failed";
       else if (object.payment_status === "paid" || providerEvent.type === "checkout.session.async_payment_succeeded") nextState = "paid";
       else nextState = "payment_processing";
     } else if (providerEvent.type === "payment_intent.payment_failed") {
@@ -362,20 +397,69 @@ export function createMarketplaceTransactionService({
     } else if (providerEvent.type === "charge.refunded") {
       paymentIntentId = typeof object.payment_intent === "string" ? object.payment_intent : object.payment_intent?.id ?? null;
       order = paymentIntentId ? transactionRepository.findOrderByPaymentIntentId(paymentIntentId) : null;
-      nextState = "refunded";
+      if (isFullChargeRefund(object)) nextState = "refunded";
+      else partialRefund = true;
     } else if (providerEvent.type === "charge.dispute.created") {
       paymentIntentId = typeof object.payment_intent === "string" ? object.payment_intent : null;
       order = paymentIntentId ? transactionRepository.findOrderByPaymentIntentId(paymentIntentId) : null;
       nextState = "disputed";
     }
 
-    const updated = nextState && order ? transitionFromProvider(order, nextState, providerEvent, paymentIntentId) : null;
+    if (order) {
+      const orderEventType = partialRefund
+        ? "marketplace.provider_partial_refund_observed"
+        : nextState
+          ? `marketplace.provider_${nextState}`
+          : "marketplace.provider_event_observed";
+      const metadata = {
+        providerEventId: providerEvent.id,
+        providerEventType: providerEvent.type,
+        ...(partialRefund ? {
+          partialRefund: true,
+          chargeAmountCents: Number.isSafeInteger(Number(object.amount)) ? Number(object.amount) : null,
+          amountRefundedCents: Number.isSafeInteger(Number(object.amount_refunded)) ? Number(object.amount_refunded) : null
+        } : {})
+      };
+      const applied = transactionRepository.applyProviderOrderEventOnce({
+        providerEventId: providerEvent.id,
+        provider: paymentProvider.id,
+        providerEventType: providerEvent.type,
+        objectId: object?.id ?? null,
+        processedAt,
+        transitionAt,
+        orderId: order.id,
+        nextState,
+        allowedFromStates: nextState ? allowedFromStates(nextState) : [],
+        paymentIntentId,
+        orderEvent: event(order.id, orderEventType, "provider", transitionAt, metadata)
+      });
+      return Object.freeze({
+        accepted: true,
+        duplicate: applied.duplicate,
+        eventId: providerEvent.id,
+        orderId: applied.order?.id ?? order.id,
+        orderState: applied.order?.state ?? order.state,
+        stateConflictIgnored: applied.stateConflict,
+        partialRefundObserved: partialRefund,
+        ownershipTransferAuthorized: false
+      });
+    }
+
+    const recorded = transactionRepository.recordProviderEventOnce({
+      providerEventId: providerEvent.id,
+      provider: paymentProvider.id,
+      eventType: providerEvent.type,
+      objectId: object?.id ?? null,
+      processedAt
+    });
     return Object.freeze({
       accepted: true,
-      duplicate: false,
+      duplicate: !recorded,
       eventId: providerEvent.id,
-      orderId: updated?.id ?? order?.id ?? null,
-      orderState: updated?.state ?? order?.state ?? null,
+      orderId: null,
+      orderState: null,
+      stateConflictIgnored: false,
+      partialRefundObserved: partialRefund,
       ownershipTransferAuthorized: false
     });
   }
