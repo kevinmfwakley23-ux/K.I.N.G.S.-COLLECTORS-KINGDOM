@@ -5,11 +5,11 @@ This is the recovery and production ledger for the **Kingdom Street Market**. Up
 ## Current production baseline
 
 **Production branch:** `main`  
-**Latest merged Marketplace slice:** PR #37 — `Marketplace: shareable live listing detail pages`  
-**Production commit after PR #37:** `14ae5627aa0c9f488c894edcdfd6a6401a6a7b5b`  
-**PR #37 final verification:** Kingdom Quality Gates #739 — **PASS**, including production dependency audit
+**Latest merged Marketplace slice:** PR #39 — `Marketplace: verified Active Market Observatory`  
+**Production commit after PR #39:** `58bbfc98118bf05e527927c5e299ce8a64654019`  
+**PR #39 final verification:** Kingdom Quality Gates #742 — **PASS**, including production dependency audit
 
-The Marketplace is real listing/discovery software, but it is still deliberately **pre-transaction**. A listing, watch, search, storefront visit, share, or Observatory view is never represented as a completed sale.
+The Marketplace now has real listing publication, discovery, seller engagement, shareable detail pages and active-market asking-price intelligence. Transaction code remains separately gated: a listing, watch, search, storefront visit, share, Observatory view, reservation attempt or provider session must never be represented as a completed sale unless the separately verified order state authorizes that claim.
 
 ## Production history
 
@@ -85,37 +85,38 @@ Added:
 - integrity-failed offers fail closed;
 - no automatic publication of private Vault media.
 
-## Current work — Active Market Observatory
+### PR #39 — Verified Active Market Observatory — MERGED
+**Production commit:** `58bbfc98118bf05e527927c5e299ce8a64654019`  
+**Final gate:** #742 — PASS
 
-**Date:** 2026-09-14 (America/Denver)  
-**Branch:** `marketplace/active-market-observatory`  
-**Status:** implementation in progress; not production until final Quality Gates pass and PR merges
+Added:
+- read-only `GET/HEAD /api/marketplace/observatory`;
+- complete scan through the same verified keyset pagination used by Marketplace discovery;
+- current Royal Vault support and representation SHA-256 verification retained for every included offer;
+- total active supported offer count and category counts;
+- per-currency lowest ask, exact middle-rank ask/range and highest ask;
+- 24-hour and 7-day listing-publication activity counts;
+- per-category asking-price evidence inside each currency;
+- no completed-sale evidence, no appraisal claim, no FX conversion and no cross-currency price aggregation;
+- 10,000-active-offer verified scan ceiling with fail-closed behavior instead of partial statistics;
+- invalid/future publication evidence and integrity failures block the whole snapshot;
+- responsive Observatory UI and navigation from live Marketplace/storefront surfaces;
+- unit, real HTTP, UI and production artifact verification.
 
 Research record:
 - `docs/research/2026-09-14-MARKETPLACE-ACTIVE-MARKET-OBSERVATORY.md`
 
-Current implementation:
-- `packages/marketplace/src/observatory-service.mjs`;
-- read-only `GET/HEAD /api/marketplace/observatory` production server route;
-- `apps/web/public/marketplace-observatory.html`;
-- `apps/web/public/marketplace-observatory.js`;
-- `apps/web/public/marketplace-observatory.css`;
-- automatic `Market Observatory` navigation on live Marketplace/storefront surfaces;
-- unit, real HTTP and UI trust tests;
-- `tools/verify-marketplace-observatory.mjs` production artifact gate;
-- Observatory verifier included in `npm run verify`.
-
 Locked Observatory truth rules:
 1. active asking prices are not market value;
 2. completed sales are not included;
-3. every included offer comes through the same live, Vault-supported, SHA-verified keyset pagination used by public Marketplace discovery;
+3. every included offer comes through the same live, Vault-supported, SHA-verified pagination used by public Marketplace discovery;
 4. prices are aggregated only inside the same currency;
 5. no FX conversion or cross-currency median/average exists;
 6. even-sized samples report both middle-rank asks instead of manufacturing a fractional minor-unit midpoint;
 7. category counts may aggregate across currencies because they are inventory counts, not price comparisons;
 8. 24-hour and 7-day counts are listing-publication activity, not sales velocity;
-9. the first complete verified scan is capped at 10,000 active offers;
-10. capacity overflow, invalid publication time, or representation-integrity failure prevents the report from publishing partial statistics.
+9. the complete verified scan is capped at 10,000 active offers in this implementation;
+10. capacity overflow, invalid publication time, or representation-integrity failure prevents partial statistics from being published as complete.
 
 ## Current live Marketplace capabilities
 
@@ -131,17 +132,34 @@ Production currently supports:
 - shareable listing-detail pages;
 - public listing/storefront discovery;
 - current-Vault support suppression;
-- responsive Street Market, seller and listing-detail surfaces.
+- active asking-price Observatory intelligence with currency separation;
+- responsive Street Market, seller, listing-detail and Observatory surfaces.
 
-## Intentionally unavailable — do not claim these exist
+## Parallel transaction work — not production yet
 
-- cart or checkout;
-- payment authorization/capture;
-- escrow or settlement;
+PR #38 — `Marketplace: safeguarded transactions phase 1` is an open draft built by the parallel co-chief engineer. At the last coordination audit it owned only new transaction/provider/test/research files and had **zero changed-file overlap** with PR #39.
+
+Its draft currently describes work toward:
+- Stripe Connect hosted seller onboarding;
+- provider-neutral payment-account persistence;
+- idempotent Vault-backed order reservation;
+- oversell protection;
+- provider-hosted Checkout session creation;
+- tax/checkout fail-closed gating;
+- verified webhook signatures and provider-event deduplication;
+- append-only order history;
+- explicit no-ownership-transfer behavior.
+
+Do **not** describe those transaction capabilities as production until PR #38 is fully wired through HTTP/runtime/UI, reconciled onto current `main`, and passes the complete production quality gate on its final head.
+
+## Intentionally unavailable in current production — do not claim these exist
+
+- live production checkout/order completion;
+- payment authorization/capture/settlement;
 - seller payouts;
 - seller identity/KYC approval;
 - tax calculation/reporting;
-- order lifecycle;
+- complete order lifecycle;
 - shipment labels/tracking;
 - buyer protection;
 - returns/refunds/disputes;
@@ -154,13 +172,15 @@ Production currently supports:
 - star ratings or verified-seller badges;
 - Marketplace-specific public media publishing from private Vault media;
 - watchlist or saved-search notifications;
+- transaction-backed Marketplace value analytics;
 - automatic sold provenance events;
 - Marketplace-driven Vault ownership transfer;
-- external marketplace cross-posting.
+- external marketplace cross-posting;
+- automatic FX conversion.
 
-## Transaction foundation — later gated phase
+## Safeguarded Transaction Foundation gate
 
-Do not add a fake Buy/Checkout path before all of these have real authority boundaries:
+A production Buy/Checkout path must not ship until all of these have real authority boundaries and executable verification:
 - seller eligibility/KYC model;
 - buyer/order identity and idempotent order state machine;
 - real payment provider and webhook authority;
