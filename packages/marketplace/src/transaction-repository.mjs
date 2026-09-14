@@ -327,6 +327,7 @@ export function createMarketplaceTransactionRepository({ vaultStore } = {}) {
     providerEventType,
     objectId = null,
     processedAt,
+    transitionAt = processedAt,
     orderId,
     nextState = null,
     allowedFromStates = [],
@@ -347,14 +348,14 @@ export function createMarketplaceTransactionRepository({ vaultStore } = {}) {
         } else {
           const timestampColumn = timestampColumnForState(nextState);
           const assignments = ["state = ?", "updated_at = ?"];
-          const values = [nextState, processedAt];
+          const values = [nextState, transitionAt];
           if (paymentIntentId) {
             assignments.push("provider_payment_intent_id = COALESCE(provider_payment_intent_id, ?)");
             values.push(paymentIntentId);
           }
           if (timestampColumn) {
             assignments.push(`${timestampColumn} = COALESCE(${timestampColumn}, ?)`);
-            values.push(processedAt);
+            values.push(transitionAt);
           }
           values.push(current.id);
           database.prepare(`UPDATE marketplace_orders SET ${assignments.join(",")} WHERE id = ?`).run(...values);
@@ -362,7 +363,7 @@ export function createMarketplaceTransactionRepository({ vaultStore } = {}) {
         }
       } else if (current && paymentIntentId && !current.providerPaymentIntentId) {
         database.prepare("UPDATE marketplace_orders SET provider_payment_intent_id = ?, updated_at = ? WHERE id = ? AND provider_payment_intent_id IS NULL")
-          .run(paymentIntentId, processedAt, current.id);
+          .run(paymentIntentId, transitionAt, current.id);
         current = findOrderById(current.id);
       }
 
