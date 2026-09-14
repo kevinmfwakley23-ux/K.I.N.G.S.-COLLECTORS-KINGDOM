@@ -9,10 +9,17 @@ function cleanSecret(value, label) {
   return value.trim();
 }
 
+function isLoopbackHost(hostname) {
+  const host = String(hostname ?? "").toLowerCase();
+  return host === "localhost" || host === "127.0.0.1" || host === "::1" || host.endsWith(".localhost");
+}
+
 function cleanUrl(value, label) {
   let parsed;
   try { parsed = new URL(value); } catch { throw new TypeError(`${label} must be a valid URL.`); }
-  if (!["https:", "http:"].includes(parsed.protocol)) throw new TypeError(`${label} must use http or https.`);
+  const localHttp = parsed.protocol === "http:" && isLoopbackHost(parsed.hostname);
+  if (parsed.protocol !== "https:" && !localHttp) throw new TypeError(`${label} must use HTTPS except for loopback development.`);
+  if (parsed.username || parsed.password) throw new TypeError(`${label} must not contain credentials.`);
   return parsed.toString().replace(/\/$/, "");
 }
 
@@ -194,7 +201,9 @@ export function createStripeConnectProvider({
     if (applicationFeeAmount > 0) entries.push(["payment_intent_data[application_fee_amount]", applicationFeeAmount]);
     shippingCountries.forEach((country, index) => entries.push([`shipping_address_collection[allowed_countries][${index}]`, country]));
     const payload = await request("POST", "/v1/checkout/sessions", { entries, idempotencyKey });
-    if (typeof payload.id !== "string" || typeof payload.url !== "string") throw stripeError(502, null, "Stripe did not return a usable Checkout Session.");
+    if (typeof payload.id !== "string" || typeof payload.url !== "string" || !payload.url.startsWith("https://")) {
+      throw stripeError(502, null, "Stripe did not return a usable secure Checkout Session.");
+    }
     return Object.freeze({
       id: payload.id,
       url: payload.url,
