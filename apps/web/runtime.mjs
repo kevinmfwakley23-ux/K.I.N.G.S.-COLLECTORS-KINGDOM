@@ -16,6 +16,7 @@ import { createMarketplaceQueryService } from "../../packages/marketplace/src/qu
 import { createMarketplaceRepository } from "../../packages/marketplace/src/repository.mjs";
 import { createMarketplaceSavedSearchRepository } from "../../packages/marketplace/src/saved-search-repository.mjs";
 import { createMarketplaceService } from "../../packages/marketplace/src/service.mjs";
+import { createMarketplaceTransactionRuntime } from "../../packages/marketplace/src/transaction-runtime.mjs";
 import { createLogger } from "../../packages/observability/src/logger.mjs";
 import { createEbayBrowseValuationProvider } from "../../packages/vault/src/ebay-browse-valuation-provider.mjs";
 import { createVaultImportRepository } from "../../packages/vault/src/import-repository.mjs";
@@ -67,6 +68,12 @@ export async function runKingdomRuntime() {
     marketplaceService: marketplaceCoreService,
     engagementRepository: marketplaceEngagementRepository
   });
+  const marketplaceTransactionRuntime = createMarketplaceTransactionRuntime({
+    vaultStore,
+    marketplaceRepository,
+    marketplaceService: marketplaceCoreService
+  });
+  const marketplaceTransactionService = marketplaceTransactionRuntime.service;
   const marketplaceService = Object.freeze({
     ...marketplaceCoreService,
     ...marketplaceQueryService,
@@ -179,7 +186,8 @@ export async function runKingdomRuntime() {
     vaultValuationService,
     vaultReorganizationService,
     vaultQueryService,
-    marketplaceService
+    marketplaceService,
+    marketplaceTransactionService
   });
 
   server.on("error", (error) => {
@@ -201,7 +209,10 @@ export async function runKingdomRuntime() {
       marketplaceVerifiedPurchaseFeedbackAvailable: false,
       marketplaceWatchlistsAvailable: true,
       marketplaceWatchlistNotificationsAvailable: false,
-      marketplaceCheckoutAvailable: false
+      marketplacePaymentProviderAvailable: marketplaceTransactionService.paymentProviderAvailable,
+      marketplaceAutomaticTaxEnabled: marketplaceTransactionService.automaticTaxEnabled,
+      marketplaceCheckoutAvailable: marketplaceTransactionService.checkoutEnabled,
+      marketplaceOwnershipTransferAvailable: false
     });
   });
 
