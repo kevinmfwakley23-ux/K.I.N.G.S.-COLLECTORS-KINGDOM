@@ -1,4 +1,5 @@
 import { IdentityError } from "../../packages/identity/src/service.mjs";
+import { createMarketplaceObservatoryService } from "../../packages/marketplace/src/observatory-service.mjs";
 import { MarketplaceError } from "../../packages/marketplace/src/service.mjs";
 import { handleMarketplaceRoute } from "./marketplace-http.mjs";
 import { createKingdomServer } from "./server.mjs";
@@ -27,6 +28,9 @@ export function createMarketplaceAwareKingdomServer({ marketplaceService = null,
   const baseHandler = server.listeners("request")[0];
   if (typeof baseHandler !== "function") throw new TypeError("Kingdom server request handler is unavailable.");
   server.removeAllListeners("request");
+  const marketplaceObservatoryService = marketplaceService && typeof marketplaceService.browsePage === "function"
+    ? createMarketplaceObservatoryService({ marketplaceService })
+    : null;
 
   server.on("request", async (request, response) => {
     const method = request.method ?? "GET";
@@ -42,6 +46,14 @@ export function createMarketplaceAwareKingdomServer({ marketplaceService = null,
     }
 
     try {
+      if (requestUrl.pathname === "/api/marketplace/observatory") {
+        if (method !== "GET" && method !== "HEAD") return sendJson(response, 405, { error: "method_not_allowed" }, method);
+        if (!marketplaceObservatoryService) {
+          throw new MarketplaceError("marketplace_observatory_unavailable", "The Marketplace Observatory is unavailable.", 503);
+        }
+        return sendJson(response, 200, marketplaceObservatoryService.observatory(), method);
+      }
+
       const handled = await handleMarketplaceRoute({
         request,
         response,
