@@ -90,6 +90,31 @@ function publish(vault, marketplace, { title = "Protected Kingdom Card", quantit
   return marketplace.publish(seller, draft.id, attestations);
 }
 
+async function readyCheckout({ vault, marketplace, provider, transactions }, identity = buyer, idempotencyKey = "ready-checkout-0000000000000001") {
+  const listing = publish(vault, marketplace);
+  await transactions.startSellerOnboarding(seller);
+  provider.setReady();
+  await transactions.getSellerPaymentStatus(seller);
+  const checkout = await transactions.createCheckout(identity, listing.id, { quantity: 1, idempotencyKey });
+  return { listing, checkout };
+}
+
+function checkoutEvent({ id, type, checkout, paymentStatus = "unpaid", created = 1789390000 }) {
+  return JSON.stringify({
+    id,
+    type,
+    created,
+    data: {
+      object: {
+        id: checkout.order.providerCheckoutSessionId,
+        payment_status: paymentStatus,
+        payment_intent: checkout.order.providerPaymentIntentId,
+        metadata: { kingdom_order_id: checkout.order.id }
+      }
+    }
+  });
+}
+
 test("seller Connect onboarding remains incomplete until provider requirements are actually ready", async () => {
   await withTransactions(async ({ provider, transactions }) => {
     const started = await transactions.startSellerOnboarding(seller);
@@ -140,45 +165,107 @@ test("checkout is idempotent, reserves live listing quantity, and never authoriz
 });
 
 test("verified provider webhook is payment authority but still cannot transfer Vault ownership", async () => {
-  await withTransactions(async ({ vault, marketplace, provider, transactions }) => {
-    const listing = publish(vault, marketplace);
-    await transactions.startSellerOnboarding(seller);
-    provider.setReady();
-    await transactions.getSellerPaymentStatus(seller);
-    const checkout = await transactions.createCheckout(buyer, listing.id, {
-      quantity: 1,
-      idempotencyKey: "webhook-checkout-00000000000001"
-    });
-
-    const payload = JSON.stringify({
-      id: "evt_checkout_paid_1",
-      type: "checkout.session.completed",
-      created: 1789390000,
-      data: {
-        object: {
-          id: checkout.order.providerCheckoutSessionId,
-          payment_status: "paid",
-          payment_intent: checkout.order.providerPaymentIntentId,
-          metadata: { kingdom_order_id: checkout.order.id }
-        }
-      }
-    });
-    const applied = await transactions.handleProviderWebhook(payload, "ignored-by-fake-provider");
+  await withTransactions(async (context) => {
+    const { checkout } = await readyCheckout(context, buyer, "webhook-checkout-00000000000001");
+    const payload = checkoutEvent({ id: "evt_checkout_paid_1", type: "checkout.session.completed", checkout, paymentStatus: "paid" });
+    const applied = await context.transactions.handleProviderWebhook(payload, "ignored-by-fake-provider");
     assert.equal(applied.orderState, "paid");
     assert.equal(applied.ownershipTransferAuthorized, false);
 
-    const duplicate = await transactions.handleProviderWebhook(payload, "ignored-by-fake-provider");
+    const duplicate = await context.transactions.handleProviderWebhook(payload, "ignored-by-fake-provider");
     assert.equal(duplicate.duplicate, true);
 
-    const order = transactions.getMyOrder(buyer, checkout.order.id);
+    const order = context.transactions.getMyOrder(buyer, checkout.order.id);
     assert.equal(order.state, "paid");
     assert.equal(order.ownershipTransferAuthorized, false);
     assert.equal(order.soldProvenanceEventCreated, false);
     assert.equal(order.events.filter((entry) => entry.source === "provider").length, 1);
     assert.throws(
-      () => transactions.getMyOrder(otherBuyer, checkout.order.id),
+      () => context.transactions.getMyOrder(otherBuyer, checkout.order.id),
       (error) => error instanceof MarketplaceError && error.code === "marketplace_order_not_found"
     );
+  });
+});
+
+test("expired Stripe Checkout cancels the pending order and releases its reserved quantity", async () => {
+  await withTransactions(async (context) => {
+    const { listing, checkout } = await readyCheckout(context, buyer, "expiry-checkout-000000000000001");
+    await assert.rejects(
+      context.transactions.createCheckout(otherBuyer, listing.id, { quantity: 1, idempotencyKey: "expiry-blocked-000000000000002" }),
+      (error) => error instanceof MarketplaceError && error.code === "marketplace_checkout_quantity"
+    );
+
+    const expired = await context.transactions.handleProviderWebhook(
+      checkoutEvent({ id: "evt_checkout_expired_1", type: "checkout.session.expired", checkout }),
+      "ignored-by-fake-provider"
+    );
+    assert.equal(expired.orderState, "cancelled");
+    assert.equal(expired.stateConflictIgnored, false);
+    const cancelled = context.transactions.getMyOrder(buyer, checkout.order.id);
+    assert.equal(cancelled.state, "cancelled");
+    assert.ok(cancelled.cancelledAt);
+
+    const replacement = await context.transactions.createCheckout(otherBuyer, listing.id, {
+      quantity: 1,
+      idempotencyKey: "expiry-released-00000000000003"
+    });
+    assert.equal(replacement.order.state, "checkout_pending");
+  });
+});
+
+test("partial refunds are recorded as evidence without falsely marking an order fully refunded", async () => {
+  await withTransactions(async (context) => {
+    const { checkout } = await readyCheckout(context, buyer, "partial-refund-000000000000001");
+    await context.transactions.handleProviderWebhook(
+      checkoutEvent({ id: "evt_paid_for_partial_refund", type: "checkout.session.completed", checkout, paymentStatus: "paid" }),
+      "ignored-by-fake-provider"
+    );
+
+    const partialPayload = JSON.stringify({
+      id: "evt_partial_refund_1",
+      type: "charge.refunded",
+      created: 1789390010,
+      data: {
+        object: {
+          id: "ch_partial_1",
+          payment_intent: checkout.order.providerPaymentIntentId,
+          amount: 10000,
+          amount_refunded: 2500,
+          refunded: false
+        }
+      }
+    });
+    const partial = await context.transactions.handleProviderWebhook(partialPayload, "ignored-by-fake-provider");
+    assert.equal(partial.partialRefundObserved, true);
+    assert.equal(partial.orderState, "paid");
+    const order = context.transactions.getMyOrder(buyer, checkout.order.id);
+    assert.equal(order.state, "paid");
+    const observations = order.events.filter((entry) => entry.eventType === "marketplace.provider_partial_refund_observed");
+    assert.equal(observations.length, 1);
+    assert.equal(observations[0].metadata.amountRefundedCents, 2500);
+
+    const duplicate = await context.transactions.handleProviderWebhook(partialPayload, "ignored-by-fake-provider");
+    assert.equal(duplicate.duplicate, true);
+    assert.equal(context.transactions.getMyOrder(buyer, checkout.order.id).events.filter((entry) => entry.eventType === "marketplace.provider_partial_refund_observed").length, 1);
+  });
+});
+
+test("late provider events are audited without regressing a more authoritative order state", async () => {
+  await withTransactions(async (context) => {
+    const { checkout } = await readyCheckout(context, buyer, "late-event-checkout-000000000001");
+    await context.transactions.handleProviderWebhook(
+      checkoutEvent({ id: "evt_late_paid", type: "checkout.session.completed", checkout, paymentStatus: "paid", created: 1789390020 }),
+      "ignored-by-fake-provider"
+    );
+    const lateExpiry = await context.transactions.handleProviderWebhook(
+      checkoutEvent({ id: "evt_late_expired", type: "checkout.session.expired", checkout, created: 1789390010 }),
+      "ignored-by-fake-provider"
+    );
+    assert.equal(lateExpiry.stateConflictIgnored, true);
+    assert.equal(lateExpiry.orderState, "paid");
+    const order = context.transactions.getMyOrder(buyer, checkout.order.id);
+    assert.equal(order.state, "paid");
+    assert.ok(order.events.some((entry) => entry.eventType === "marketplace.provider_event_ignored_state_conflict"));
   });
 });
 
@@ -200,6 +287,16 @@ test("checkout fails closed when compliance gating is not fully configured", asy
       disabled.createCheckout(buyer, listing.id, { quantity: 1, idempotencyKey: "disabled-checkout-0000000000001" }),
       (error) => error instanceof MarketplaceError && error.code === "marketplace_checkout_not_enabled"
     );
+
+    assert.throws(() => createMarketplaceTransactionService({
+      marketplaceRepository,
+      marketplaceService: marketplace,
+      transactionRepository,
+      paymentProvider: provider,
+      publicBaseUrl: "http://marketplace.example.test",
+      checkoutEnabled: false,
+      now
+    }), /HTTPS except for loopback/i);
   });
 });
 
@@ -221,4 +318,18 @@ test("Stripe webhook verification checks timestamp and HMAC before parsing event
   assert.equal(verified.id, "evt_signature_1");
   assert.throws(() => provider.verifyWebhook(`${body} `, `t=${timestamp},v1=${signature}`), /verification failed/i);
   assert.throws(() => provider.verifyWebhook(body, `t=${timestamp - 1000},v1=${signature}`), /outside the accepted tolerance/i);
+});
+
+test("Stripe provider refuses cleartext external API transport but permits loopback development", () => {
+  const common = {
+    secretKey: "sk_test_kingdom",
+    webhookSecret: "whsec_test_secret",
+    policyId: "stripe-policy-test",
+    fetchImpl: async () => { throw new Error("network should not be called"); }
+  };
+  assert.throws(
+    () => createStripeConnectProvider({ ...common, apiBaseUrl: "http://stripe.example.test" }),
+    /HTTPS except for loopback/i
+  );
+  assert.doesNotThrow(() => createStripeConnectProvider({ ...common, apiBaseUrl: "http://127.0.0.1:9999" }));
 });
