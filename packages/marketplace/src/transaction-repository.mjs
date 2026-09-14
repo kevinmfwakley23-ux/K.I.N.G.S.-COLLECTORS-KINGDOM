@@ -156,6 +156,17 @@ function insertEvent(database, event) {
   `).run(event.id, event.orderId, event.eventType, event.source, JSON.stringify(event.metadata ?? {}), event.createdAt);
 }
 
+function insertProviderEvent(database, { providerEventId, provider, eventType, objectId = null, processedAt }) {
+  return database.prepare(`
+    INSERT OR IGNORE INTO marketplace_provider_events (provider_event_id,provider,event_type,object_id,processed_at)
+    VALUES (?,?,?,?,?)
+  `).run(providerEventId, provider, eventType, objectId, processedAt);
+}
+
+function timestampColumnForState(state) {
+  return ({ paid: "paid_at", cancelled: "cancelled_at", refunded: "refunded_at", disputed: "disputed_at" })[state] ?? null;
+}
+
 export function createMarketplaceTransactionRepository({ vaultStore } = {}) {
   if (!vaultStore?.database || typeof vaultStore.database.prepare !== "function") throw new TypeError("Marketplace transaction repository requires the Vault SQLite database boundary.");
   const database = vaultStore.database;
@@ -268,7 +279,7 @@ export function createMarketplaceTransactionRepository({ vaultStore } = {}) {
 
   function transitionOrder(orderId, nextState, { updatedAt, paymentIntentId = null, event, timestampField = null } = {}) {
     if (!ORDER_STATES.includes(nextState)) throw new TypeError("Unsupported Marketplace order state.");
-    const timestampColumn = ({ paid: "paid_at", cancelled: "cancelled_at", refunded: "refunded_at", disputed: "disputed_at" })[timestampField ?? nextState] ?? null;
+    const timestampColumn = timestampColumnForState(timestampField ?? nextState);
     return transaction(database, () => {
       const current = findOrderById(orderId);
       if (!current) return null;
@@ -301,12 +312,85 @@ export function createMarketplaceTransactionRepository({ vaultStore } = {}) {
     return database.prepare("SELECT * FROM marketplace_order_events WHERE order_id = ? ORDER BY created_at ASC,id ASC").all(orderId).map(mapOrderEvent);
   }
 
+  function hasProviderEvent(providerEventId) {
+    return Boolean(database.prepare("SELECT 1 AS found FROM marketplace_provider_events WHERE provider_event_id = ?").get(providerEventId));
+  }
+
   function recordProviderEventOnce({ providerEventId, provider, eventType, objectId = null, processedAt }) {
-    const result = database.prepare(`
-      INSERT OR IGNORE INTO marketplace_provider_events (provider_event_id,provider,event_type,object_id,processed_at)
-      VALUES (?,?,?,?,?)
-    `).run(providerEventId, provider, eventType, objectId, processedAt);
+    const result = insertProviderEvent(database, { providerEventId, provider, eventType, objectId, processedAt });
     return Number(result.changes) === 1;
+  }
+
+  function applyProviderOrderEventOnce({
+    providerEventId,
+    provider,
+    providerEventType,
+    objectId = null,
+    processedAt,
+    orderId,
+    nextState = null,
+    allowedFromStates = [],
+    paymentIntentId = null,
+    orderEvent = null
+  }) {
+    if (nextState !== null && !ORDER_STATES.includes(nextState)) throw new TypeError("Unsupported Marketplace provider order state.");
+    return transaction(database, () => {
+      if (database.prepare("SELECT 1 AS found FROM marketplace_provider_events WHERE provider_event_id = ?").get(providerEventId)) {
+        return Object.freeze({ duplicate: true, order: orderId ? findOrderById(orderId) : null, stateConflict: false });
+      }
+
+      let current = orderId ? findOrderById(orderId) : null;
+      let stateConflict = false;
+      if (current && nextState && current.state !== nextState) {
+        if (!allowedFromStates.includes(current.state)) {
+          stateConflict = true;
+        } else {
+          const timestampColumn = timestampColumnForState(nextState);
+          const assignments = ["state = ?", "updated_at = ?"];
+          const values = [nextState, processedAt];
+          if (paymentIntentId) {
+            assignments.push("provider_payment_intent_id = COALESCE(provider_payment_intent_id, ?)");
+            values.push(paymentIntentId);
+          }
+          if (timestampColumn) {
+            assignments.push(`${timestampColumn} = COALESCE(${timestampColumn}, ?)`);
+            values.push(processedAt);
+          }
+          values.push(current.id);
+          database.prepare(`UPDATE marketplace_orders SET ${assignments.join(",")} WHERE id = ?`).run(...values);
+          current = findOrderById(current.id);
+        }
+      } else if (current && paymentIntentId && !current.providerPaymentIntentId) {
+        database.prepare("UPDATE marketplace_orders SET provider_payment_intent_id = ?, updated_at = ? WHERE id = ? AND provider_payment_intent_id IS NULL")
+          .run(paymentIntentId, processedAt, current.id);
+        current = findOrderById(current.id);
+      }
+
+      if (current && orderEvent) {
+        const eventToWrite = stateConflict
+          ? Object.freeze({
+              ...orderEvent,
+              eventType: "marketplace.provider_event_ignored_state_conflict",
+              metadata: Object.freeze({
+                ...(orderEvent.metadata ?? {}),
+                ignoredStateConflict: true,
+                currentState: current.state,
+                attemptedState: nextState
+              })
+            })
+          : orderEvent;
+        insertEvent(database, eventToWrite);
+      }
+
+      insertProviderEvent(database, {
+        providerEventId,
+        provider,
+        eventType: providerEventType,
+        objectId,
+        processedAt
+      });
+      return Object.freeze({ duplicate: false, order: current, stateConflict });
+    });
   }
 
   return Object.freeze({
@@ -324,6 +408,8 @@ export function createMarketplaceTransactionRepository({ vaultStore } = {}) {
     findOrderByCheckoutSessionId,
     findOrderByPaymentIntentId,
     listOrderEvents,
-    recordProviderEventOnce
+    hasProviderEvent,
+    recordProviderEventOnce,
+    applyProviderOrderEventOnce
   });
 }
