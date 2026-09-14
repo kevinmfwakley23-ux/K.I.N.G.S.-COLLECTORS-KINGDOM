@@ -56,6 +56,7 @@ function decodePathPart(value, code, message) {
 }
 
 function routeFor(pathname) {
+  if (pathname === "/api/marketplace/transactions/capabilities") return Object.freeze({ kind: "capabilities" });
   if (pathname === "/api/marketplace/seller/payments/status") return Object.freeze({ kind: "seller-payment-status" });
   if (pathname === "/api/marketplace/seller/payments/onboarding") return Object.freeze({ kind: "seller-payment-onboarding" });
   if (pathname === "/api/marketplace/orders") return Object.freeze({ kind: "orders" });
@@ -108,6 +109,11 @@ export async function handleMarketplaceTransactionRoute({
   if (!route) return null;
   const method = request.method ?? "GET";
   if (!transactionService) throw new MarketplaceError("marketplace_transactions_unavailable", "Marketplace transaction services are unavailable.", 503);
+
+  if (route.kind === "capabilities") {
+    if (method !== "GET" && method !== "HEAD") return false;
+    return sendJson(response, 200, { capabilities: capabilities(transactionService) }, method, securityHeaders);
+  }
 
   if (route.kind === "stripe-webhook") {
     if (method !== "POST") return false;
