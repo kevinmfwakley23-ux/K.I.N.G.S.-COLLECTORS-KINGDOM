@@ -1,4 +1,5 @@
 const DETAIL_LINK_ATTRIBUTE = "data-listing-detail-link";
+const OBSERVATORY_LINK_ATTRIBUTE = "data-market-observatory-link";
 
 function addListingDetailLinks(root = document) {
   for (const card of root.querySelectorAll?.("article.marketplace-card[data-listing-id]") ?? []) {
@@ -14,7 +15,18 @@ function addListingDetailLinks(root = document) {
   }
 }
 
+function addObservatoryNavigation(root = document) {
+  const navigation = root.querySelector?.(".marketplace-header nav");
+  if (!navigation || navigation.querySelector(`[${OBSERVATORY_LINK_ATTRIBUTE}]`)) return;
+  const link = document.createElement("a");
+  link.href = "/marketplace-observatory.html";
+  link.textContent = "Market Observatory";
+  link.setAttribute(OBSERVATORY_LINK_ATTRIBUTE, "true");
+  navigation.append(link);
+}
+
 addListingDetailLinks();
+addObservatoryNavigation();
 
 const observer = new MutationObserver((mutations) => {
   for (const mutation of mutations) {
