@@ -86,13 +86,21 @@ function currencyStats(currency, listings, nowMs) {
   });
 }
 
-function readVerifiedListings(marketplaceService) {
+function transactionAvailableListings(transactionService, listings) {
+  if (typeof transactionService?.decoratePublicListings !== "function") return listings;
+  return transactionService.decoratePublicListings(listings).filter((listing) =>
+    listing.availability?.publicSupportCurrent !== false && Number(listing.availability?.availableQuantity ?? listing.quantity) > 0
+  );
+}
+
+function readVerifiedListings(marketplaceService, transactionService) {
   const listings = [];
+  let scannedListings = 0;
   let cursor = null;
   do {
     const page = marketplaceService.browsePage({ pageSize: PAGE_SIZE, cursor: cursor ?? undefined });
-    listings.push(...page.listings);
-    if (listings.length > MAX_VERIFIED_LISTINGS) {
+    scannedListings += page.listings.length;
+    if (scannedListings > MAX_VERIFIED_LISTINGS) {
       throw new MarketplaceError(
         "marketplace_observatory_capacity_exceeded",
         "The active market exceeds the Observatory's verified scan capacity. Partial statistics will not be published.",
@@ -100,22 +108,28 @@ function readVerifiedListings(marketplaceService) {
         { maxVerifiedListings: MAX_VERIFIED_LISTINGS }
       );
     }
+    listings.push(...transactionAvailableListings(transactionService, page.listings));
     cursor = page.pageInfo?.hasNext ? page.pageInfo.nextCursor : null;
   } while (cursor);
-  return Object.freeze(listings);
+  return Object.freeze({ listings: Object.freeze(listings), scannedListings });
 }
 
 export function createMarketplaceObservatoryService({
   marketplaceService,
+  transactionService = null,
   now = () => new Date()
 } = {}) {
   if (!marketplaceService || typeof marketplaceService.browsePage !== "function") {
     throw new TypeError("Marketplace observatory service requires verified paged Marketplace discovery.");
   }
+  if (transactionService && typeof transactionService.decoratePublicListings !== "function") {
+    throw new TypeError("Marketplace observatory transaction availability boundary is invalid.");
+  }
   if (typeof now !== "function") throw new TypeError("Marketplace observatory now must be a function.");
 
   function observatory() {
-    const listings = readVerifiedListings(marketplaceService);
+    const verified = readVerifiedListings(marketplaceService, transactionService);
+    const listings = verified.listings;
     const generatedAtDate = now();
     const nowMs = generatedAtDate.getTime();
     if (!Number.isFinite(nowMs)) throw new TypeError("Marketplace observatory now must return a valid date.");
@@ -143,12 +157,15 @@ export function createMarketplaceObservatoryService({
         crossCurrencyPriceAggregation: false,
         sellerAskingPricesAreNotMarketValue: true,
         currentLiveVaultSupportRequired: true,
-        publishedRepresentationIntegrityRequired: true
+        publishedRepresentationIntegrityRequired: true,
+        currentTransactionAvailabilityRequired: Boolean(transactionService),
+        zeroAvailableQuantityExcluded: Boolean(transactionService)
       }),
       capacity: Object.freeze({
         complete: true,
         maxVerifiedListings: MAX_VERIFIED_LISTINGS,
-        pageSize: PAGE_SIZE
+        pageSize: PAGE_SIZE,
+        scannedListings: verified.scannedListings
       })
     });
   }
