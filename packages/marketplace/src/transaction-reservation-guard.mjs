@@ -55,6 +55,31 @@ export function createMarketplaceReservationGuard({
   database.exec(`
     CREATE INDEX IF NOT EXISTS marketplace_orders_reservation_expiry_idx
       ON marketplace_orders(state,reservation_expires_at,listing_id);
+
+    CREATE TRIGGER IF NOT EXISTS marketplace_orders_created_reservation_expiry
+    AFTER INSERT ON marketplace_orders
+    WHEN NEW.state = 'created' AND NEW.reservation_expires_at IS NULL
+    BEGIN
+      UPDATE marketplace_orders
+      SET reservation_expires_at = strftime('%Y-%m-%dT%H:%M:%fZ', NEW.created_at, '+10 minutes')
+      WHERE id = NEW.id;
+    END;
+
+    CREATE TRIGGER IF NOT EXISTS marketplace_orders_checkout_reservation_expiry
+    AFTER UPDATE OF state ON marketplace_orders
+    WHEN NEW.state = 'checkout_pending'
+    BEGIN
+      UPDATE marketplace_orders
+      SET reservation_expires_at = strftime('%Y-%m-%dT%H:%M:%fZ', NEW.updated_at, '+60 minutes')
+      WHERE id = NEW.id;
+    END;
+
+    CREATE TRIGGER IF NOT EXISTS marketplace_orders_clear_reservation_expiry
+    AFTER UPDATE OF state ON marketplace_orders
+    WHEN NEW.state NOT IN ('created','checkout_pending') AND NEW.reservation_expires_at IS NOT NULL
+    BEGIN
+      UPDATE marketplace_orders SET reservation_expires_at = NULL WHERE id = NEW.id;
+    END;
   `);
 
   const legacyCreated = database.prepare(`
