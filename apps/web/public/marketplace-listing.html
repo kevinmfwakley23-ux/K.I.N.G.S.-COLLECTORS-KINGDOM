@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/marketplace-discovery.css">
   <link rel="stylesheet" href="/marketplace-engagement.css">
   <link rel="stylesheet" href="/marketplace-listing.css">
+  <link rel="stylesheet" href="/marketplace-transactions.css">
 </head>
 <body class="marketplace-page marketplace-listing-page">
   <header class="marketplace-header">
@@ -51,6 +52,19 @@
             <div class="marketplace-card-actions">
               <button id="watch-listing-detail" type="button" class="marketplace-secondary">Watch listing</button>
             </div>
+
+            <section id="listing-transaction-panel" class="marketplace-transaction-panel" aria-labelledby="listing-transaction-title">
+              <p class="marketplace-kicker">Buyer transaction boundary</p>
+              <h2 id="listing-transaction-title">Safeguarded checkout</h2>
+              <p id="listing-availability-status" class="marketplace-availability-line" data-state="checking" role="status" aria-live="polite">Checking current transaction availability…</p>
+              <div class="marketplace-checkout-controls">
+                <label id="listing-checkout-quantity-label" hidden>Quantity
+                  <input id="listing-checkout-quantity" type="number" min="1" step="1" value="1" inputmode="numeric">
+                </label>
+                <button id="listing-checkout-button" type="button" hidden disabled>Continue to secure checkout</button>
+              </div>
+              <p class="marketplace-form-note">Checkout, when available, is provider-hosted. A successful payment redirect is not delivery evidence and does not by itself transfer Royal Vault ownership or create sold provenance.</p>
+            </section>
           </article>
 
           <aside class="marketplace-listing-trust" aria-labelledby="listing-trust-title">
@@ -58,8 +72,8 @@
             <dl>
               <div><dt>Published</dt><dd id="listing-detail-published"></dd></div>
               <div><dt>Representation SHA-256</dt><dd><code id="listing-detail-hash"></code></dd></div>
-              <div><dt>Checkout</dt><dd>Not enabled</dd></div>
-              <div><dt>Payment / settlement</dt><dd>Not enabled</dd></div>
+              <div><dt>Checkout</dt><dd id="listing-detail-checkout-state">Checking runtime…</dd></div>
+              <div><dt>Provider payment flow</dt><dd id="listing-detail-payment-state">Checking runtime…</dd></div>
               <div><dt>Ownership transfer</dt><dd>Not enabled</dd></div>
               <div><dt>Public Vault media</dt><dd>Not enabled for this phase</dd></div>
             </dl>
@@ -76,7 +90,7 @@
   </main>
 
   <footer class="marketplace-footer">
-    <p>K.I.N.G.S. Collector's Kingdom · A listing representation is seller-published evidence, not authentication, appraisal, payment, or ownership transfer.</p>
+    <p>K.I.N.G.S. Collector's Kingdom · A listing representation is seller-published evidence, not authentication, appraisal, payment, delivery, or ownership transfer.</p>
   </footer>
   <script type="module" src="/marketplace-listing.js"></script>
 </body>
