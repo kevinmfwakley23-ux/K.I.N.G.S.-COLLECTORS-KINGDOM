@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 const root = resolve(new URL("..", import.meta.url).pathname);
 const contractFiles = [
   "config/runtime.mjs",
+  "config/marketplace-transactions.mjs",
   "packages/core/src/health.mjs",
   "packages/observability/src/logger.mjs",
   "packages/identity/src/passwords.mjs",
@@ -18,7 +19,14 @@ const contractFiles = [
   "packages/marketplace/src/saved-search-repository.mjs",
   "packages/marketplace/src/engagement-repository.mjs",
   "packages/marketplace/src/engagement-service.mjs",
+  "packages/marketplace/src/observatory-service.mjs",
   "packages/marketplace/src/great-hall-adapter.mjs",
+  "packages/marketplace/src/stripe-connect-provider.mjs",
+  "packages/marketplace/src/stripe-connect-checkout-policy.mjs",
+  "packages/marketplace/src/transaction-repository.mjs",
+  "packages/marketplace/src/transaction-service.mjs",
+  "packages/marketplace/src/transaction-reservation-guard.mjs",
+  "packages/marketplace/src/transaction-runtime.mjs",
   "packages/catalog/src/cache.mjs",
   "packages/catalog/src/open-library-provider.mjs",
   "packages/catalog/src/upcitemdb-provider.mjs",
@@ -65,6 +73,7 @@ const contractFiles = [
   "apps/web/grading-analysis-http.mjs",
   "apps/web/grading-reference-http.mjs",
   "apps/web/marketplace-http.mjs",
+  "apps/web/marketplace-transaction-http.mjs",
   "apps/web/marketplace-server.mjs",
   "apps/web/vault-import-http.mjs",
   "apps/web/vault-intake-http.mjs",
@@ -123,4 +132,4 @@ for (const relative of contractFiles) {
 const entries = await readdir(resolve(root, "packages"), { withFileTypes: true });
 if (!entries.some((entry) => entry.isDirectory())) throw new Error("No package boundaries found.");
 
-console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, Vault, provider-neutral catalog/cert evidence and valuation observations, evidence-backed portfolio intelligence, AI pre-grading and reporting, secure media/import/intake/provenance/reorganization/retrieval boundaries, Kingdom voice, and the production-wired Marketplace listing, discovery, saved-search, watchlist and seller-storefront boundaries.");
+console.log("Type contract check passed for foundation, identity, KINGS AI, Great Hall, Vault, provider-neutral catalog/cert evidence and valuation observations, evidence-backed portfolio intelligence, AI pre-grading and reporting, secure media/import/intake/provenance/reorganization/retrieval boundaries, Kingdom voice, and the production-wired Marketplace listing, discovery, saved-search, watchlist, seller-storefront, active-market observatory and safeguarded transaction boundaries.");
