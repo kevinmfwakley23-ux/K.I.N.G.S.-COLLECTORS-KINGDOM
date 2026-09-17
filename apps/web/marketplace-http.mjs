@@ -173,16 +173,79 @@ function engagementCapabilities(marketplaceService) {
   });
 }
 
-function decorateDiscovery(marketplaceService, discovery) {
+function commerceCapabilities(transactionService) {
+  const checkoutAvailable = transactionService?.checkoutEnabled === true;
+  return Object.freeze({
+    listingPublicationAvailable: true,
+    fixedPriceAvailable: true,
+    paymentProviderAvailable: transactionService?.paymentProviderAvailable === true,
+    sellerPaymentOnboardingAvailable: transactionService?.paymentProviderAvailable === true,
+    checkoutAvailable,
+    paymentAvailable: checkoutAvailable,
+    reservationRecoveryAvailable: transactionService?.reservationRecoveryAvailable === true,
+    settlementAvailable: false,
+    deliveryVerificationAvailable: false,
+    buyerProtectionAvailable: false,
+    verifiedPurchaseFeedbackAvailable: false,
+    ownershipTransferAvailable: false
+  });
+}
+
+function decorateEngagementDiscovery(marketplaceService, discovery) {
   return typeof marketplaceService.decorateDiscovery === "function"
     ? marketplaceService.decorateDiscovery(discovery)
     : discovery;
 }
 
-function decorateListing(marketplaceService, listing) {
+function decorateEngagementListing(marketplaceService, listing) {
   return typeof marketplaceService.decoratePublicListing === "function"
     ? marketplaceService.decoratePublicListing(listing)
     : listing;
+}
+
+function decorateTransactionListings(transactionService, listings) {
+  return typeof transactionService?.decoratePublicListings === "function"
+    ? transactionService.decoratePublicListings(listings)
+    : listings;
+}
+
+function decorateTransactionListing(transactionService, listing) {
+  return typeof transactionService?.decoratePublicListing === "function"
+    ? transactionService.decoratePublicListing(listing)
+    : listing;
+}
+
+function decorateDiscovery(marketplaceService, transactionService, discovery) {
+  const engaged = decorateEngagementDiscovery(marketplaceService, discovery);
+  return Object.freeze({
+    ...engaged,
+    listings: decorateTransactionListings(transactionService, engaged.listings ?? [])
+  });
+}
+
+function decorateListing(marketplaceService, transactionService, listing) {
+  return decorateTransactionListing(transactionService, decorateEngagementListing(marketplaceService, listing));
+}
+
+function decorateListingCollection(transactionService, result) {
+  if (!result || !Array.isArray(result.listings)) return result;
+  return Object.freeze({
+    ...result,
+    listings: decorateTransactionListings(transactionService, result.listings)
+  });
+}
+
+function decorateWatchlist(transactionService, result) {
+  if (!result || !Array.isArray(result.items) || typeof transactionService?.decoratePublicListings !== "function") return result;
+  const liveItems = result.items.filter((item) => item?.available && item.listing?.id);
+  const decorated = transactionService.decoratePublicListings(liveItems.map((item) => item.listing));
+  const byId = new Map(decorated.map((listing) => [listing.id, listing]));
+  return Object.freeze({
+    ...result,
+    items: Object.freeze(result.items.map((item) => item?.available && item.listing?.id
+      ? Object.freeze({ ...item, listing: byId.get(item.listing.id) ?? item.listing })
+      : item))
+  });
 }
 
 export async function handleMarketplaceRoute({
@@ -191,6 +254,7 @@ export async function handleMarketplaceRoute({
   requestUrl,
   identityService,
   marketplaceService,
+  transactionService = null,
   securityHeaders
 } = {}) {
   const route = routeFor(requestUrl.pathname);
@@ -205,25 +269,18 @@ export async function handleMarketplaceRoute({
       ? marketplaceService.browsePage(discoveryFilters(requestUrl))
       : marketplaceService.discovery(discoveryFilters(requestUrl));
     return sendJson(response, 200, {
-      ...decorateDiscovery(marketplaceService, discovery),
+      ...decorateDiscovery(marketplaceService, transactionService, discovery),
       savedSearches: savedSearchCapabilities(marketplaceService),
       engagement: engagementCapabilities(marketplaceService),
-      commerce: {
-        listingPublicationAvailable: true,
-        fixedPriceAvailable: true,
-        checkoutAvailable: false,
-        paymentAvailable: false,
-        settlementAvailable: false,
-        buyerProtectionAvailable: false,
-        ownershipTransferAvailable: false
-      }
+      commerce: commerceCapabilities(transactionService)
     }, method, securityHeaders);
   }
 
   if (route.kind === "listing" && !route.action && (method === "GET" || method === "HEAD")) {
     return sendJson(response, 200, {
-      listing: decorateListing(marketplaceService, marketplaceService.getPublic(route.listingId)),
-      engagement: engagementCapabilities(marketplaceService)
+      listing: decorateListing(marketplaceService, transactionService, marketplaceService.getPublic(route.listingId)),
+      engagement: engagementCapabilities(marketplaceService),
+      commerce: commerceCapabilities(transactionService)
     }, method, securityHeaders);
   }
 
@@ -233,7 +290,8 @@ export async function handleMarketplaceRoute({
     }
     return sendJson(response, 200, {
       seller: marketplaceService.getPublicSeller(route.sellerPublicId),
-      engagement: engagementCapabilities(marketplaceService)
+      engagement: engagementCapabilities(marketplaceService),
+      commerce: commerceCapabilities(transactionService)
     }, method, securityHeaders);
   }
 
@@ -242,8 +300,9 @@ export async function handleMarketplaceRoute({
       throw new MarketplaceError("marketplace_storefronts_unavailable", "Marketplace seller storefronts are unavailable.", 503);
     }
     return sendJson(response, 200, {
-      ...marketplaceService.listPublicSellerListings(route.sellerPublicId, { limit: limitFrom(requestUrl, 24) }),
-      engagement: engagementCapabilities(marketplaceService)
+      ...decorateListingCollection(transactionService, marketplaceService.listPublicSellerListings(route.sellerPublicId, { limit: limitFrom(requestUrl, 24) })),
+      engagement: engagementCapabilities(marketplaceService),
+      commerce: commerceCapabilities(transactionService)
     }, method, securityHeaders);
   }
 
@@ -256,14 +315,16 @@ export async function handleMarketplaceRoute({
     if (method === "GET" || method === "HEAD") {
       return sendJson(response, 200, {
         seller: marketplaceService.getMySellerProfile(identity),
-        engagement: engagementCapabilities(marketplaceService)
+        engagement: engagementCapabilities(marketplaceService),
+        commerce: commerceCapabilities(transactionService)
       }, method, securityHeaders);
     }
     if (method === "PATCH") {
       const body = await readJson(request);
       return sendJson(response, 200, {
         seller: marketplaceService.updateMySellerProfile(identity, body),
-        engagement: engagementCapabilities(marketplaceService)
+        engagement: engagementCapabilities(marketplaceService),
+        commerce: commerceCapabilities(transactionService)
       }, method, securityHeaders);
     }
   }
@@ -274,15 +335,17 @@ export async function handleMarketplaceRoute({
     }
     if (method === "GET" || method === "HEAD") {
       return sendJson(response, 200, {
-        ...marketplaceService.listWatchlist(identity, { limit: watchlistLimitFrom(requestUrl, 100) }),
-        engagement: engagementCapabilities(marketplaceService)
+        ...decorateWatchlist(transactionService, marketplaceService.listWatchlist(identity, { limit: watchlistLimitFrom(requestUrl, 100) })),
+        engagement: engagementCapabilities(marketplaceService),
+        commerce: commerceCapabilities(transactionService)
       }, method, securityHeaders);
     }
     if (method === "POST") {
       const body = await readJson(request);
       return sendJson(response, 201, {
         item: marketplaceService.addToWatchlist(identity, body.listingId),
-        engagement: engagementCapabilities(marketplaceService)
+        engagement: engagementCapabilities(marketplaceService),
+        commerce: commerceCapabilities(transactionService)
       }, method, securityHeaders);
     }
   }
@@ -303,7 +366,8 @@ export async function handleMarketplaceRoute({
     if (method === "GET" || method === "HEAD") {
       return sendJson(response, 200, {
         savedSearches: marketplaceService.listSavedSearches(identity),
-        capabilities: savedSearchCapabilities(marketplaceService)
+        capabilities: savedSearchCapabilities(marketplaceService),
+        commerce: commerceCapabilities(transactionService)
       }, method, securityHeaders);
     }
     if (method === "POST") {
@@ -313,7 +377,8 @@ export async function handleMarketplaceRoute({
           name: body.name,
           filters: body.filters
         }),
-        capabilities: savedSearchCapabilities(marketplaceService)
+        capabilities: savedSearchCapabilities(marketplaceService),
+        commerce: commerceCapabilities(transactionService)
       }, method, securityHeaders);
     }
   }
@@ -325,14 +390,16 @@ export async function handleMarketplaceRoute({
     if (!route.action && (method === "GET" || method === "HEAD")) {
       return sendJson(response, 200, {
         savedSearch: marketplaceService.getSavedSearch(identity, route.savedSearchId),
-        capabilities: savedSearchCapabilities(marketplaceService)
+        capabilities: savedSearchCapabilities(marketplaceService),
+        commerce: commerceCapabilities(transactionService)
       }, method, securityHeaders);
     }
     if (!route.action && method === "PATCH") {
       const body = await readJson(request);
       return sendJson(response, 200, {
         savedSearch: marketplaceService.updateSavedSearch(identity, route.savedSearchId, body),
-        capabilities: savedSearchCapabilities(marketplaceService)
+        capabilities: savedSearchCapabilities(marketplaceService),
+        commerce: commerceCapabilities(transactionService)
       }, method, securityHeaders);
     }
     if (!route.action && method === "DELETE") {
@@ -343,8 +410,9 @@ export async function handleMarketplaceRoute({
     if (route.action === "run" && (method === "GET" || method === "HEAD")) {
       const result = marketplaceService.runSavedSearch(identity, route.savedSearchId, savedSearchRunOptions(requestUrl));
       return sendJson(response, 200, {
-        ...decorateDiscovery(marketplaceService, result),
-        capabilities: savedSearchCapabilities(marketplaceService)
+        ...decorateDiscovery(marketplaceService, transactionService, result),
+        capabilities: savedSearchCapabilities(marketplaceService),
+        commerce: commerceCapabilities(transactionService)
       }, method, securityHeaders);
     }
   }
@@ -366,7 +434,8 @@ export async function handleMarketplaceRoute({
     return sendJson(response, 200, {
       listings: marketplaceService.listMine(identity, { limit: limitFrom(requestUrl, 100) }),
       saleFormats: marketplaceService.saleFormats,
-      fulfillmentMethods: marketplaceService.fulfillmentMethods
+      fulfillmentMethods: marketplaceService.fulfillmentMethods,
+      commerce: commerceCapabilities(transactionService)
     }, method, securityHeaders);
   }
 
