@@ -6,10 +6,10 @@ This is the recovery and production ledger for the **Kingdom Street Market**. Up
 
 **Production branch:** `main`  
 **Latest merged Marketplace slice:** PR #39 — `Marketplace: verified Active Market Observatory`  
-**Production commit after PR #39:** `58bbfc98118bf05e527927c5e299ce8a64654019`  
+**Current production head:** `b503b28b979e7be4768d11a88fb49ba67ab2f494` — Observatory production implementation plus documentation lock  
 **PR #39 final verification:** Kingdom Quality Gates #742 — **PASS**, including production dependency audit
 
-The Marketplace now has real listing publication, discovery, seller engagement, shareable detail pages and active-market asking-price intelligence. Transaction code remains separately gated: a listing, watch, search, storefront visit, share, Observatory view, reservation attempt or provider session must never be represented as a completed sale unless the separately verified order state authorizes that claim.
+The production Marketplace has real listing publication, discovery, seller engagement, shareable detail pages and active-market asking-price intelligence. A listing, watch, search, storefront visit, share, Observatory view, reservation attempt or provider session must never be represented as a completed sale unless a separately verified order state authorizes that claim.
 
 ## Production history
 
@@ -86,7 +86,8 @@ Added:
 - no automatic publication of private Vault media.
 
 ### PR #39 — Verified Active Market Observatory — MERGED
-**Production commit:** `58bbfc98118bf05e527927c5e299ce8a64654019`  
+**Production implementation commit:** `58bbfc98118bf05e527927c5e299ce8a64654019`  
+**Production documentation lock:** `b503b28b979e7be4768d11a88fb49ba67ab2f494`  
 **Final gate:** #742 — PASS
 
 Added:
@@ -120,7 +121,7 @@ Locked Observatory truth rules:
 
 ## Current live Marketplace capabilities
 
-Production currently supports:
+Production `main` currently supports:
 - fixed-price Vault-linked offer publication;
 - seller attestations and live Vault support rechecks;
 - immutable publication representation + SHA-256 verification;
@@ -135,25 +136,56 @@ Production currently supports:
 - active asking-price Observatory intelligence with currency separation;
 - responsive Street Market, seller, listing-detail and Observatory surfaces.
 
-## Parallel transaction work — not production yet
+## PR #38 — Safeguarded transaction candidate — VERIFIED BRANCH, NOT MERGED
 
-PR #38 — `Marketplace: safeguarded transactions phase 1` is an open draft built by the parallel co-chief engineer. At the last coordination audit it owned only new transaction/provider/test/research files and had **zero changed-file overlap** with PR #39.
+PR #38 — `Marketplace: safeguarded transactions phase 1` has now been reconciled onto production head `b503b28b979e7be4768d11a88fb49ba67ab2f494` without overwriting the Observatory work.
 
-Its draft currently describes work toward:
+**Reconciliation commit:** `234d475238b599d25439a5e53a3dc6c731bda5e5`  
+**Buyer/seller transaction UI commit:** `61be88b74901d4b80b117be43f07ea9dae715f29`  
+**Verified implementation checkpoint:** `61c6bbacc94bc6da826ef355113b29154f81069e`  
+**Checkpoint gate:** Kingdom Quality Gates #750 — **PASS**, including lint, type contracts, complete tests, production build verification, all configured Marketplace verifiers and production dependency audit
+
+Implemented on the PR branch:
 - Stripe Connect hosted seller onboarding;
-- provider-neutral payment-account persistence;
+- provider-neutral persisted seller payment-account state;
+- authenticated seller payment-status and onboarding HTTP boundaries;
 - idempotent Vault-backed order reservation;
-- oversell protection;
+- atomic oversell protection;
 - provider-hosted Checkout session creation;
-- tax/checkout fail-closed gating;
-- verified webhook signatures and provider-event deduplication;
-- append-only order history;
-- explicit no-ownership-transfer behavior.
+- fail-closed checkout, payment-provider, automatic-tax and reviewed-tax-policy gates;
+- raw-body Stripe webhook signature verification;
+- provider-event deduplication;
+- append-only order-state history;
+- provider-authoritative paid/processing/failed/cancelled/refunded/disputed event handling;
+- reservation expiry/release behavior;
+- late-event conflict protection;
+- authenticated buyer order retrieval;
+- guarded listing-detail checkout UI with quantity bounds and idempotency keys;
+- dedicated Orders & Payments UI with buyer order evidence and seller onboarding/readiness state;
+- safe HTTPS provider redirects, with loopback HTTP only for local development;
+- Observatory routing and verifier chain preserved after reconciliation;
+- explicit `ownershipTransferAuthorized: false` and `soldProvenanceEventCreated: false` boundaries.
 
-Do **not** describe those transaction capabilities as production until PR #38 is fully wired through HTTP/runtime/UI, reconciled onto current `main`, and passes the complete production quality gate on its final head.
+The branch remains **not production** until review and merge. Even after merge, checkout must remain disabled unless deployment explicitly supplies the required real payment-provider secrets/webhook secret, enables checkout and automatic tax, supplies the reviewed tax-policy identifier, and the seller's provider account is active. Missing requirements fail closed.
+
+Research record:
+- `docs/research/2026-09-14-MARKETPLACE-SAFEGUARDED-TRANSACTIONS-PHASE1.md`
+
+Locked transaction truth rules:
+1. a listing is not an order;
+2. an inventory reservation is not a sale;
+3. a provider-hosted checkout session is not proof of payment;
+4. a browser success redirect is not payment authority;
+5. verified provider webhook events are the payment-state authority for this phase;
+6. duplicate provider events must not duplicate state transitions or inventory effects;
+7. checkout must fail closed when provider, seller, tax-policy, listing-integrity or inventory gates are not satisfied;
+8. payment state alone does not verify shipment, delivery or buyer-protection outcomes;
+9. checkout/payment does not automatically append sold provenance;
+10. checkout/payment does not automatically transfer authoritative Royal Vault ownership.
 
 ## Intentionally unavailable in current production — do not claim these exist
 
+Until PR #38 is reviewed and merged, production `main` does not claim:
 - live production checkout/order completion;
 - payment authorization/capture/settlement;
 - seller payouts;
@@ -162,7 +194,7 @@ Do **not** describe those transaction capabilities as production until PR #38 is
 - complete order lifecycle;
 - shipment labels/tracking;
 - buyer protection;
-- returns/refunds/disputes;
+- customer-facing returns/refund/dispute workflows;
 - fraud/risk scoring;
 - offers/counteroffers;
 - auctions;
@@ -178,19 +210,20 @@ Do **not** describe those transaction capabilities as production until PR #38 is
 - external marketplace cross-posting;
 - automatic FX conversion.
 
+On PR #38, refund/dispute provider events exist as guarded transaction-state evidence; that is not yet the same as complete customer-facing return, refund, dispute or buyer-protection operations.
+
 ## Safeguarded Transaction Foundation gate
 
-A production Buy/Checkout path must not ship until all of these have real authority boundaries and executable verification:
-- seller eligibility/KYC model;
-- buyer/order identity and idempotent order state machine;
-- real payment provider and webhook authority;
-- tax handling;
-- shipment evidence and delivery states;
-- cancellation/refund rules;
-- disputes and buyer-protection workflow;
+The PR #38 branch now provides real authority boundaries and executable verification for seller payment onboarding, buyer/order identity, idempotent reservation, a real payment-provider adapter, webhook authority, tax enablement gates, refund/dispute event evidence and no-ownership-transfer behavior.
+
+Before a broader completed-commerce claim, the next guarded milestones are:
+- verified shipping evidence and delivery states;
+- customer-facing cancellation/refund/return workflows;
+- dispute and buyer-protection operations;
 - fraud/risk controls;
-- settlement/payout authority;
-- exact completed-transaction condition for provenance append;
-- exact authoritative condition for Vault ownership transfer.
+- settlement/payout operational evidence;
+- exact completed-transaction condition for sold-provenance append;
+- exact authoritative condition for Royal Vault ownership transfer;
+- transaction-backed analytics that remain separate from active asking-price Observatory evidence.
 
 **Guiding rule:** a Marketplace click is never a sale. Ownership changes only after an independently verified transaction state authorizes it.
