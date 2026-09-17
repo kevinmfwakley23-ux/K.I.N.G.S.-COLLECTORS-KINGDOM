@@ -1,0 +1,97 @@
+.marketplace-transaction-panel,
+.marketplace-payment-panel,
+.marketplace-orders-panel {
+  margin-top: 1.25rem;
+  border: 1px solid rgba(127, 96, 32, 0.35);
+  border-radius: 18px;
+  padding: 1.1rem;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 14px 34px rgba(34, 28, 18, 0.08);
+}
+
+.marketplace-transaction-panel h2,
+.marketplace-payment-panel h3,
+.marketplace-orders-panel h3 {
+  margin-top: 0;
+}
+
+.marketplace-checkout-controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: end;
+  flex-wrap: wrap;
+  margin-top: 0.9rem;
+}
+
+.marketplace-checkout-controls label {
+  min-width: 8rem;
+}
+
+.marketplace-checkout-controls input {
+  width: 100%;
+}
+
+.marketplace-availability-line {
+  font-weight: 700;
+}
+
+.marketplace-availability-line[data-state="available"] {
+  color: #25552f;
+}
+
+.marketplace-availability-line[data-state="unavailable"] {
+  color: #7a2b2b;
+}
+
+.marketplace-payment-actions,
+.marketplace-order-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.8rem;
+}
+
+.marketplace-order-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.marketplace-order-card {
+  border: 1px solid rgba(35, 32, 25, 0.16);
+  border-radius: 14px;
+  padding: 0.9rem;
+  background: rgba(255, 255, 255, 0.64);
+}
+
+.marketplace-order-card strong,
+.marketplace-order-card small {
+  display: block;
+}
+
+.marketplace-order-state {
+  display: inline-flex;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.marketplace-commerce-truth {
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 620px) {
+  .marketplace-checkout-controls,
+  .marketplace-payment-actions,
+  .marketplace-order-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .marketplace-checkout-controls label {
+    min-width: 0;
+  }
+}
