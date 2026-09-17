@@ -62,6 +62,12 @@ function routeFor(pathname) {
   if (pathname === "/api/marketplace/orders") return Object.freeze({ kind: "orders" });
   if (pathname === "/api/marketplace/webhooks/stripe") return Object.freeze({ kind: "stripe-webhook" });
 
+  const availability = pathname.match(/^\/api\/marketplace\/listings\/([^/]+)\/checkout-availability$/);
+  if (availability) return Object.freeze({
+    kind: "checkout-availability",
+    listingId: decodePathPart(availability[1], "invalid_marketplace_listing_id", "The Marketplace listing identifier is invalid.")
+  });
+
   const checkout = pathname.match(/^\/api\/marketplace\/listings\/([^/]+)\/checkout$/);
   if (checkout) return Object.freeze({
     kind: "checkout",
@@ -91,6 +97,7 @@ function capabilities(transactionService) {
     checkoutAvailable: transactionService?.checkoutEnabled === true,
     automaticTaxEnabled: transactionService?.automaticTaxEnabled === true,
     taxPolicyConfigured: Boolean(transactionService?.taxPolicyId),
+    reservationRecoveryAvailable: transactionService?.reservationRecoveryAvailable === true,
     ownershipTransferAvailable: false,
     deliveryVerificationAvailable: false,
     verifiedPurchaseFeedbackAvailable: false
@@ -113,6 +120,17 @@ export async function handleMarketplaceTransactionRoute({
   if (route.kind === "capabilities") {
     if (method !== "GET" && method !== "HEAD") return false;
     return sendJson(response, 200, { capabilities: capabilities(transactionService) }, method, securityHeaders);
+  }
+
+  if (route.kind === "checkout-availability") {
+    if (method !== "GET" && method !== "HEAD") return false;
+    if (typeof transactionService.getCheckoutAvailability !== "function") {
+      throw new MarketplaceError("marketplace_checkout_availability_unavailable", "Marketplace checkout availability is unavailable.", 503);
+    }
+    return sendJson(response, 200, {
+      availability: transactionService.getCheckoutAvailability(route.listingId),
+      capabilities: capabilities(transactionService)
+    }, method, securityHeaders);
   }
 
   if (route.kind === "stripe-webhook") {
