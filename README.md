@@ -4,10 +4,10 @@ K.I.N.G.S. Collector's Kingdom is a collector-first system for cataloging, locat
 
 ## Engineering status
 
-**Current production baseline:** `58bbfc98118bf05e527927c5e299ce8a64654019` — Marketplace Active Market Observatory merged through PR #39.  
-**Latest verified Marketplace gate:** Kingdom Quality Gates #742 — **PASS**, including production dependency audit.  
-**Royal Vault Phase 1:** production-capable baseline with Year/Tags, import/export, provenance, valuation, portfolio history and insurance-preparation reporting.  
-**Parallel transaction work:** PR #38 — `Marketplace: safeguarded transactions phase 1` — **draft / not production**.
+**Current production baseline:** `427da91346feb06065a88ff87786be43026833d1` — safeguarded Marketplace transactions merged through PR #41.  
+**Latest verified Marketplace gate:** Kingdom Quality Gates #754 — **PASS** on exact head `b6b040ad7ef389526ad0cdc17d7f790b6ac865b1`.  
+**Verification:** 379/379 tests, production build + all Marketplace artifact verifiers, and production dependency audit with 0 vulnerabilities.  
+**Royal Vault Phase 1:** production-capable baseline with Year/Tags, import/export, provenance, valuation, portfolio history and insurance-preparation reporting.
 
 The repository contains real executable Node.js/SQLite application code, tests and production artifact verification. Documentation, UI, provider adapters and architecture claims are not considered complete merely because a file exists: production status requires executable integration and the canonical quality gate.
 
@@ -23,7 +23,7 @@ The Kingdom never silently upgrades evidence into authoritative truth.
 - A provider observation remains evidence, not an automatic appraisal.
 - A collector's own realized sale is historical lifecycle evidence, not automatically a current market comparable.
 - A Kingdom valuation, portfolio estimate or insurance-preparation report is advisory/documentary evidence, not an appraisal or guaranteed sale/replacement value.
-- A Marketplace listing, watch, saved search, storefront visit, share, Observatory snapshot, reservation attempt or checkout-session creation is never by itself a completed sale.
+- A Marketplace listing, watch, saved search, storefront visit, share, Observatory snapshot, reservation attempt, Checkout-session creation or payment event is never by itself authoritative ownership transfer.
 - No grading, valuation, catalog, AI, provenance or Marketplace subsystem may silently overwrite ownership or permanent physical treasure identity.
 
 Permanent Kingdom treasure UUIDs remain provider-independent physical-item identities.
@@ -61,17 +61,13 @@ The Royal Vault includes:
 
 ### Collector-owned insurance preparation reporting
 
-The production reporting slice provides private owner-scoped evidence packages without pretending the Kingdom is an insurer or professional appraiser.
-
-It includes permanent treasure identity, Year/Tags, quantity, condition, collection/storage context, acquisition facts, private media references with SHA-256 metadata, provenance IDs, evidence-backed advisory valuation references, portfolio snapshot citation, per-currency totals, deterministic report integrity hashing, explicit non-appraisal language and browser Print / Save as PDF support.
-
-Archived treasures require explicit opt-in, unsupported value remains unavailable rather than becoming zero, and report generation performs no destructive mutation.
+The production reporting slice provides private owner-scoped evidence packages without pretending the Kingdom is an insurer or professional appraiser. Archived treasures require explicit opt-in, unsupported value remains unavailable rather than becoming zero, and report generation performs no destructive mutation.
 
 Research: [`docs/research/2026-09-13-IMP-005-INSURANCE-REPORTING.md`](docs/research/2026-09-13-IMP-005-INSURANCE-REPORTING.md).
 
 ## Kingdom Street Market — current production capability
 
-Marketplace production currently supports real pre-transaction collector workflows:
+Marketplace production supports real collector workflows across publication, discovery, market context and a safeguarded transaction backend:
 
 - private Vault-linked fixed-price listing drafts;
 - explicit possession, right-to-sell and accuracy attestations before publication;
@@ -79,46 +75,54 @@ Marketplace production currently supports real pre-transaction collector workflo
 - immutable published representation SHA-256 hashes;
 - fail-closed suppression if a Vault treasure is archived or quantity no longer supports the offer;
 - sanitized public listing payloads with no private Vault UUID, acquisition cost, private notes or storage data;
-- accent-insensitive multi-field search;
-- category, currency and fulfillment facets;
-- currency-safe price filtering/sorting with no automatic FX comparison;
+- accent-insensitive search, facets and currency-safe filtering/sorting with no automatic FX comparison;
 - bounded query-bound keyset pagination;
-- private saved searches that rerun current market state rather than storing stale result snapshots;
+- private saved searches that rerun current market state rather than storing stale snapshots;
 - private watchlists with no reservation or purchase semantics;
 - optional seller storefronts that remain private until explicit publication;
-- seller-selected immutable public storefront IDs and current live supported inventory;
 - shareable evidence-rich listing-detail pages using Marketplace listing IDs rather than private Vault treasure IDs;
-- copy/share and private watch actions from listing detail;
 - active-only detail behavior: withdrawn, archived, unsupported or integrity-failed offers are not replayed from stale snapshots;
 - Great Hall / Keeper Marketplace availability context;
+- Active Market Observatory asking-price intelligence with strict sold-vs-asking and currency separation;
+- provider-hosted Stripe Connect seller onboarding backend when configured;
+- provider-neutral seller payment-account persistence;
+- buyer-private order persistence/read APIs;
+- atomic Vault-backed quantity reservation and idempotent Checkout creation;
+- signed raw-body provider webhook verification and provider-event deduplication;
+- provider-authoritative payment-state evidence;
+- crash-safe stale-reservation recovery;
+- public sanitized checkout-availability reads that never expose buyer/order identities;
 - responsive Street Market, storefront, listing-detail and Observatory surfaces.
 
 Marketplace recovery and production ledger: [`docs/MARKETPLACE-PROGRESS.md`](docs/MARKETPLACE-PROGRESS.md).
 
 ### Active Market Observatory — production
 
-The Active Market Observatory is a read-only public market-context surface backed by the same live, integrity-checked pagination used by Marketplace discovery.
+The Active Market Observatory is a read-only public market-context surface backed by the same live, integrity-checked pagination used by Marketplace discovery. It reports currently supported offer/category counts, separate per-currency asking-price groups, lowest/middle/high asks, 24-hour/7-day publication activity and category-level asking ranges.
 
-It reports:
-
-- total currently supported active offers;
-- active offer counts by category;
-- separate per-currency asking-price groups;
-- lowest ask, exact middle-rank ask/range and highest ask;
-- 24-hour and 7-day listing-publication activity;
-- category-level asking ranges inside each currency.
-
-The Observatory deliberately does **not** call asking prices market value. Completed sales are not included, currencies are never automatically combined, no FX conversion is performed, and a verified scan over the current 10,000-offer ceiling fails closed rather than publishing a partial sample as complete. Representation-integrity failure or invalid publication evidence blocks the whole snapshot.
+The Observatory deliberately does **not** call asking prices market value. Completed sales are not included, currencies are never automatically combined, no FX conversion is performed, and a verified scan over the current 10,000-offer ceiling fails closed rather than publishing a partial sample as complete.
 
 Research: [`docs/research/2026-09-14-MARKETPLACE-ACTIVE-MARKET-OBSERVATORY.md`](docs/research/2026-09-14-MARKETPLACE-ACTIVE-MARKET-OBSERVATORY.md).
 
-## Parallel safeguarded transaction work — not production
+### Safeguarded transaction foundation — production code, activation gated
 
-PR #38 (`Marketplace: safeguarded transactions phase 1`) is being developed by the parallel co-chief engineer from the Marketplace production baseline. Its current draft describes work toward Stripe Connect hosted seller onboarding, provider-neutral payment-account persistence, idempotent Vault-backed order reservation, oversell protection, provider-hosted Checkout session creation, tax/checkout fail-closed gating, verified webhooks, provider-event deduplication, append-only order history and explicit no-ownership-transfer behavior.
+PR #41 reconciled the real Stripe Connect transaction backend onto the Observatory production baseline instead of force-merging stale PR #38.
 
-Those capabilities are **not production claims** until the branch is reconciled onto current `main`, wired through the required runtime/HTTP/UI boundaries, and passes the complete final quality gate.
+The production boundary includes hosted seller onboarding, provider-hosted Checkout, destination-charge routing, explicit tax/checkout gating, signed webhook authority, buyer-private order history, idempotent quantity reservation and reservation recovery. New `created` reservations receive a database deadline immediately; unattached reservations expire after 10 minutes, Stripe Checkout is policy-bounded to 30 minutes, and `checkout_pending` orders keep a 60-minute webhook-delivery grace window before safe release.
 
-Production still does not claim complete checkout/order completion, payment capture/settlement, payouts, KYC approval, tax handling, shipping protection, refunds/disputes, verified-purchase ratings, auctions, trades, automatic sold provenance or authoritative Marketplace-driven Vault ownership transfer.
+**Live buyer Checkout is OFF by default.** The default configuration sets:
+
+```env
+KINGDOM_MARKETPLACE_CHECKOUT_ENABLED=false
+KINGDOM_STRIPE_TAX_ENABLED=false
+KINGDOM_STRIPE_TAX_POLICY_ID=
+```
+
+The backend fails closed unless the required provider, signed-webhook, tax and reviewed policy configuration exists. Production code availability does not mean a deployment is configured for live payment acceptance.
+
+The Kingdom still does **not** claim automatic Vault ownership transfer, automatic sold provenance, shipment/delivery verification, buyer-protection adjudication, verified-purchase ratings, independent KYC certification, or tax filing/remittance authority.
+
+Research: [`docs/research/2026-09-14-MARKETPLACE-SAFEGUARDED-TRANSACTIONS-PHASE1.md`](docs/research/2026-09-14-MARKETPLACE-SAFEGUARDED-TRANSACTIONS-PHASE1.md).
 
 ## Evidence-backed valuation rules
 
@@ -149,14 +153,6 @@ Enable only when all reviewed deployment values exist:
 KINGDOM_EBAY_CLIENT_ID=...
 KINGDOM_EBAY_CLIENT_SECRET=...
 KINGDOM_EBAY_PROVIDER_POLICY_ID=...
-```
-
-Optional configuration:
-
-```env
-KINGDOM_EBAY_API_BASE_URL=https://api.ebay.com
-KINGDOM_EBAY_MARKETPLACE_ID=EBAY_US
-KINGDOM_EBAY_TIMEOUT_MS=5000
 ```
 
 No scraping workaround is used for restricted or unavailable sold-history access.
@@ -192,7 +188,6 @@ This is **not** a claim that a signed native Android APK is already complete. Na
 ## Run the Kingdom
 
 Requirements:
-
 - Node.js 22.13+;
 - npm;
 - runtime write access to `KINGDOM_DATA_DIR`.
@@ -235,8 +230,9 @@ The production build manifest identifies `apps/web/runtime.mjs` as the real wire
 
 - [`docs/MISSION-STATEMENT.md`](docs/MISSION-STATEMENT.md) — permanent mission and authority order.
 - [`docs/MISSION-PROGRESS.md`](docs/MISSION-PROGRESS.md) — recoverable build state, verified checkpoints, blockers and exact next target.
-- [`docs/MARKETPLACE-PROGRESS.md`](docs/MARKETPLACE-PROGRESS.md) — Street Market production history, current parallel work and intentionally unavailable transaction boundaries.
+- [`docs/MARKETPLACE-PROGRESS.md`](docs/MARKETPLACE-PROGRESS.md) — Street Market production history, transaction truth and intentionally unavailable boundaries.
 - [`docs/research/2026-09-14-MARKETPLACE-ACTIVE-MARKET-OBSERVATORY.md`](docs/research/2026-09-14-MARKETPLACE-ACTIVE-MARKET-OBSERVATORY.md) — active-market evidence model and Observatory truth rules.
+- [`docs/research/2026-09-14-MARKETPLACE-SAFEGUARDED-TRANSACTIONS-PHASE1.md`](docs/research/2026-09-14-MARKETPLACE-SAFEGUARDED-TRANSACTIONS-PHASE1.md) — transaction provider, tax, webhook and reservation-recovery authority rules.
 - [`docs/research/2026-09-13-MARKETPLACE-LISTING-DETAIL.md`](docs/research/2026-09-13-MARKETPLACE-LISTING-DETAIL.md) — shareable listing-detail research and privacy rules.
 - [`docs/research/2026-09-13-IMP-005-INSURANCE-REPORTING.md`](docs/research/2026-09-13-IMP-005-INSURANCE-REPORTING.md) — insurance/documentation research and report trust rules.
 - [`docs/research/`](docs/research/) — dated competitor, provider, standards and technical research.
@@ -255,10 +251,10 @@ Documentation is part of implementation. Substantial verified build batches must
 
 ## Exact next engineering target
 
-1. Keep the merged Observatory baseline (`58bbfc98118bf05e527927c5e299ce8a64654019`) green while parallel transaction work advances.
-2. Audit PR #38 against current `main` before it touches shared runtime, HTTP, UI, package verification or recovery-ledger files.
-3. Require real seller/payment eligibility, idempotent order authority, provider webhook verification, tax/shipment/refund/dispute boundaries and oversell protection before exposing production checkout.
-4. Do not append automatic sold provenance or transfer authoritative Vault ownership until a separately verified completed transaction state explicitly authorizes it.
-5. Add transaction-backed Marketplace analytics only after completed-order evidence exists; keep Observatory asking-price evidence separate.
+1. Make Marketplace discovery/storefront/listing UI transaction-aware without rewriting the immutable publication snapshot: fully reserved quantity must not be presented as freely available.
+2. Add buyer/seller transaction UI that exposes provider-hosted Checkout only when the backend reports real readiness; otherwise show truthful unavailable/setup states with no fake Buy button.
+3. Add private buyer order-state UI and provider-hosted seller payment-onboarding/status UI without collecting KYC documents inside the Kingdom.
+4. Design shipment/delivery, return/refund, dispute and buyer-protection authority before any automatic sold provenance or Vault ownership transfer.
+5. Add completed-transaction Marketplace analytics only after authoritative completed-order evidence exists; keep Observatory asking-price evidence separate.
 
-The guiding Marketplace rule remains: **a click is never a sale; ownership changes only after a separately verified transaction state authorizes it.**
+The guiding Marketplace rule remains: **a click is never a sale; payment is not delivery, and ownership changes only after a separately verified transaction state authorizes it.**
