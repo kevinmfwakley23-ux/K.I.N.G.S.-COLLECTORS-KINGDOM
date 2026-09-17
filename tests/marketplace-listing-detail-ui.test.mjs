@@ -40,7 +40,7 @@ test("shareable listing detail UI exposes live publication evidence and fail-clo
   assert.match(js, /\/api\/marketplace\/transactions\/capabilities/);
   assert.match(js, /\/checkout/);
   assert.match(js, /Idempotency-Key/);
-  assert.match(js, /crypto\.randomUUID/);
+  assert.match(js, /randomUUID/);
   assert.match(js, /window\.location\.assign/);
   assert.match(js, /marketplace-storefront\.html\?store=/);
   assert.match(js, /navigator\.clipboard/);

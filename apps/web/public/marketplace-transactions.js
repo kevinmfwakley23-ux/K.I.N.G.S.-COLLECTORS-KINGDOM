@@ -39,9 +39,17 @@ function escapeHtml(value) {
   })[character]);
 }
 
+function fractionDigits(currency) {
+  try {
+    return new Intl.NumberFormat("en", { style: "currency", currency }).resolvedOptions().maximumFractionDigits;
+  } catch {
+    return 2;
+  }
+}
+
 function money(amountCents, currency) {
   try {
-    return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(Number(amountCents) / 100);
+    return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(Number(amountCents) / (10 ** fractionDigits(currency)));
   } catch {
     return `${currency ?? ""} ${amountCents ?? ""}`.trim();
   }
