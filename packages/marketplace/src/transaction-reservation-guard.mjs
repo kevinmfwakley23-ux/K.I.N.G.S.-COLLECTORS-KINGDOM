@@ -3,7 +3,7 @@ import { MarketplaceError } from "./service.mjs";
 
 const CREATED_RESERVATION_TTL_MS = 10 * 60 * 1000;
 const CHECKOUT_RESERVATION_TTL_MS = 60 * 60 * 1000;
-const HELD_STATES = Object.freeze(["payment_processing", "paid", "refunded", "disputed"]);
+const MAX_PUBLIC_AVAILABILITY_BATCH = 500;
 
 function cleanListingId(value) {
   if (typeof value !== "string" || !value.trim() || value.trim().length > 100) {
@@ -28,6 +28,21 @@ function transaction(database, work) {
     database.exec("ROLLBACK;");
     throw error;
   }
+}
+
+function frozenUnavailable(listingId, checkedAt) {
+  return Object.freeze({
+    listingId,
+    maximumQuantity: 0,
+    reservedQuantity: 0,
+    availableQuantity: 0,
+    sellerPaymentReady: false,
+    checkoutAvailable: false,
+    checkoutCreatesOwnershipTransfer: false,
+    reservationRecoveryAvailable: true,
+    publicSupportCurrent: false,
+    checkedAt
+  });
 }
 
 export function createMarketplaceReservationGuard({
@@ -153,50 +168,92 @@ export function createMarketplaceReservationGuard({
     `).run(orderId);
   }
 
-  function checkoutAvailability(listingIdValue) {
-    const listingId = cleanListingId(listingIdValue);
-    const publicListing = marketplaceService.getPublic(listingId);
+  function availabilityMap(listingIdValues) {
+    const ids = [...new Set((listingIdValues ?? []).map(cleanListingId))];
+    if (ids.length > MAX_PUBLIC_AVAILABILITY_BATCH) {
+      throw new MarketplaceError(
+        "marketplace_availability_batch_too_large",
+        `Marketplace availability batches may contain at most ${MAX_PUBLIC_AVAILABILITY_BATCH} listing identifiers.`,
+        400
+      );
+    }
     const cleanup = expireStaleReservations();
-    const source = database.prepare(`
-      SELECT l.id,l.quantity AS listing_quantity,t.quantity AS vault_quantity,l.seller_account_id
+    const result = new Map(ids.map((id) => [id, frozenUnavailable(id, cleanup.checkedAt)]));
+    if (!ids.length) return result;
+
+    const placeholders = ids.map(() => "?").join(",");
+    const rows = database.prepare(`
+      SELECT
+        l.id,
+        l.quantity AS listing_quantity,
+        t.quantity AS vault_quantity,
+        spa.status AS seller_payment_status,
+        COALESCE(SUM(CASE
+          WHEN o.state IN ('payment_processing','paid','refunded','disputed') THEN o.quantity
+          WHEN o.state IN ('created','checkout_pending')
+            AND o.reservation_expires_at IS NOT NULL
+            AND o.reservation_expires_at > ? THEN o.quantity
+          ELSE 0
+        END),0) AS reserved_quantity
       FROM marketplace_listings l
       INNER JOIN vault_treasures t
         ON t.id = l.treasure_id
        AND t.owner_account_id = l.seller_account_id
        AND t.archived_at IS NULL
-      WHERE l.id = ? AND l.state = 'active'
-    `).get(listingId);
-    if (!source) throw new MarketplaceError("marketplace_listing_not_found", "The requested active Marketplace listing was not found.", 404);
+      LEFT JOIN marketplace_seller_payment_accounts spa
+        ON spa.seller_account_id = l.seller_account_id
+      LEFT JOIN marketplace_orders o
+        ON o.listing_id = l.id
+      WHERE l.state = 'active' AND l.id IN (${placeholders})
+      GROUP BY l.id,l.quantity,t.quantity,spa.status
+    `).all(cleanup.checkedAt, ...ids);
 
-    const current = cleanup.checkedAt;
-    const heldMarks = HELD_STATES.map(() => "?").join(",");
-    const reserved = Number(database.prepare(`
-      SELECT COALESCE(SUM(quantity),0) AS quantity
-      FROM marketplace_orders
-      WHERE listing_id = ? AND (
-        state IN (${heldMarks}) OR
-        (state IN ('created','checkout_pending') AND reservation_expires_at IS NOT NULL AND reservation_expires_at > ?)
-      )
-    `).get(listingId, ...HELD_STATES, current).quantity);
-    const maximum = Math.max(0, Math.min(Number(source.listing_quantity), Number(source.vault_quantity)));
-    const available = Math.max(0, maximum - reserved);
-    const sellerPayment = database.prepare(`
-      SELECT status FROM marketplace_seller_payment_accounts WHERE seller_account_id = ?
-    `).get(source.seller_account_id);
-    const sellerPaymentReady = sellerPayment?.status === "active";
+    for (const row of rows) {
+      const maximum = Math.max(0, Math.min(Number(row.listing_quantity), Number(row.vault_quantity)));
+      const reserved = Math.max(0, Number(row.reserved_quantity));
+      const available = Math.max(0, maximum - reserved);
+      const sellerPaymentReady = row.seller_payment_status === "active";
+      result.set(row.id, Object.freeze({
+        listingId: row.id,
+        maximumQuantity: maximum,
+        reservedQuantity: reserved,
+        availableQuantity: available,
+        sellerPaymentReady,
+        checkoutAvailable: transactionService.checkoutEnabled === true && sellerPaymentReady && available > 0,
+        checkoutCreatesOwnershipTransfer: false,
+        reservationRecoveryAvailable: true,
+        publicSupportCurrent: true,
+        checkedAt: cleanup.checkedAt
+      }));
+    }
+    return result;
+  }
 
+  function checkoutAvailability(listingIdValue) {
+    const listingId = cleanListingId(listingIdValue);
+    const publicListing = marketplaceService.getPublic(listingId);
+    const availability = availabilityMap([listingId]).get(listingId);
+    if (!availability?.publicSupportCurrent) {
+      throw new MarketplaceError("marketplace_listing_not_found", "The requested active Marketplace listing was not found.", 404);
+    }
     return Object.freeze({
-      listingId,
-      representationSha256: publicListing.representationSha256 ?? null,
-      maximumQuantity: maximum,
-      reservedQuantity: reserved,
-      availableQuantity: available,
-      sellerPaymentReady,
-      checkoutAvailable: transactionService.checkoutEnabled === true && sellerPaymentReady && available > 0,
-      checkoutCreatesOwnershipTransfer: false,
-      reservationRecoveryAvailable: true,
-      checkedAt: current
+      ...availability,
+      representationSha256: publicListing.representationSha256 ?? null
     });
+  }
+
+  function decoratePublicListings(listings = []) {
+    if (!Array.isArray(listings)) throw new TypeError("Marketplace public listings must be an array.");
+    const map = availabilityMap(listings.map((listing) => listing?.id).filter(Boolean));
+    return Object.freeze(listings.map((listing) => Object.freeze({
+      ...listing,
+      availability: map.get(listing.id) ?? frozenUnavailable(listing.id, now().toISOString())
+    })));
+  }
+
+  function decoratePublicListing(listing) {
+    if (!listing?.id) throw new TypeError("Marketplace public listing is required.");
+    return decoratePublicListings([listing])[0];
   }
 
   async function createCheckout(identity, listingId, input) {
@@ -231,6 +288,8 @@ export function createMarketplaceReservationGuard({
     reservationRecoveryAvailable: true,
     expireStaleReservations,
     getCheckoutAvailability: checkoutAvailability,
+    decoratePublicListing,
+    decoratePublicListings,
     createCheckout,
     handleProviderWebhook,
     listMyOrders,
