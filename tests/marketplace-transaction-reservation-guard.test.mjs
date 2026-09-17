@@ -16,7 +16,7 @@ const seller = Object.freeze({ id: "guard-seller", email: "seller@example.test" 
 const buyer = Object.freeze({ id: "guard-buyer", email: "buyer@example.test" });
 const attestations = Object.freeze({ attestPossession: true, attestRightToSell: true, confirmAccuracy: true });
 
-async function withGuard(run) {
+async function withGuard(run, coreOverrides = {}) {
   const directory = await mkdtemp(join(tmpdir(), "kingdom-market-guard-"));
   const vaultStore = new SqliteVaultStore(join(directory, "vault.sqlite"));
   const vault = createVaultService({ store: vaultStore });
@@ -34,7 +34,8 @@ async function withGuard(run) {
     async createCheckout() { throw new Error("not-used"); },
     async handleProviderWebhook() { return { accepted: true }; },
     listMyOrders() { return []; },
-    getMyOrder() { return null; }
+    getMyOrder() { return null; },
+    ...coreOverrides
   });
   const guarded = createMarketplaceReservationGuard({
     vaultStore,
@@ -74,7 +75,7 @@ function reserve(transactionRepository, listing, now) {
     unitAmountCents: listing.amountCents,
     totalAmountCents: listing.amountCents,
     currency: listing.currency,
-    listingSnapshotSha256: listing.publishedSnapshotSha256,
+    listingSnapshotSha256: listing.representationSha256,
     requestSha256: "a".repeat(64),
     idempotencyKey: `guard-${id}`,
     paymentProvider: "stripe-connect",
@@ -89,7 +90,7 @@ function reserve(transactionRepository, listing, now) {
       createdAt: timestamp
     }
   });
-  assert.equal(result.ok, true);
+  assert.deepEqual(result.ok ? { ok: true } : { ok: false, reason: result.reason }, { ok: true });
   return result.order;
 }
 
@@ -148,6 +149,24 @@ test("checkout-pending reservations receive webhook grace before stale cleanup",
     advance(30 * 60 * 1000);
     assert.equal(guarded.getCheckoutAvailability(listing.id).availableQuantity, 1);
     assert.equal(vaultStore.database.prepare("SELECT state FROM marketplace_orders WHERE id = ?").get(order.id).state, "cancelled");
+  });
+});
+
+test("an invalid provider webhook cannot trigger reservation cleanup before provider verification", async () => {
+  await withGuard(async ({ vaultStore, vault, marketplace, transactionRepository, guarded, now, advance }) => {
+    const listing = publish(vault, marketplace, 1);
+    const order = reserve(transactionRepository, listing, now);
+    advance(11 * 60 * 1000);
+
+    await assert.rejects(
+      guarded.handleProviderWebhook(Buffer.from("{}"), "bad-signature"),
+      /invalid-provider-signature/
+    );
+    const stored = vaultStore.database.prepare("SELECT state,reservation_expires_at FROM marketplace_orders WHERE id = ?").get(order.id);
+    assert.equal(stored.state, "created");
+    assert.ok(stored.reservation_expires_at);
+  }, {
+    async handleProviderWebhook() { throw new Error("invalid-provider-signature"); }
   });
 });
 
