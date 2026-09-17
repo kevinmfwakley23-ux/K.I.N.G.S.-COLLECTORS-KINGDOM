@@ -21,7 +21,7 @@ test("Orders & Payments UI keeps provider redirects, order state, and ownership 
     'marketplace-transactions.css'
   ]) assert.match(html, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 
-  assert.match(html, /checkout reservation.*not.*completed sale/i);
+  assert.match(html, /checkout reservation.*proof of a completed sale/i);
   assert.match(html, /provider redirect.*does not prove payment/i);
   assert.match(html, /does not automatically create sold provenance/i);
   assert.match(html, /change authoritative Royal Vault ownership/i);
