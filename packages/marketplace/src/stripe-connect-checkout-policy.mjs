@@ -10,6 +10,13 @@ function cleanTtl(value) {
   return ttl;
 }
 
+function sellerStallReturnUrl(value) {
+  const url = new URL(value);
+  url.pathname = "/marketplace.html";
+  url.hash = "seller-stall";
+  return url.toString();
+}
+
 export function createPolicyBoundStripeConnectProvider({
   fetchImpl = globalThis.fetch,
   now = () => new Date(),
@@ -39,6 +46,13 @@ export function createPolicyBoundStripeConnectProvider({
 
   return Object.freeze({
     ...provider,
-    checkoutTtlSeconds: ttl
+    checkoutTtlSeconds: ttl,
+    createAccountLink(input = {}) {
+      return provider.createAccountLink({
+        ...input,
+        refreshUrl: sellerStallReturnUrl(input.refreshUrl),
+        returnUrl: sellerStallReturnUrl(input.returnUrl)
+      });
+    }
   });
 }
