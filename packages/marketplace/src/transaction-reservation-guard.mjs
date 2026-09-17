@@ -210,8 +210,8 @@ export function createMarketplaceReservationGuard({
   }
 
   async function handleProviderWebhook(rawBody, signatureHeader) {
-    expireStaleReservations();
     const result = await transactionService.handleProviderWebhook(rawBody, signatureHeader);
+    expireStaleReservations();
     if (result?.orderId) clearDeadlineForDurableState(result.orderId);
     return result;
   }
