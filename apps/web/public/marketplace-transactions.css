@@ -7,6 +7,7 @@
 
 .transaction-hero h1,
 .transaction-seller h2,
+.transaction-fulfillment h2,
 .transaction-truth h2 {
   margin: .2rem 0 .55rem;
 }
@@ -115,14 +116,85 @@
   grid-template-columns: repeat(4,minmax(0,1fr));
 }
 
-.transaction-truth {
-  border-left: 4px solid #9d7528;
+.transaction-shipment-list {
+  display: grid;
+  gap: .45rem;
+  margin: .8rem 0;
+  padding: 0;
+  list-style: none;
 }
 
+.transaction-shipment-list li {
+  padding: .7rem .8rem;
+  border: 1px solid rgba(157,117,40,.18);
+  border-radius: .65rem;
+  background: rgba(255,255,255,.68);
+  overflow-wrap: anywhere;
+}
+
+.transaction-shipment-list li span {
+  display: block;
+  margin-top: .25rem;
+  color: #625947;
+  font-size: .82rem;
+}
+
+.transaction-shipment-form {
+  display: grid;
+  gap: .75rem;
+  margin-top: 1rem;
+  padding: .9rem;
+  border: 1px solid rgba(157,117,40,.28);
+  border-radius: .8rem;
+  background: rgba(243,238,226,.55);
+}
+
+.transaction-shipment-form > div {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: .65rem;
+}
+
+.transaction-shipment-form label {
+  display: grid;
+  gap: .3rem;
+  color: #4e4638;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.transaction-shipment-form input,
+.transaction-shipment-form select {
+  width: 100%;
+  min-height: 2.65rem;
+  padding: .5rem .6rem;
+  border: 1px solid var(--market-border);
+  border-radius: .55rem;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.transaction-shipment-form button:disabled,
 .transaction-seller button:disabled,
 #refresh-transactions:disabled {
   cursor: not-allowed;
   opacity: .6;
+}
+
+.transaction-truth {
+  border-left: 4px solid #9d7528;
+}
+
+@media (max-width: 900px) {
+  .transaction-shipment-form > div {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
 }
 
 @media (max-width: 760px) {
@@ -143,7 +215,8 @@
   .transaction-order-heading > strong {
     white-space: normal;
   }
-  .transaction-order-facts {
+  .transaction-order-facts,
+  .transaction-shipment-form > div {
     grid-template-columns: 1fr;
   }
   .transaction-actions > * {

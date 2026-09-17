@@ -74,6 +74,7 @@ export async function runKingdomRuntime() {
     marketplaceService: marketplaceCoreService
   });
   const marketplaceTransactionService = marketplaceTransactionRuntime.service;
+  const marketplaceFulfillmentService = marketplaceTransactionRuntime.fulfillmentService;
   const marketplaceService = Object.freeze({
     ...marketplaceCoreService,
     ...marketplaceQueryService,
@@ -187,7 +188,8 @@ export async function runKingdomRuntime() {
     vaultReorganizationService,
     vaultQueryService,
     marketplaceService,
-    marketplaceTransactionService
+    marketplaceTransactionService,
+    marketplaceFulfillmentService
   });
 
   server.on("error", (error) => {
@@ -212,6 +214,9 @@ export async function runKingdomRuntime() {
       marketplacePaymentProviderAvailable: marketplaceTransactionService.paymentProviderAvailable,
       marketplaceAutomaticTaxEnabled: marketplaceTransactionService.automaticTaxEnabled,
       marketplaceCheckoutAvailable: marketplaceTransactionService.checkoutEnabled,
+      marketplaceSellerShipmentEvidenceAvailable: true,
+      marketplaceCarrierVerificationAvailable: false,
+      marketplaceDeliveryVerificationAvailable: false,
       marketplaceOwnershipTransferAvailable: false
     });
   });
