@@ -30,7 +30,7 @@ export function createMarketplaceAwareKingdomServer({ marketplaceService = null,
   if (typeof baseHandler !== "function") throw new TypeError("Kingdom server request handler is unavailable.");
   server.removeAllListeners("request");
   const marketplaceObservatoryService = marketplaceService && typeof marketplaceService.browsePage === "function"
-    ? createMarketplaceObservatoryService({ marketplaceService })
+    ? createMarketplaceObservatoryService({ marketplaceService, transactionService: marketplaceTransactionService })
     : null;
 
   server.on("request", async (request, response) => {
@@ -72,6 +72,7 @@ export function createMarketplaceAwareKingdomServer({ marketplaceService = null,
         requestUrl,
         identityService: kingdomOptions.identityService,
         marketplaceService,
+        transactionService: marketplaceTransactionService,
         securityHeaders: SECURITY_HEADERS
       });
       if (handled === null) return sendJson(response, 404, { error: "not_found" }, method);
