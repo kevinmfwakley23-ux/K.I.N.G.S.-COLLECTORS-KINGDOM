@@ -1,0 +1,153 @@
+.marketplace-transactions-shell {
+  width: min(1180px,calc(100% - 2rem));
+  margin: 2rem auto 4rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.transaction-hero h1,
+.transaction-seller h2,
+.transaction-truth h2 {
+  margin: .2rem 0 .55rem;
+}
+
+.transaction-capability-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(190px,1fr));
+  gap: .75rem;
+}
+
+.transaction-capability-card,
+.transaction-order-card {
+  border: 1px solid var(--market-border);
+  border-radius: .9rem;
+  background: rgba(255,255,255,.8);
+  box-shadow: 0 10px 24px rgba(28,22,13,.07);
+}
+
+.transaction-capability-card {
+  padding: .9rem;
+  display: grid;
+  gap: .25rem;
+}
+
+.transaction-capability-card span {
+  color: #625947;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .025em;
+  text-transform: uppercase;
+}
+
+.transaction-capability-card strong {
+  overflow-wrap: anywhere;
+}
+
+.transaction-facts,
+.transaction-order-facts {
+  display: grid;
+  gap: .6rem;
+  margin: 1rem 0;
+}
+
+.transaction-facts {
+  grid-template-columns: repeat(auto-fit,minmax(170px,1fr));
+}
+
+.transaction-facts > div,
+.transaction-order-facts > div {
+  padding: .7rem;
+  border: 1px solid rgba(157,117,40,.18);
+  border-radius: .65rem;
+  background: rgba(243,238,226,.62);
+}
+
+.transaction-facts dt,
+.transaction-order-facts dt {
+  color: #625947;
+  font-size: .76rem;
+  font-weight: 800;
+  letter-spacing: .025em;
+  text-transform: uppercase;
+}
+
+.transaction-facts dd,
+.transaction-order-facts dd {
+  margin: .2rem 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.transaction-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+  align-items: center;
+}
+
+.transaction-order-list {
+  display: grid;
+  gap: .85rem;
+}
+
+.transaction-order-card {
+  padding: 1rem;
+}
+
+.transaction-order-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.transaction-order-heading h3 {
+  margin: .45rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.transaction-order-heading > strong {
+  font-size: 1.15rem;
+  white-space: nowrap;
+}
+
+.transaction-order-facts {
+  grid-template-columns: repeat(4,minmax(0,1fr));
+}
+
+.transaction-truth {
+  border-left: 4px solid #9d7528;
+}
+
+.transaction-seller button:disabled,
+#refresh-transactions:disabled {
+  cursor: not-allowed;
+  opacity: .6;
+}
+
+@media (max-width: 760px) {
+  .transaction-order-facts {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+}
+
+@media (max-width: 540px) {
+  .marketplace-transactions-shell {
+    width: min(100% - 1rem,1180px);
+  }
+  .transaction-order-heading,
+  .transaction-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .transaction-order-heading > strong {
+    white-space: normal;
+  }
+  .transaction-order-facts {
+    grid-template-columns: 1fr;
+  }
+  .transaction-actions > * {
+    width: 100%;
+    justify-content: center;
+  }
+}
