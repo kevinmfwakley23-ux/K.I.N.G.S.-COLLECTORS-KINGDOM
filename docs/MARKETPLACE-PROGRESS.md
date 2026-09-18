@@ -5,13 +5,13 @@ This is the recovery and production ledger for the **Kingdom Street Market**. Up
 ## Current production baseline
 
 **Production branch:** `main`  
-**Latest merged Marketplace slice:** PR #41 — `Marketplace: reconcile and harden safeguarded transactions`  
-**Production commit after PR #41:** `427da91346feb06065a88ff87786be43026833d1`  
-**PR #41 final verification:** Kingdom Quality Gates #754 — **PASS**  
-**Exact verified PR head:** `b6b040ad7ef389526ad0cdc17d7f790b6ac865b1`  
-**Verification result:** 379/379 tests, production build + all Marketplace artifact verifiers, and production dependency audit with 0 vulnerabilities
+**Latest merged Marketplace slice:** PR #43 — `Marketplace: reservation-aware discovery and guarded checkout UI`  
+**Production commit after PR #43:** `ae5e47e05c8b7b986aeec0bff468734a4881db36`  
+**PR #43 final verification:** Kingdom Quality Gates #761 — **PASS**  
+**Exact verified PR head:** `fcc69f6cfd32933c8a2ce1e4a58c25af1e0d12e5`  
+**Verification result:** 384/384 tests, production build + all Marketplace artifact verifiers, and production dependency audit with 0 vulnerabilities
 
-The Marketplace now has real listing publication, discovery, seller engagement, shareable detail pages, active-market asking-price intelligence, and a production-wired safeguarded transaction backend. **Live buyer checkout remains disabled by default** (`KINGDOM_MARKETPLACE_CHECKOUT_ENABLED=false`) and cannot become available unless the configured provider, signed-webhook, Stripe Tax and reviewed tax-policy gates all pass. A listing, watch, search, storefront visit, share, Observatory view, reservation attempt, provider session or payment event is never by itself authoritative ownership transfer.
+The Marketplace now has real listing publication, discovery, seller engagement, shareable detail pages, active-market asking-price intelligence, a production-wired safeguarded transaction backend, and reservation-aware public offer cards with readiness-gated provider-hosted Checkout controls. **Live buyer checkout remains disabled by default** (`KINGDOM_MARKETPLACE_CHECKOUT_ENABLED=false`) and cannot become available unless the configured provider, signed-webhook, Stripe Tax and reviewed tax-policy gates all pass. A listing, watch, search, storefront visit, share, Observatory view, reservation attempt, provider session or payment event is never by itself authoritative ownership transfer.
 
 ## Production history
 
@@ -93,7 +93,7 @@ Production transaction foundation added:
 
 Research: `docs/research/2026-09-14-MARKETPLACE-SAFEGUARDED-TRANSACTIONS-PHASE1.md`
 
-### PR #43 — Reservation-aware discovery and guarded Checkout UI — integration candidate
+### PR #43 — Reservation-aware discovery and guarded Checkout UI — MERGED
 
 This slice layers current reservation truth onto the public offer cards without rewriting the immutable published listing representation.
 
@@ -109,7 +109,13 @@ It adds:
 
 Research: `docs/research/2026-09-18-MARKETPLACE-RESERVATION-AWARE-DISCOVERY.md`
 
-The implementation passed Kingdom Quality Gates #759 on code head `a8a4d022be6b4d5eed744f5d633301818c32b205`, including the production dependency audit. This ledger update changes the branch head, so PR #43 must still pass the complete gate again on its final exact head before merge.
+**Production commit:** `ae5e47e05c8b7b986aeec0bff468734a4881db36`  
+**Final gate:** #761 — PASS  
+**Exact verified PR head:** `fcc69f6cfd32933c8a2ce1e4a58c25af1e0d12e5`  
+**Tests:** 384/384 PASS  
+**Production dependency audit:** 0 vulnerabilities
+
+The earlier implementation-only head also passed gate #759; the final ledger head then passed the complete gate again before squash merge.
 
 It deliberately does **not** add server-side fully-reserved search suppression, delivery verification, disputes/buyer protection, verified-purchase ratings, sold provenance, Vault ownership transfer, completed-sale analytics or public Vault media.
 
@@ -130,6 +136,9 @@ Production code currently supports:
 - atomic quantity reservation, idempotency and stale-reservation recovery;
 - signed provider-webhook payment-state authority;
 - sanitized public checkout-availability reads;
+- reservation-aware public offer cards showing current live/reserved quantity separately from immutable published quantity;
+- secure Checkout controls only when current reservation state, seller payment readiness and deployment transaction gates all pass;
+- bounded/lazy browser availability hydration and explicit unconfirmed states when live evidence cannot be checked;
 - a provider-hosted Checkout backend that remains **feature-gated and OFF by default** until deployment configuration satisfies all safety gates.
 
 Production code availability is not the same as operator activation. A deployment with default `.env.example` settings has no live buyer checkout.
@@ -158,8 +167,8 @@ Production code availability is not the same as operator activation. A deploymen
 ## Next safeguarded transaction gates
 
 Before enabling a complete end-to-end ownership-changing purchase workflow, the Kingdom still needs executable authority for:
-- transaction-aware discovery/storefront availability so fully reserved inventory is never visually presented as freely available;
-- buyer/seller transaction UI that exposes secure Checkout only when the backend reports real readiness;
+- server-authoritative suppression of fully reserved inventory from normal discovery/storefront result sets and facets while preserving direct listing evidence;
+- complete private buyer order-state UI and seller payment-onboarding/status UX;
 - shipment evidence and delivery states;
 - cancellation/refund/return policy authority;
 - disputes and buyer-protection workflow;
