@@ -1,0 +1,101 @@
+.marketplace-live-availability {
+  display: grid;
+  gap: .55rem;
+  margin: .95rem 0;
+  padding: .8rem .9rem;
+  border: 1px solid rgba(72,53,22,.2);
+  border-left: .28rem solid #8a6a29;
+  border-radius: .7rem;
+  background: rgba(255,255,255,.72);
+}
+
+.marketplace-live-availability-status,
+.marketplace-live-checkout-note,
+.marketplace-live-truth,
+.marketplace-live-checked-at {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.marketplace-live-availability-status {
+  font-weight: 800;
+}
+
+.marketplace-live-truth,
+.marketplace-live-checked-at,
+.marketplace-live-checkout-note {
+  color: #625947;
+  font-size: .82rem;
+}
+
+.marketplace-live-checkout {
+  display: grid;
+  gap: .5rem;
+}
+
+.marketplace-live-checkout[hidden] {
+  display: none;
+}
+
+.marketplace-live-checkout-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .65rem;
+}
+
+.marketplace-live-quantity-label {
+  display: grid;
+  gap: .28rem;
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.marketplace-live-quantity-label input {
+  width: 5.5rem;
+  min-height: 2.6rem;
+  padding: .5rem .6rem;
+  border: 1px solid #8c826f;
+  border-radius: .5rem;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+
+.marketplace-live-checkout [data-listing-secure-checkout] {
+  min-height: 2.6rem;
+  background: #17140f;
+}
+
+.marketplace-card[data-market-availability="available"] .marketplace-live-availability {
+  border-left-color: #4d6b3c;
+  background: rgba(244,250,241,.84);
+}
+
+.marketplace-card[data-market-availability="reserved"] .marketplace-live-availability,
+.marketplace-card[data-market-availability="unavailable"] .marketplace-live-availability {
+  border-left-color: #8a4b31;
+  background: rgba(252,244,240,.9);
+}
+
+.marketplace-card[data-market-availability="reserved"] .marketplace-price,
+.marketplace-card[data-market-availability="unavailable"] .marketplace-price {
+  opacity: .68;
+}
+
+.marketplace-card[data-market-availability="unknown"] .marketplace-live-availability {
+  border-left-color: #7b6a45;
+  background: rgba(250,247,239,.95);
+}
+
+@media (max-width: 620px) {
+  .marketplace-live-checkout-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .marketplace-live-quantity-label input,
+  .marketplace-live-checkout [data-listing-secure-checkout] {
+    width: 100%;
+  }
+}
