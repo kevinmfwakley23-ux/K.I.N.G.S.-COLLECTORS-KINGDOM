@@ -140,6 +140,9 @@ test("paid seller can record append-only tracked shipment evidence and buyer see
     });
     assert.equal(first.idempotentReplay, false);
     assert.equal(first.shipment.evidenceAuthority, "seller-declared");
+    assert.equal(first.shipment.verificationState, "seller-declared");
+    assert.match(first.shipment.evidenceSha256, /^[a-f0-9]{64}$/);
+    assert.equal(first.shipment.trackingProvided, true);
     assert.equal(first.shipment.carrierVerified, false);
     assert.equal(first.shipment.deliveryVerified, false);
     assert.equal(first.shipment.ownershipTransferAuthorized, false);
@@ -168,6 +171,9 @@ test("paid seller can record append-only tracked shipment evidence and buyer see
     assert.equal(buyerOrder.shipments.length, 2);
     assert.equal(buyerOrder.fulfillment.shippedQuantity, 2);
     assert.equal(buyerOrder.fulfillment.deliveryVerified, false);
+    assert.equal(buyerOrder.fulfillmentEvidenceEvents.length, 2);
+    assert.equal(buyerOrder.fulfillmentEvidenceEvents[0].source, "seller");
+    assert.equal(buyerOrder.fulfillmentEvidenceEvents[0].metadata.evidenceSha256, buyerOrder.shipments[0].evidenceSha256);
     assert.equal(buyerOrder.ownershipTransferAuthorized, false);
 
     const sellerOrders = context.fulfillment.listSellerOrders(seller);
