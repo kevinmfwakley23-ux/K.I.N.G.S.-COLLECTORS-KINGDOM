@@ -4,9 +4,9 @@ K.I.N.G.S. Collector's Kingdom is a collector-first system for cataloging, locat
 
 ## Engineering status
 
-**Current production baseline:** `427da91346feb06065a88ff87786be43026833d1` — safeguarded Marketplace transactions merged through PR #41.  
-**Latest verified Marketplace gate:** Kingdom Quality Gates #754 — **PASS** on exact head `b6b040ad7ef389526ad0cdc17d7f790b6ac865b1`.  
-**Verification:** 379/379 tests, production build + all Marketplace artifact verifiers, and production dependency audit with 0 vulnerabilities.  
+**Current production baseline:** `ae5e47e05c8b7b986aeec0bff468734a4881db36` — reservation-aware Marketplace discovery and guarded Checkout UI merged through PR #43.  
+**Latest verified Marketplace gate:** Kingdom Quality Gates #761 — **PASS** on exact head `fcc69f6cfd32933c8a2ce1e4a58c25af1e0d12e5`.  
+**Verification:** 384/384 tests, production build + all Marketplace artifact verifiers, and production dependency audit with 0 vulnerabilities.  
 **Royal Vault Phase 1:** production-capable baseline with Year/Tags, import/export, provenance, valuation, portfolio history and insurance-preparation reporting.
 
 The repository contains real executable Node.js/SQLite application code, tests and production artifact verification. Documentation, UI, provider adapters and architecture claims are not considered complete merely because a file exists: production status requires executable integration and the canonical quality gate.
@@ -92,6 +92,9 @@ Marketplace production supports real collector workflows across publication, dis
 - provider-authoritative payment-state evidence;
 - crash-safe stale-reservation recovery;
 - public sanitized checkout-availability reads that never expose buyer/order identities;
+- reservation-aware Street Market/storefront cards that separate published quantity from current sellable quantity;
+- conditional secure Checkout controls only when live quantity, seller payment readiness and deployment transaction gates all pass;
+- bounded/lazy availability hydration with truthful unconfirmed states when current availability cannot be verified;
 - responsive Street Market, storefront, listing-detail and Observatory surfaces.
 
 Marketplace recovery and production ledger: [`docs/MARKETPLACE-PROGRESS.md`](docs/MARKETPLACE-PROGRESS.md).
@@ -251,10 +254,10 @@ Documentation is part of implementation. Substantial verified build batches must
 
 ## Exact next engineering target
 
-1. Make Marketplace discovery/storefront/listing UI transaction-aware without rewriting the immutable publication snapshot: fully reserved quantity must not be presented as freely available.
-2. Add buyer/seller transaction UI that exposes provider-hosted Checkout only when the backend reports real readiness; otherwise show truthful unavailable/setup states with no fake Buy button.
-3. Add private buyer order-state UI and provider-hosted seller payment-onboarding/status UI without collecting KYC documents inside the Kingdom.
-4. Design shipment/delivery, return/refund, dispute and buyer-protection authority before any automatic sold provenance or Vault ownership transfer.
-5. Add completed-transaction Marketplace analytics only after authoritative completed-order evidence exists; keep Observatory asking-price evidence separate.
+1. Reconcile the still-open fulfillment/transaction UX workstream with the PR #43 production baseline without weakening reservation, webhook, privacy or ownership safeguards.
+2. Hide fully reserved inventory from normal discovery/storefront result sets and facets at the server authority while preserving direct listing evidence and deterministic pagination.
+3. Complete private buyer order-state UI and provider-hosted seller payment-onboarding/status UI without collecting KYC documents inside the Kingdom.
+4. Design and verify shipment/delivery, cancellation/refund/return, dispute and buyer-protection authority before any automatic sold provenance or Vault ownership transfer.
+5. Admit completed-transaction Marketplace analytics only after authoritative completed-order evidence and settlement/completion policy exist; keep Observatory asking-price evidence separate.
 
 The guiding Marketplace rule remains: **a click is never a sale; payment is not delivery, and ownership changes only after a separately verified transaction state authorizes it.**
