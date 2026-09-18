@@ -66,7 +66,7 @@ function cards(listings) {
       <div class="marketplace-facts">${facts(listing)}</div>
       ${listing.sellerDescription ? `<p>${escapeHtml(listing.sellerDescription)}</p>` : ""}
       <div class="marketplace-price">${escapeHtml(money(listing.amountCents, listing.currency))}</div>
-      <p class="marketplace-meta">Quantity offered: ${listing.quantity} · Published ${escapeHtml(new Date(listing.publishedAt).toLocaleString())}</p>
+      <p class="marketplace-meta">Published quantity: ${listing.quantity} · Published ${escapeHtml(new Date(listing.publishedAt).toLocaleString())}</p>
       <div class="marketplace-card-actions">
         <button type="button" class="marketplace-secondary" data-watch-listing-id="${escapeHtml(listing.id)}">Watch listing</button>
       </div>
