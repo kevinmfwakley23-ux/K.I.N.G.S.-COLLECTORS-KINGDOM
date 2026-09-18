@@ -29,6 +29,8 @@ for (const marker of [
 const service = await readFile(resolve(root, "dist/packages/marketplace/src/fulfillment-service.mjs"), "utf8");
 for (const marker of [
   "evidenceAuthority: \"seller-declared\"",
+  "evidenceSha256: shipment.requestSha256",
+  "appendOnlyEvidenceTimelineAvailable: true",
   "carrierVerified: false",
   "deliveryVerified: false",
   "ownershipTransferAuthorized: false",
@@ -64,6 +66,8 @@ for (const marker of [
   "/api/marketplace/fulfillment/capabilities",
   "/api/marketplace/fulfillment/seller/orders?limit=100",
   "Carrier verified: No · Delivery verified: No",
+  "Evidence SHA-256",
+  "View evidence timeline",
   "Recording append-only seller shipment evidence"
 ]) {
   if (!ui.includes(marker)) throw new Error(`Orders & Payments fulfillment UI is missing: ${marker}`);
