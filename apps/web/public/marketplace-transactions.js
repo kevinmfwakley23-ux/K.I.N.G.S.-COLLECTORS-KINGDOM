@@ -78,6 +78,8 @@ function renderCapabilities(next) {
     ["Automatic tax", capabilities.automaticTaxEnabled === true ? "Enabled" : "Disabled"],
     ["Reviewed tax policy", capabilities.taxPolicyConfigured === true ? "Configured" : "Missing"],
     ["Seller shipment evidence", capabilities.sellerShipmentEvidenceAvailable === true ? "Available after paid state" : "Unavailable"],
+    ["Shipment evidence integrity", capabilities.shipmentEvidenceIntegrityAvailable === true ? "SHA-256 locked" : "Unavailable"],
+    ["Evidence timeline", capabilities.appendOnlyEvidenceTimelineAvailable === true ? "Append-only" : "Unavailable"],
     ["Carrier verification", capabilities.carrierVerificationAvailable === true ? "Available" : "Not yet enabled"],
     ["Delivery verification", capabilities.deliveryVerificationAvailable === true ? "Available" : "Not yet enabled"],
     ["Ownership transfer", capabilities.ownershipTransferAvailable === true ? "Available" : "Not authorized by this phase"]
@@ -123,8 +125,52 @@ function shipmentEvidenceList(shipments) {
     const evidence = shipment.trackingNumber
       ? `${escapeHtml(shipment.carrier)} · ${escapeHtml(shipment.trackingNumber)}`
       : `No tracking · ${escapeHtml(stateLabel(shipment.noTrackingReason))}`;
-    return `<li><strong>${Number(shipment.quantity)} unit${Number(shipment.quantity) === 1 ? "" : "s"}</strong> · ${evidence} · Seller declared ${escapeHtml(new Date(shipment.declaredShippedAt).toLocaleString())}<span>Carrier verified: No · Delivery verified: No</span></li>`;
+    const digest = typeof shipment.evidenceSha256 === "string" ? shipment.evidenceSha256 : "";
+    const integrity = digest
+      ? `<span>Evidence SHA-256: <code title="${escapeHtml(digest)}">${escapeHtml(digest.slice(0, 16))}…</code></span>`
+      : "";
+    return `<li><strong>${Number(shipment.quantity)} unit${Number(shipment.quantity) === 1 ? "" : "s"}</strong> · ${evidence} · Seller declared ${escapeHtml(new Date(shipment.declaredShippedAt).toLocaleString())}${integrity}<span>Carrier verified: No · Delivery verified: No</span></li>`;
   }).join("")}</ul>`;
+}
+
+function evidenceTimeline(events) {
+  if (!Array.isArray(events) || events.length === 0) {
+    return '<p class="marketplace-form-note">No append-only fulfillment evidence events are recorded for this order yet.</p>';
+  }
+  return `<ol class="transaction-evidence-events">${events.map((entry) => {
+    const digest = typeof entry.metadata?.evidenceSha256 === "string" ? entry.metadata.evidenceSha256 : "";
+    return `<li>
+      <strong>${escapeHtml(stateLabel(entry.eventType))}</strong>
+      <span>${escapeHtml(new Date(entry.createdAt).toLocaleString())} · Source: ${escapeHtml(entry.source)}</span>
+      ${digest ? `<code title="${escapeHtml(digest)}">${escapeHtml(digest)}</code>` : ""}
+    </li>`;
+  }).join("")}</ol>`;
+}
+
+async function toggleEvidenceTimeline(button) {
+  const orderId = button.dataset.orderEvidenceId;
+  const card = button.closest("[data-order-id]");
+  const target = card?.querySelector("[data-evidence-timeline]");
+  if (!orderId || !target) return;
+  if (!target.hidden) {
+    target.hidden = true;
+    button.textContent = "View evidence timeline";
+    return;
+  }
+  button.disabled = true;
+  button.textContent = "Loading evidence…";
+  try {
+    const payload = await requestJson(`/api/marketplace/fulfillment/orders/${encodeURIComponent(orderId)}`);
+    target.innerHTML = evidenceTimeline(payload.order?.fulfillmentEvidenceEvents ?? []);
+    target.hidden = false;
+    button.textContent = "Hide evidence timeline";
+  } catch (error) {
+    target.innerHTML = `<p class="marketplace-form-note">Evidence timeline could not be loaded: ${escapeHtml(error.message)}</p>`;
+    target.hidden = false;
+    button.textContent = "Retry evidence timeline";
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function renderOrders(orders) {
@@ -151,7 +197,9 @@ function renderOrders(orders) {
       ${shipmentEvidenceList(order.shipments)}
       <div class="transaction-actions">
         <a class="marketplace-secondary-link" href="/marketplace-listing.html?id=${encodeURIComponent(order.listingId)}">View listing</a>
+        <button type="button" class="marketplace-secondary" data-order-evidence-id="${escapeHtml(order.id)}">View evidence timeline</button>
       </div>
+      <div class="transaction-evidence-timeline" data-evidence-timeline hidden></div>
     </article>
   `).join("");
   ordersStatus.textContent = `Loaded ${orders.length} authenticated Marketplace order${orders.length === 1 ? "" : "s"}. Tracking shown here is seller-declared evidence until an independent carrier verification layer exists.`;
@@ -172,8 +220,8 @@ function sellerShipmentForm(order) {
     <form class="transaction-shipment-form" data-shipment-order-id="${escapeHtml(order.id)}">
       <div>
         <label>Quantity<input name="quantity" type="number" min="1" max="${remaining}" value="${remaining}" required></label>
-        <label>Carrier<input name="carrier" type="text" maxlength="80" autocomplete="off" placeholder="USPS, UPS, FedEx…"></label>
-        <label>Tracking number<input name="trackingNumber" type="text" maxlength="120" autocomplete="off" placeholder="Carrier tracking number"></label>
+        <label>Carrier<input name="carrier" type="text" maxlength="80" autocomplete="off" aria-label="Shipping carrier"></label>
+        <label>Tracking number<input name="trackingNumber" type="text" maxlength="120" autocomplete="off" aria-label="Carrier tracking number"></label>
         <label>No-tracking reason
           <select name="noTrackingReason">
             <option value="">Use carrier tracking above</option>
@@ -207,6 +255,10 @@ function renderSellerOrders(orders) {
         <div><dt>Method</dt><dd>${escapeHtml(stateLabel(order.fulfillmentMethod))}</dd></div>
       </dl>
       ${shipmentEvidenceList(order.shipments)}
+      <div class="transaction-actions">
+        <button type="button" class="marketplace-secondary" data-order-evidence-id="${escapeHtml(order.id)}">View evidence timeline</button>
+      </div>
+      <div class="transaction-evidence-timeline" data-evidence-timeline hidden></div>
       ${sellerShipmentForm(order)}
     </article>
   `).join("");
@@ -329,6 +381,13 @@ sellerOnboarding.addEventListener("click", async () => {
     sellerOnboarding.disabled = !(capabilities?.sellerOnboardingAvailable && sellerPayment?.status !== "active");
   }
 });
+
+for (const root of [ordersNode, sellerOrdersNode]) {
+  root.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-order-evidence-id]");
+    if (button) void toggleEvidenceTimeline(button);
+  });
+}
 
 sellerOrdersNode.addEventListener("submit", async (event) => {
   const form = event.target.closest("form[data-shipment-order-id]");
