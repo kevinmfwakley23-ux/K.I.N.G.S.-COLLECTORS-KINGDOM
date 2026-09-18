@@ -31,7 +31,13 @@ function service() {
   return {
     calls,
     capabilities() {
-      return { sellerShipmentEvidenceAvailable: true, carrierVerificationAvailable: false, deliveryVerificationAvailable: false };
+      return {
+        sellerShipmentEvidenceAvailable: true,
+        shipmentEvidenceIntegrityAvailable: true,
+        appendOnlyEvidenceTimelineAvailable: true,
+        carrierVerificationAvailable: false,
+        deliveryVerificationAvailable: false
+      };
     },
     listBuyerOrders(actor, options) {
       calls.push(["buyer", actor.id, options.limit]);
@@ -73,6 +79,8 @@ test("fulfillment capabilities are public but order evidence is authenticated an
   const capabilities = await handle("/api/marketplace/fulfillment/capabilities");
   assert.equal(capabilities.res.statusCode, 200);
   assert.equal(capabilities.res.payload.capabilities.sellerShipmentEvidenceAvailable, true);
+  assert.equal(capabilities.res.payload.capabilities.shipmentEvidenceIntegrityAvailable, true);
+  assert.equal(capabilities.res.payload.capabilities.appendOnlyEvidenceTimelineAvailable, true);
   assert.equal(capabilities.res.payload.capabilities.carrierVerificationAvailable, false);
 
   await assert.rejects(
@@ -87,6 +95,21 @@ test("fulfillment capabilities are public but order evidence is authenticated an
   await assert.rejects(
     handle("/api/marketplace/fulfillment/orders?limit=101", { headers: { cookie: "kingdom_session=valid" } }),
     (error) => error instanceof MarketplaceError && error.code === "invalid_marketplace_fulfillment_order_limit"
+  );
+});
+
+test("private order fulfillment detail exposes the evidence timeline only after authentication", async () => {
+  const detail = await handle(
+    "/api/marketplace/fulfillment/orders/order-42",
+    { headers: { cookie: "kingdom_session=valid" } }
+  );
+  assert.equal(detail.res.statusCode, 200);
+  assert.equal(detail.res.payload.order.id, "order-42");
+  assert.deepEqual(detail.fulfillmentService.calls[0], ["detail", identity.id, "order-42"]);
+
+  await assert.rejects(
+    handle("/api/marketplace/fulfillment/orders/order-42"),
+    (error) => error?.code === "unauthorized"
   );
 });
 
