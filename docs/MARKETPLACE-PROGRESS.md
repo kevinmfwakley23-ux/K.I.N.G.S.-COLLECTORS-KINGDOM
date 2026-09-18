@@ -93,6 +93,26 @@ Production transaction foundation added:
 
 Research: `docs/research/2026-09-14-MARKETPLACE-SAFEGUARDED-TRANSACTIONS-PHASE1.md`
 
+### PR #43 — Reservation-aware discovery and guarded Checkout UI — integration candidate
+
+This slice layers current reservation truth onto the public offer cards without rewriting the immutable published listing representation.
+
+It adds:
+- live `availableQuantity` / `reservedQuantity` presentation from the existing reservation guard;
+- clear separation between **Published quantity** and current sellable quantity;
+- secure Checkout controls only when the backend reports both live quantity and transaction readiness;
+- provider-hosted HTTPS Checkout redirects with browser idempotency keys;
+- bounded six-request card hydration, lazy viewport loading, dynamic-card observation and stale-tab refresh;
+- fail-closed/unconfirmed presentation when availability evidence cannot be verified;
+- real HTTP coverage proving quantity moves 2 → 1 → 0 as reservations are created, a third checkout is blocked, and stale reservation expiry restores quantity;
+- explicit preservation of the rule that payment is not delivery or ownership transfer.
+
+Research: `docs/research/2026-09-18-MARKETPLACE-RESERVATION-AWARE-DISCOVERY.md`
+
+The implementation passed Kingdom Quality Gates #759 on code head `a8a4d022be6b4d5eed744f5d633301818c32b205`, including the production dependency audit. This ledger update changes the branch head, so PR #43 must still pass the complete gate again on its final exact head before merge.
+
+It deliberately does **not** add server-side fully-reserved search suppression, delivery verification, disputes/buyer protection, verified-purchase ratings, sold provenance, Vault ownership transfer, completed-sale analytics or public Vault media.
+
 ## Current live Marketplace capabilities
 
 Production code currently supports:
