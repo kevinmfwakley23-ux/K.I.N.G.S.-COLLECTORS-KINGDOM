@@ -39,6 +39,10 @@ test("Orders & Payments UI keeps provider, shipment, delivery, and ownership tru
   assert.match(js, /Idempotency-Key/);
   assert.match(js, /kingdom-shipment-/);
   assert.match(js, /Carrier verified: No · Delivery verified: No/i);
+  assert.match(js, /Evidence SHA-256/i);
+  assert.match(js, /View evidence timeline/i);
+  assert.match(js, /fulfillmentEvidenceEvents/);
+  assert.doesNotMatch(js, /place(?:holder)/i);
   assert.match(js, /separate pickup verification workflow/i);
   assert.match(js, /window\.location\.assign/);
   assert.match(js, /unsafe onboarding destination/i);
@@ -50,6 +54,8 @@ test("Orders & Payments UI keeps provider, shipment, delivery, and ownership tru
   assert.match(css, /transaction-order-card/);
   assert.match(css, /transaction-shipment-form/);
   assert.match(css, /transaction-shipment-list/);
+  assert.match(css, /transaction-evidence-timeline/);
+  assert.match(css, /transaction-evidence-events/);
   assert.match(css, /@media \(max-width: 900px\)/);
   assert.match(css, /@media \(max-width: 760px\)/);
   assert.match(css, /@media \(max-width: 540px\)/);
