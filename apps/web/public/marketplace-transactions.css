@@ -139,6 +139,44 @@
   font-size: .82rem;
 }
 
+.transaction-shipment-list code,
+.transaction-evidence-events code {
+  display: block;
+  margin-top: .3rem;
+  padding: .35rem .45rem;
+  border-radius: .4rem;
+  background: rgba(243,238,226,.82);
+  overflow-wrap: anywhere;
+  white-space: normal;
+  font-size: .76rem;
+}
+
+.transaction-evidence-timeline {
+  margin-top: .75rem;
+  padding: .8rem;
+  border: 1px solid rgba(157,117,40,.2);
+  border-radius: .7rem;
+  background: rgba(250,247,239,.86);
+}
+
+.transaction-evidence-events {
+  display: grid;
+  gap: .55rem;
+  margin: 0;
+  padding-left: 1.35rem;
+}
+
+.transaction-evidence-events li {
+  padding-left: .2rem;
+}
+
+.transaction-evidence-events span {
+  display: block;
+  margin-top: .2rem;
+  color: #625947;
+  font-size: .82rem;
+}
+
 .transaction-shipment-form {
   display: grid;
   gap: .75rem;
