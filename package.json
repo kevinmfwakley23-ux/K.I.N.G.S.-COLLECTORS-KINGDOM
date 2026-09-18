@@ -12,6 +12,6 @@
     "lint": "node tools/lint.mjs",
     "typecheck": "node tools/typecheck.mjs",
     "test": "node --test tests/*.test.mjs",
-    "verify": "npm run lint && npm run typecheck && npm test && npm run build && node tools/verify-build.mjs && node tools/verify-marketplace-discovery.mjs && node tools/verify-marketplace-saved-searches.mjs && node tools/verify-marketplace-engagement.mjs && node tools/verify-marketplace-listing-detail.mjs && node tools/verify-marketplace-observatory.mjs && node tools/verify-marketplace-transactions.mjs"
+    "verify": "npm run lint && npm run typecheck && npm test && npm run build && node tools/verify-build.mjs && node tools/verify-marketplace-discovery.mjs && node tools/verify-marketplace-saved-searches.mjs && node tools/verify-marketplace-engagement.mjs && node tools/verify-marketplace-listing-detail.mjs && node tools/verify-marketplace-observatory.mjs && node tools/verify-marketplace-transactions.mjs && node tools/verify-marketplace-fulfillment.mjs"
   }
 }
