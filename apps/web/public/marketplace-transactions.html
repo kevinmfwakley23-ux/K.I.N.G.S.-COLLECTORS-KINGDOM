@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f3eee2">
+  <title>Orders & Payments · K.I.N.G.S. Collector's Kingdom</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/marketplace.css">
+  <link rel="stylesheet" href="/marketplace-transactions.css">
+</head>
+<body class="marketplace-page marketplace-transactions-page">
+  <header class="marketplace-header">
+    <a class="marketplace-brand" href="/marketplace.html" aria-label="Return to the Kingdom Street Market">
+      <img src="/assets/marketplace.svg" alt="" width="58" height="58">
+      <span><strong>K.I.N.G.S.</strong><small>Orders &amp; Payments</small></span>
+    </a>
+    <nav aria-label="Marketplace navigation">
+      <a href="/marketplace.html">Street Market</a>
+      <a href="/marketplace-observatory.html">Market Observatory</a>
+      <a href="/great-hall.html">Great Hall</a>
+      <a href="/vault.html">Royal Vault</a>
+    </nav>
+  </header>
+
+  <main class="marketplace-transactions-shell">
+    <section class="marketplace-section transaction-hero" aria-labelledby="transaction-title">
+      <p class="marketplace-kicker">Authenticated commerce evidence</p>
+      <h1 id="transaction-title">Orders &amp; Payments</h1>
+      <p>Review buyer order states, seller payment onboarding, and seller-declared shipment evidence without treating a browser redirect, checkout reservation, tracking entry, or provider session as proof of a completed delivery or ownership transfer.</p>
+      <p id="transaction-return-status" class="marketplace-status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="marketplace-section" aria-labelledby="transaction-capabilities-title">
+      <div class="marketplace-section-heading">
+        <div><p class="marketplace-kicker">Fail-closed readiness</p><h2 id="transaction-capabilities-title">Transaction capability gates</h2></div>
+        <button id="refresh-transactions" type="button" class="marketplace-secondary">Refresh</button>
+      </div>
+      <div id="transaction-capabilities" class="transaction-capability-grid" aria-live="polite"></div>
+    </section>
+
+    <section class="marketplace-section transaction-seller" aria-labelledby="seller-payments-title">
+      <div class="marketplace-section-heading">
+        <div><p class="marketplace-kicker">Seller settlement readiness</p><h2 id="seller-payments-title">Seller payment account</h2></div>
+      </div>
+      <p id="seller-payment-status" class="marketplace-status" role="status" aria-live="polite">Checking seller payment status…</p>
+      <dl id="seller-payment-facts" class="transaction-facts"></dl>
+      <div class="transaction-actions">
+        <button id="seller-payment-onboarding" type="button" disabled>Open secure provider onboarding</button>
+        <a class="marketplace-secondary-link" href="/marketplace-seller.html">Seller storefront tools</a>
+      </div>
+      <p class="marketplace-form-note">Provider onboarding and payout readiness are controlled by the configured payment provider. The Kingdom does not mark an account ready until provider status confirms it.</p>
+    </section>
+
+    <section class="marketplace-section transaction-fulfillment" aria-labelledby="seller-fulfillment-title">
+      <div class="marketplace-section-heading">
+        <div><p class="marketplace-kicker">Paid-order fulfillment evidence</p><h2 id="seller-fulfillment-title">Seller shipment desk</h2></div>
+      </div>
+      <p id="seller-orders-status" class="marketplace-status" role="status" aria-live="polite">Loading seller orders eligible for fulfillment evidence…</p>
+      <div id="seller-fulfillment-orders" class="transaction-order-list" aria-live="polite"></div>
+      <p class="marketplace-form-note">A tracking number entered here is a seller declaration, not carrier verification or proof of delivery. Shipping evidence is accepted only after provider-authoritative payment reaches <strong>Paid</strong>. Local pickup has a separate future evidence workflow.</p>
+    </section>
+
+    <section class="marketplace-section" aria-labelledby="orders-title">
+      <div class="marketplace-section-heading">
+        <div><p class="marketplace-kicker">Buyer-side evidence</p><h2 id="orders-title">My Marketplace orders</h2></div>
+      </div>
+      <p id="orders-status" class="marketplace-status" role="status" aria-live="polite">Loading authenticated order and fulfillment history…</p>
+      <div id="transaction-orders" class="transaction-order-list" aria-live="polite"></div>
+    </section>
+
+    <section class="marketplace-section transaction-truth" aria-labelledby="transaction-truth-title">
+      <p class="marketplace-kicker">Permanent truth boundary</p>
+      <h2 id="transaction-truth-title">What order and shipment state do not mean</h2>
+      <p>A checkout session does not transfer ownership. A provider redirect does not prove payment. A paid provider event does not automatically create sold provenance. Seller-declared shipment or tracking evidence does not prove carrier acceptance, delivery, buyer protection, or authoritative Royal Vault ownership transfer.</p>
+    </section>
+  </main>
+
+  <footer class="marketplace-footer">
+    <p>K.I.N.G.S. Collector's Kingdom · Transaction and fulfillment evidence remain separate from authoritative collection ownership.</p>
+  </footer>
+  <script type="module" src="/marketplace-transactions.js"></script>
+</body>
+</html>
