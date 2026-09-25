@@ -11,10 +11,16 @@ const quantity = document.querySelector("#listing-detail-quantity");
 const published = document.querySelector("#listing-detail-published");
 const representationHash = document.querySelector("#listing-detail-hash");
 const transactionMessage = document.querySelector("#listing-detail-transaction-message");
+const checkoutTrust = document.querySelector("#listing-detail-checkout-trust");
+const checkoutReadiness = document.querySelector("#checkout-readiness");
+const checkoutQuantity = document.querySelector("#checkout-quantity");
+const checkoutButton = document.querySelector("#start-protected-checkout");
 const watchButton = document.querySelector("#watch-listing-detail");
 const copyButton = document.querySelector("#copy-listing-link");
 
 let listingId = null;
+let activeListing = null;
+let transactionCapabilities = null;
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>'"]/g, (character) => ({
@@ -40,6 +46,7 @@ async function requestJson(url, options = {}) {
     const error = new Error(payload.message || `Request failed with status ${response.status}.`);
     error.code = payload.error || "request_failed";
     error.status = response.status;
+    error.details = payload.details ?? null;
     throw error;
   }
   return payload;
@@ -88,6 +95,7 @@ function renderSeller(listing) {
 }
 
 function renderListing(listing) {
+  activeListing = listing;
   title.textContent = listing.title;
   document.title = `${listing.title} · Kingdom Street Market`;
   renderSeller(listing);
@@ -100,6 +108,8 @@ function renderListing(listing) {
   representationHash.textContent = listing.representationSha256;
   transactionMessage.textContent = listing.transactionMessage;
   watchButton.dataset.listingId = listing.id;
+  checkoutQuantity.max = String(Math.max(1, Number(listing.quantity) || 1));
+  checkoutQuantity.value = "1";
   content.hidden = false;
   unavailable.hidden = true;
   status.textContent = "Offer is currently active and passed the Marketplace representation-integrity and live Vault-support checks.";
@@ -109,6 +119,37 @@ function showUnavailable(message) {
   content.hidden = true;
   unavailable.hidden = false;
   status.textContent = message;
+}
+
+function renderCheckoutCapabilities(capabilities) {
+  transactionCapabilities = capabilities;
+  if (!activeListing) return;
+  const ready = capabilities?.checkoutAvailable === true;
+  checkoutQuantity.disabled = !ready;
+  checkoutButton.disabled = !ready;
+  if (ready) {
+    checkoutTrust.textContent = "Enabled behind live provider, seller, tax, and inventory gates";
+    checkoutReadiness.textContent = "Safeguarded checkout is available for this active offer. Quantity will be reserved atomically before provider-hosted checkout opens.";
+    return;
+  }
+  const reasons = [];
+  if (!capabilities?.paymentProviderAvailable) reasons.push("payment provider unavailable");
+  if (!capabilities?.automaticTaxEnabled) reasons.push("automatic tax disabled");
+  if (!capabilities?.taxPolicyConfigured) reasons.push("reviewed tax policy missing");
+  checkoutTrust.textContent = "Fail-closed / unavailable";
+  checkoutReadiness.textContent = `Checkout is not available${reasons.length ? `: ${reasons.join(", ")}` : " until all production safety gates pass"}.`;
+}
+
+async function loadCheckoutCapabilities() {
+  try {
+    const payload = await requestJson("/api/marketplace/transactions/capabilities");
+    renderCheckoutCapabilities(payload.capabilities ?? {});
+  } catch (error) {
+    checkoutTrust.textContent = "Unavailable";
+    checkoutReadiness.textContent = `Checkout capability verification failed: ${error.message}`;
+    checkoutButton.disabled = true;
+    checkoutQuantity.disabled = true;
+  }
 }
 
 async function loadListing() {
@@ -121,6 +162,7 @@ async function loadListing() {
   try {
     const payload = await requestJson(`/api/marketplace/listings/${encodeURIComponent(listingId)}`);
     renderListing(payload.listing);
+    await loadCheckoutCapabilities();
   } catch (error) {
     title.textContent = "Listing unavailable";
     seller.textContent = "";
@@ -135,6 +177,59 @@ async function loadListing() {
     showUnavailable(`The listing could not be verified: ${error.message}`);
   }
 }
+
+function newIdempotencyKey() {
+  if (globalThis.crypto?.randomUUID) return `kingdom-ui-${globalThis.crypto.randomUUID()}`;
+  const values = new Uint32Array(4);
+  globalThis.crypto?.getRandomValues?.(values);
+  return `kingdom-ui-${Date.now()}-${Array.from(values, (value) => value.toString(16)).join("")}`;
+}
+
+function safeCheckoutUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return null;
+  let parsed;
+  try { parsed = new URL(value, window.location.origin); } catch { return null; }
+  const host = parsed.hostname.toLowerCase();
+  const loopback = host === "localhost" || host === "127.0.0.1" || host === "::1" || host.endsWith(".localhost");
+  if (parsed.protocol !== "https:" && !(parsed.protocol === "http:" && loopback)) return null;
+  return parsed.href;
+}
+
+checkoutButton.addEventListener("click", async () => {
+  if (!listingId || !activeListing || transactionCapabilities?.checkoutAvailable !== true) return;
+  const requestedQuantity = Number(checkoutQuantity.value);
+  const availableQuantity = Number(activeListing.quantity);
+  if (!Number.isInteger(requestedQuantity) || requestedQuantity < 1 || requestedQuantity > availableQuantity) {
+    checkoutReadiness.textContent = `Choose a quantity from 1 through ${availableQuantity}.`;
+    return;
+  }
+  checkoutButton.disabled = true;
+  checkoutQuantity.disabled = true;
+  checkoutReadiness.textContent = "Reserving current quantity and requesting provider-hosted checkout. No ownership transfer occurs at this step.";
+  const idempotencyKey = newIdempotencyKey();
+  try {
+    const payload = await requestJson(`/api/marketplace/listings/${encodeURIComponent(listingId)}/checkout`, {
+      method: "POST",
+      headers: { "Idempotency-Key": idempotencyKey },
+      body: JSON.stringify({ quantity: requestedQuantity, idempotencyKey })
+    });
+    const destination = safeCheckoutUrl(payload.order?.checkoutUrl);
+    if (!destination) throw new Error("The payment provider returned an unsafe checkout destination.");
+    checkoutReadiness.textContent = "Quantity reserved. Opening provider-hosted checkout. Final payment state will still come from verified provider webhooks.";
+    window.location.assign(destination);
+  } catch (error) {
+    if (error.code === "unauthorized") {
+      checkoutReadiness.innerHTML = `Sign in through the <a href="/auth.html">Royal Gate</a> before starting checkout.`;
+    } else if (error.code === "marketplace_checkout_quantity" && error.details?.availableQuantity !== undefined) {
+      checkoutReadiness.textContent = `That quantity is no longer available. Current reservable quantity: ${error.details.availableQuantity}.`;
+    } else {
+      checkoutReadiness.textContent = `Checkout did not start: ${error.message}`;
+    }
+    const canRetry = transactionCapabilities?.checkoutAvailable === true;
+    checkoutButton.disabled = !canRetry;
+    checkoutQuantity.disabled = !canRetry;
+  }
+});
 
 watchButton.addEventListener("click", async () => {
   if (!listingId) return;
