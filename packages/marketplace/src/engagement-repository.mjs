@@ -1,3 +1,5 @@
+import { sellableInventoryConstraint } from "./sellable-inventory.mjs";
+
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS marketplace_seller_profiles (
   seller_account_id TEXT PRIMARY KEY,
@@ -45,10 +47,11 @@ function mapWatch(row) {
   });
 }
 
-export function createMarketplaceEngagementRepository({ vaultStore } = {}) {
+export function createMarketplaceEngagementRepository({ vaultStore, now = () => new Date() } = {}) {
   if (!vaultStore?.database || typeof vaultStore.database.prepare !== "function") {
     throw new TypeError("Marketplace engagement repository requires the Vault SQLite database boundary.");
   }
+  if (typeof now !== "function") throw new TypeError("Marketplace engagement repository now must be a function.");
   const database = vaultStore.database;
   database.exec(SCHEMA);
 
@@ -111,6 +114,8 @@ export function createMarketplaceEngagementRepository({ vaultStore } = {}) {
 
   function listActiveListingIdsForSellerAccount(sellerAccountId, { limit = 100 } = {}) {
     const bounded = Math.min(Math.max(Number(limit) || 100, 1), 100);
+    const sellable = sellableInventoryConstraint(database, { checkedAt: now() });
+    const sellableWhere = sellable.enabled ? ` AND ${sellable.sql}` : "";
     return database.prepare(`
       SELECT l.id
       FROM marketplace_listings l
@@ -119,13 +124,15 @@ export function createMarketplaceEngagementRepository({ vaultStore } = {}) {
        AND t.owner_account_id = l.seller_account_id
        AND t.archived_at IS NULL
        AND t.quantity >= l.quantity
-      WHERE l.seller_account_id = ? AND l.state = 'active'
+      WHERE l.seller_account_id = ? AND l.state = 'active'${sellableWhere}
       ORDER BY l.published_at DESC,l.id ASC
       LIMIT ?
-    `).all(sellerAccountId, bounded).map((row) => row.id);
+    `).all(sellerAccountId, ...sellable.values, bounded).map((row) => row.id);
   }
 
   function countActiveListingsForSellerAccount(sellerAccountId) {
+    const sellable = sellableInventoryConstraint(database, { checkedAt: now() });
+    const sellableWhere = sellable.enabled ? ` AND ${sellable.sql}` : "";
     return Number(database.prepare(`
       SELECT COUNT(*) AS count
       FROM marketplace_listings l
@@ -134,8 +141,8 @@ export function createMarketplaceEngagementRepository({ vaultStore } = {}) {
        AND t.owner_account_id = l.seller_account_id
        AND t.archived_at IS NULL
        AND t.quantity >= l.quantity
-      WHERE l.seller_account_id = ? AND l.state = 'active'
-    `).get(sellerAccountId).count);
+      WHERE l.seller_account_id = ? AND l.state = 'active'${sellableWhere}
+    `).get(sellerAccountId, ...sellable.values).count);
   }
 
   function addWatch(ownerAccountId, listingId, addedAt) {

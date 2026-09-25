@@ -1,3 +1,5 @@
+import { sellableInventoryConstraint } from "./sellable-inventory.mjs";
+
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS marketplace_listings (
   id TEXT PRIMARY KEY,
@@ -232,10 +234,11 @@ function cursorKeyForRow(row, sort) {
   return Object.freeze(base);
 }
 
-export function createMarketplaceRepository({ vaultStore } = {}) {
+export function createMarketplaceRepository({ vaultStore, now = () => new Date() } = {}) {
   if (!vaultStore?.database || typeof vaultStore.database.prepare !== "function") {
     throw new TypeError("Marketplace repository requires the Vault SQLite database boundary.");
   }
+  if (typeof now !== "function") throw new TypeError("Marketplace repository now must be a function.");
   const database = vaultStore.database;
   database.exec(SCHEMA);
 
@@ -386,6 +389,11 @@ export function createMarketplaceRepository({ vaultStore } = {}) {
 
   function listActivePage(filters = {}, { pageSize = 50, cursorKey = null } = {}) {
     const { where, values } = activeWhere(filters);
+    const sellable = sellableInventoryConstraint(database, { checkedAt: now() });
+    if (sellable.enabled) {
+      where.push(sellable.sql);
+      values.push(...sellable.values);
+    }
     appendCursor(where, values, filters.sort, cursorKey);
     const limit = Math.min(Math.max(Number(pageSize) || 50, 1), 100);
     const rows = database.prepare(`
@@ -410,32 +418,35 @@ export function createMarketplaceRepository({ vaultStore } = {}) {
   }
 
   function activeFacets() {
+    const sellable = sellableInventoryConstraint(database, { checkedAt: now() });
+    const sellableWhere = sellable.enabled ? ` AND ${sellable.sql}` : "";
+    const values = sellable.values;
     const total = Number(database.prepare(`
       SELECT COUNT(*) AS count
       ${ACTIVE_VAULT_JOIN}
-      WHERE l.state = 'active'
-    `).get().count);
+      WHERE l.state = 'active'${sellableWhere}
+    `).get(...values).count);
     const categories = database.prepare(`
       SELECT l.category_snapshot AS value, COUNT(*) AS count
       ${ACTIVE_VAULT_JOIN}
-      WHERE l.state = 'active'
+      WHERE l.state = 'active'${sellableWhere}
       GROUP BY l.category_snapshot COLLATE NOCASE
       ORDER BY count DESC,l.category_snapshot COLLATE NOCASE ASC
-    `).all().map((row) => Object.freeze({ value: row.value, count: Number(row.count) }));
+    `).all(...values).map((row) => Object.freeze({ value: row.value, count: Number(row.count) }));
     const currencies = database.prepare(`
       SELECT l.currency AS value, COUNT(*) AS count
       ${ACTIVE_VAULT_JOIN}
-      WHERE l.state = 'active'
+      WHERE l.state = 'active'${sellableWhere}
       GROUP BY l.currency
       ORDER BY l.currency ASC
-    `).all().map((row) => Object.freeze({ value: row.value, count: Number(row.count) }));
+    `).all(...values).map((row) => Object.freeze({ value: row.value, count: Number(row.count) }));
     const fulfillmentMethods = database.prepare(`
       SELECT l.fulfillment_method AS value, COUNT(*) AS count
       ${ACTIVE_VAULT_JOIN}
-      WHERE l.state = 'active'
+      WHERE l.state = 'active'${sellableWhere}
       GROUP BY l.fulfillment_method
       ORDER BY l.fulfillment_method ASC
-    `).all().map((row) => Object.freeze({ value: row.value, count: Number(row.count) }));
+    `).all(...values).map((row) => Object.freeze({ value: row.value, count: Number(row.count) }));
     return Object.freeze({
       totalActiveListings: total,
       categories: Object.freeze(categories),
