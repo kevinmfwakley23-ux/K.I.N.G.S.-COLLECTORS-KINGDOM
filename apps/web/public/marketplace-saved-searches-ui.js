@@ -77,6 +77,19 @@ function describe(savedSearch) {
   ].filter(Boolean).join(" · ") || "All active offers";
 }
 
+function formatCheckedAt(value) {
+  if (!value) return "Not checked yet";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "Last check unavailable";
+  return `Last checked ${date.toLocaleString()}`;
+}
+
+function newListingMessage(savedSearch) {
+  const count = Number(savedSearch.newlyPublishedMatchCount ?? 0);
+  if (!Number.isSafeInteger(count) || count < 1) return "No newly published sellable matches since your last check";
+  return `${count} newly published sellable ${count === 1 ? "match" : "matches"} since your last check`;
+}
+
 function render(savedSearches) {
   if (!savedSearches.length) {
     list.innerHTML = `<p class="marketplace-form-note">You have no saved Street Market searches yet.</p>`;
@@ -87,9 +100,11 @@ function render(savedSearches) {
       <div>
         <strong>${escapeHtml(savedSearch.name)}</strong>
         <small>${escapeHtml(describe(savedSearch))}</small>
+        <small data-saved-search-new-listings>${escapeHtml(newListingMessage(savedSearch))}</small>
+        <small>${escapeHtml(formatCheckedAt(savedSearch.lastCheckedAt))}</small>
       </div>
       <div class="marketplace-saved-search-actions">
-        <button type="button" data-action="run" data-id="${escapeHtml(savedSearch.id)}">Run live search</button>
+        <button type="button" data-action="run" data-id="${escapeHtml(savedSearch.id)}">Check &amp; open live search</button>
         <button type="button" class="marketplace-secondary" data-action="delete" data-id="${escapeHtml(savedSearch.id)}">Delete</button>
       </div>
     </article>
@@ -104,14 +119,12 @@ async function loadSavedSearches() {
     form.hidden = false;
     render(payload.savedSearches ?? []);
     const maximum = payload.capabilities?.maxSavedSearches;
-    status.textContent = payload.capabilities?.notificationsAvailable
-      ? `Saved searches are private to your Kingdom account.${maximum ? ` Up to ${maximum} may be kept.` : ""}`
-      : `Saved searches are private definitions that rerun the current market.${maximum ? ` Up to ${maximum} may be kept.` : ""} Automatic alerts are not enabled yet.`;
+    status.textContent = `Saved searches are private and rerun the current market.${maximum ? ` Up to ${maximum} may be kept.` : ""} New-listing counts include only currently sellable matches. Push, email, and SMS alerts are not enabled yet.`;
   } catch (error) {
     form.hidden = true;
     list.replaceChildren();
     if (error.code === "unauthorized") {
-      status.innerHTML = `Sign in through the <a href="/auth.html">Royal Gate</a> to save private Street Market searches. Search alerts are not enabled yet.`;
+      status.innerHTML = `Sign in through the <a href="/auth.html">Royal Gate</a> to save private Street Market searches. Push, email, and SMS search alerts are not enabled yet.`;
       return;
     }
     status.textContent = `Saved searches could not be loaded: ${error.message}`;
@@ -152,7 +165,10 @@ list?.addEventListener("click", async (event) => {
       return;
     }
     if (button.dataset.action === "run") {
-      const payload = await requestJson(`/api/marketplace/saved-searches/${encodeURIComponent(id)}`);
+      const payload = await requestJson(`/api/marketplace/saved-searches/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ acknowledgeNewListings: true })
+      });
       window.location.assign(urlForSavedSearch(payload.savedSearch));
     }
   } catch (error) {
