@@ -20,6 +20,7 @@ const html = await readFile(resolve(root, "dist/apps/web/public/marketplace.html
 const discovery = await readFile(resolve(root, "dist/apps/web/public/marketplace.js"), "utf8");
 const savedUi = await readFile(resolve(root, "dist/apps/web/public/marketplace-saved-searches-ui.js"), "utf8");
 const queryService = await readFile(resolve(root, "dist/packages/marketplace/src/query-service.mjs"), "utf8");
+const savedRepository = await readFile(resolve(root, "dist/packages/marketplace/src/saved-search-repository.mjs"), "utf8");
 const runtime = await readFile(resolve(root, "dist/apps/web/runtime.mjs"), "utf8");
 
 for (const marker of ["market-saved-searches", "load-more-market", "marketplace-saved-searches-ui.js"]) {
@@ -31,14 +32,17 @@ if (!html.includes("not old result snapshots") || !html.includes("Automatic sear
 if (!discovery.includes("MARKET_PAGE_SIZE = 24") || !discovery.includes("nextCursor")) {
   throw new Error("Street Market discovery must use bounded cursor-backed pages.");
 }
-if (!savedUi.includes("Automatic alerts are not enabled yet") || !savedUi.includes("rerun the current market")) {
-  throw new Error("Saved-search UI must preserve live-rerun and no-alert truth boundaries.");
+for (const marker of ["newly published sellable", "acknowledgeNewListings: true", "Push, email, and SMS alerts are not enabled yet"]) {
+  if (!savedUi.includes(marker)) throw new Error(`Saved-search UI must expose truthful new-listing intelligence marker: ${marker}.`);
 }
-if (!queryService.includes("invalid_marketplace_cursor") || !queryService.includes("notificationsAvailable: false")) {
-  throw new Error("Marketplace query service must bind cursors to searches and keep alerts disabled.");
+for (const marker of ["newListingTrackingAvailable: true", "newlyPublishedMatchCount", "marketplace.saved_search_checked", "notificationsAvailable: false"]) {
+  if (!queryService.includes(marker)) throw new Error(`Marketplace query service is missing saved-search intelligence marker: ${marker}.`);
+}
+for (const marker of ["last_checked_at", "countNewlyPublishedSellableMatches", "sellableInventoryConstraint"]) {
+  if (!savedRepository.includes(marker)) throw new Error(`Saved-search persistence is missing change-intelligence marker: ${marker}.`);
 }
 if (!runtime.includes("createMarketplaceQueryService") || !runtime.includes("createMarketplaceSavedSearchRepository")) {
   throw new Error("Production runtime must wire Marketplace saved searches and pagination.");
 }
 
-console.log("Marketplace saved-search and bounded cursor-pagination production artifact verification passed.");
+console.log("Marketplace saved-search change intelligence and bounded cursor-pagination production artifact verification passed.");
