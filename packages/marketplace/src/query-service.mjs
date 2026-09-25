@@ -36,9 +36,15 @@ function pageSize(value) {
   return numeric;
 }
 
-function publicSavedSearch(savedSearch) {
+function publicSavedSearch(savedSearch, newlyPublishedMatchCount = 0) {
   const { ownerAccountId, ...publicFields } = savedSearch;
-  return Object.freeze({ ...publicFields, notificationsAvailable: false, resultsAreSnapshots: false });
+  return Object.freeze({
+    ...publicFields,
+    newlyPublishedMatchCount,
+    newListingTrackingAvailable: true,
+    notificationsAvailable: false,
+    resultsAreSnapshots: false
+  });
 }
 
 function searchDefinition(appliedFilters) {
@@ -50,6 +56,15 @@ function searchDefinition(appliedFilters) {
     minAmountCents: appliedFilters.minAmountCents ?? null,
     maxAmountCents: appliedFilters.maxAmountCents ?? null,
     sort: appliedFilters.sort ?? "newest"
+  });
+}
+
+function repositoryFilters(definition) {
+  return Object.freeze({
+    ...definition,
+    queryTokens: definition.query
+      ? Object.freeze(definition.query.normalize("NFKD").replace(/\p{M}+/gu, "").toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])
+      : Object.freeze([])
   });
 }
 
@@ -98,7 +113,9 @@ export function createMarketplaceQueryService({ vaultStore, marketplaceRepositor
   if (!vaultStore?.writeEvent) throw new TypeError("Marketplace query service requires the Vault event boundary.");
   if (!marketplaceRepository?.listActivePage) throw new TypeError("Marketplace query service requires paged Marketplace repository reads.");
   if (!marketplaceService?.discovery || !marketplaceService?.getPublic) throw new TypeError("Marketplace query service requires the Marketplace public discovery boundary.");
-  if (!savedSearchRepository?.create) throw new TypeError("Marketplace query service requires saved-search persistence.");
+  if (!savedSearchRepository?.create || !savedSearchRepository?.markChecked || !savedSearchRepository?.countNewlyPublishedSellableMatches) {
+    throw new TypeError("Marketplace query service requires saved-search persistence and change intelligence.");
+  }
   if (typeof now !== "function") throw new TypeError("Marketplace query service now must be a function.");
 
   function audit(ownerAccountId, eventType, metadata) {
@@ -110,17 +127,34 @@ export function createMarketplaceQueryService({ vaultStore, marketplaceRepositor
     return searchDefinition(normalized);
   }
 
+  function newListingActivity(savedSearch, checkedThrough) {
+    const count = savedSearchRepository.countNewlyPublishedSellableMatches(
+      repositoryFilters(savedSearch.filters),
+      {
+        publishedAfter: savedSearch.lastCheckedAt ?? savedSearch.createdAt,
+        publishedThrough: checkedThrough,
+        checkedAt: checkedThrough
+      }
+    );
+    return Object.freeze({
+      newlyPublishedSinceLastCheck: count,
+      checkedFrom: savedSearch.lastCheckedAt ?? savedSearch.createdAt,
+      checkedThrough,
+      currentlySellableOnly: true,
+      notificationsAvailable: false
+    });
+  }
+
+  function publicWithActivity(savedSearch, checkedThrough) {
+    const activity = newListingActivity(savedSearch, checkedThrough);
+    return publicSavedSearch(savedSearch, activity.newlyPublishedSinceLastCheck);
+  }
+
   function browsePage(input = {}) {
     const size = pageSize(input.pageSize ?? input.limit);
     const definition = normalizeDefinition(input);
     const cursorKey = decodeCursor(input.cursor, definition);
-    const repositoryFilters = Object.freeze({
-      ...definition,
-      queryTokens: definition.query
-        ? Object.freeze(definition.query.normalize("NFKD").replace(/\p{M}+/gu, "").toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])
-        : Object.freeze([])
-    });
-    const page = marketplaceRepository.listActivePage(repositoryFilters, { pageSize: size, cursorKey });
+    const page = marketplaceRepository.listActivePage(repositoryFilters(definition), { pageSize: size, cursorKey });
     const listings = page.listings.map((listing) => marketplaceService.getPublic(listing.id));
     return Object.freeze({
       listings: Object.freeze(listings),
@@ -138,7 +172,8 @@ export function createMarketplaceQueryService({ vaultStore, marketplaceRepositor
 
   function listSavedSearches(identity) {
     const collector = requireCollector(identity);
-    return Object.freeze(savedSearchRepository.list(collector.id).map(publicSavedSearch));
+    const checkedThrough = now().toISOString();
+    return Object.freeze(savedSearchRepository.list(collector.id).map((savedSearch) => publicWithActivity(savedSearch, checkedThrough)));
   }
 
   function getSavedSearch(identity, idValue) {
@@ -146,7 +181,7 @@ export function createMarketplaceQueryService({ vaultStore, marketplaceRepositor
     const id = cleanId(idValue);
     const savedSearch = savedSearchRepository.findById(collector.id, id);
     if (!savedSearch) throw new MarketplaceError("marketplace_saved_search_not_found", "The requested saved Marketplace search was not found.", 404);
-    return publicSavedSearch(savedSearch);
+    return publicWithActivity(savedSearch, now().toISOString());
   }
 
   function createSavedSearch(identity, input = {}) {
@@ -157,12 +192,12 @@ export function createMarketplaceQueryService({ vaultStore, marketplaceRepositor
     const timestamp = now().toISOString();
     const savedSearch = {
       id: randomUUID(), ownerAccountId: collector.id, name: cleanName(input.name),
-      filters: normalizeDefinition(input.filters ?? {}), createdAt: timestamp, updatedAt: timestamp
+      filters: normalizeDefinition(input.filters ?? {}), lastCheckedAt: timestamp, createdAt: timestamp, updatedAt: timestamp
     };
     try {
       const created = savedSearchRepository.create(savedSearch);
       audit(collector.id, "marketplace.saved_search_created", { savedSearchId: created.id, name: created.name });
-      return publicSavedSearch(created);
+      return publicSavedSearch(created, 0);
     } catch (error) {
       if (uniqueConstraint(error)) throw new MarketplaceError("marketplace_saved_search_exists", "A saved Marketplace search with that name already exists.", 409);
       throw error;
@@ -175,22 +210,42 @@ export function createMarketplaceQueryService({ vaultStore, marketplaceRepositor
     const existing = savedSearchRepository.findById(collector.id, id);
     if (!existing) throw new MarketplaceError("marketplace_saved_search_not_found", "The requested saved Marketplace search was not found.", 404);
     if (!input || typeof input !== "object" || Array.isArray(input)) throw new MarketplaceError("invalid_marketplace_saved_search", "Saved search update must be an object.");
-    const unsupported = Object.keys(input).filter((key) => !["name", "filters"].includes(key));
+    const unsupported = Object.keys(input).filter((key) => !["name", "filters", "acknowledgeNewListings"].includes(key));
     if (unsupported.length) throw new MarketplaceError("unsupported_marketplace_saved_search_field", `Unsupported saved-search field${unsupported.length === 1 ? "" : "s"}: ${unsupported.join(", ")}.`);
-    if (!Object.prototype.hasOwnProperty.call(input, "name") && !Object.prototype.hasOwnProperty.call(input, "filters")) {
-      throw new MarketplaceError("empty_marketplace_saved_search_update", "Saved search update requires name and/or filters.");
+    const hasName = Object.prototype.hasOwnProperty.call(input, "name");
+    const hasFilters = Object.prototype.hasOwnProperty.call(input, "filters");
+    const hasAcknowledge = Object.prototype.hasOwnProperty.call(input, "acknowledgeNewListings");
+    if (!hasName && !hasFilters && !hasAcknowledge) {
+      throw new MarketplaceError("empty_marketplace_saved_search_update", "Saved search update requires name, filters, and/or an explicit new-listing acknowledgement.");
     }
+    if (hasAcknowledge && input.acknowledgeNewListings !== true) {
+      throw new MarketplaceError("invalid_marketplace_saved_search_acknowledgement", "New-listing acknowledgement must be explicitly true.");
+    }
+    const timestamp = now().toISOString();
+    const definitionChanged = hasName || hasFilters;
+    const shouldAdvanceCheckpoint = hasFilters || hasAcknowledge;
     const next = {
       ...existing,
-      name: Object.prototype.hasOwnProperty.call(input, "name") ? cleanName(input.name) : existing.name,
-      filters: Object.prototype.hasOwnProperty.call(input, "filters") ? normalizeDefinition(input.filters) : existing.filters,
-      updatedAt: now().toISOString()
+      name: hasName ? cleanName(input.name) : existing.name,
+      filters: hasFilters ? normalizeDefinition(input.filters) : existing.filters,
+      lastCheckedAt: shouldAdvanceCheckpoint ? timestamp : existing.lastCheckedAt,
+      updatedAt: definitionChanged ? timestamp : existing.updatedAt
     };
     try {
-      const updated = savedSearchRepository.update(next);
+      const updated = definitionChanged
+        ? savedSearchRepository.update(next)
+        : savedSearchRepository.markChecked(collector.id, id, timestamp);
       if (!updated) throw new MarketplaceError("marketplace_saved_search_not_found", "The requested saved Marketplace search was not found.", 404);
-      audit(collector.id, "marketplace.saved_search_updated", { savedSearchId: updated.id, name: updated.name });
-      return publicSavedSearch(updated);
+      audit(
+        collector.id,
+        definitionChanged ? "marketplace.saved_search_updated" : "marketplace.saved_search_checked",
+        {
+          savedSearchId: updated.id,
+          name: updated.name,
+          ...(shouldAdvanceCheckpoint ? { previousCheckedAt: existing.lastCheckedAt, checkedAt: updated.lastCheckedAt } : {})
+        }
+      );
+      return publicWithActivity(updated, now().toISOString());
     } catch (error) {
       if (uniqueConstraint(error)) throw new MarketplaceError("marketplace_saved_search_exists", "A saved Marketplace search with that name already exists.", 409);
       throw error;
@@ -208,9 +263,18 @@ export function createMarketplaceQueryService({ vaultStore, marketplaceRepositor
   }
 
   function runSavedSearch(identity, idValue, options = {}) {
-    const savedSearch = getSavedSearch(identity, idValue);
-    const page = browsePage({ ...savedSearch.filters, pageSize: options.pageSize, cursor: options.cursor });
-    return Object.freeze({ savedSearch, ...page });
+    const collector = requireCollector(identity);
+    const id = cleanId(idValue);
+    const existing = savedSearchRepository.findById(collector.id, id);
+    if (!existing) throw new MarketplaceError("marketplace_saved_search_not_found", "The requested saved Marketplace search was not found.", 404);
+    const checkedThrough = now().toISOString();
+    const activity = options.cursor ? null : newListingActivity(existing, checkedThrough);
+    const page = browsePage({ ...existing.filters, pageSize: options.pageSize, cursor: options.cursor });
+    return Object.freeze({
+      savedSearch: publicSavedSearch(existing, activity?.newlyPublishedSinceLastCheck ?? 0),
+      matchActivity: activity,
+      ...page
+    });
   }
 
   return Object.freeze({
@@ -218,6 +282,7 @@ export function createMarketplaceQueryService({ vaultStore, marketplaceRepositor
     maxPageSize: MAX_PAGE_SIZE,
     maxSavedSearches: MAX_SAVED_SEARCHES,
     notificationsAvailable: false,
+    newListingTrackingAvailable: true,
     browsePage,
     listSavedSearches,
     getSavedSearch,
