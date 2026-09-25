@@ -5,13 +5,13 @@ This is the recovery and production ledger for the **Kingdom Street Market**. Up
 ## Current production baseline
 
 **Production branch:** `main`  
-**Latest merged Marketplace slice:** PR #43 — `Marketplace: reservation-aware discovery and guarded checkout UI`  
-**Production commit after PR #43:** `ae5e47e05c8b7b986aeec0bff468734a4881db36`  
-**PR #43 final verification:** Kingdom Quality Gates #761 — **PASS**  
-**Exact verified PR head:** `fcc69f6cfd32933c8a2ce1e4a58c25af1e0d12e5`  
-**Verification result:** 384/384 tests, production build + all Marketplace artifact verifiers, and production dependency audit with 0 vulnerabilities
+**Latest merged Marketplace slice:** PR #46 — `Marketplace: server-authoritative sellable inventory`  
+**Production commit after PR #46:** `1183cdbf1104736132f78a9853f3ffd0de7fbbd8`  
+**PR #46 final verification:** Kingdom Quality Gates #766 — **PASS**  
+**Exact verified PR head:** `ca4104c6529a634b83a790f666162acb60af0b87`  
+**Verification result:** full repository quality gate and production dependency audit passed on the exact final head
 
-The Marketplace now has real listing publication, discovery, seller engagement, shareable detail pages, active-market asking-price intelligence, a production-wired safeguarded transaction backend, and reservation-aware public offer cards with readiness-gated provider-hosted Checkout controls. **Live buyer checkout remains disabled by default** (`KINGDOM_MARKETPLACE_CHECKOUT_ENABLED=false`) and cannot become available unless the configured provider, signed-webhook, Stripe Tax and reviewed tax-policy gates all pass. A listing, watch, search, storefront visit, share, Observatory view, reservation attempt, provider session or payment event is never by itself authoritative ownership transfer.
+The Marketplace now has real listing publication, discovery, seller engagement, shareable detail pages, active-market asking-price intelligence, a production-wired safeguarded transaction backend, reservation-aware buyer controls, and **server-authoritative suppression of fully reserved inventory** from normal discovery/facets/storefront inventory while preserving direct listing evidence. **Live buyer checkout remains disabled by default** (`KINGDOM_MARKETPLACE_CHECKOUT_ENABLED=false`) and cannot become available unless the configured provider, signed-webhook, Stripe Tax and reviewed tax-policy gates all pass. A listing, watch, search, storefront visit, share, Observatory view, reservation attempt, provider session or payment event is never by itself authoritative ownership transfer.
 
 ## Production history
 
@@ -115,9 +115,27 @@ Research: `docs/research/2026-09-18-MARKETPLACE-RESERVATION-AWARE-DISCOVERY.md`
 **Tests:** 384/384 PASS  
 **Production dependency audit:** 0 vulnerabilities
 
-The earlier implementation-only head also passed gate #759; the final ledger head then passed the complete gate again before squash merge.
+### PR #46 — Server-authoritative sellable inventory — MERGED
 
-It deliberately does **not** add server-side fully-reserved search suppression, delivery verification, disputes/buyer protection, verified-purchase ratings, sold provenance, Vault ownership transfer, completed-sale analytics or public Vault media.
+This slice closes the server-side availability gap left deliberately open by PR #43.
+
+It adds:
+- a shared reservation-aware SQLite sellability boundary used by discovery/facets and public storefront inventory;
+- dynamic activation only after the transaction reservation schema exists, so startup ordering and non-transaction contexts remain safe;
+- temporary `created` / `checkout_pending` holds that suppress quantity only while their reservation deadline is live;
+- durable suppression for `payment_processing`, `paid`, `refunded`, and `disputed` inventory holds;
+- partial-stock behavior: a listing remains discoverable while at least one unit is still sellable;
+- full-stock behavior: a listing disappears from normal discovery, public facets and seller storefront inventory/counts when every currently supported unit is held;
+- automatic inheritance by saved-search reruns and the Active Market Observatory because both consume the canonical active-discovery boundary;
+- preservation of direct listing evidence: fully held inventory remains addressable through the listing-detail identity rather than having its immutable publication record rewritten or deleted;
+- server-time recovery: expired temporary holds become discoverable again even if no browser performed cleanup;
+- integration coverage for schema fallback, partial/full holds, expiry, durable states, facets, storefront counts and direct-detail evidence.
+
+The architecture follows the same useful distinction found in eBay Out-of-Stock Control: unavailable inventory can disappear from normal search while the listing identity remains alive. It also matches reservation accounting used by commerce engines such as Medusa, where reserved quantity is physically present but not currently sellable.
+
+**Production commit:** `1183cdbf1104736132f78a9853f3ffd0de7fbbd8`  
+**Final gate:** #766 — PASS  
+**Exact verified PR head:** `ca4104c6529a634b83a790f666162acb60af0b87`
 
 ## Current live Marketplace capabilities
 
@@ -125,6 +143,9 @@ Production code currently supports:
 - fixed-price Vault-linked offer publication with seller attestations and live Vault support checks;
 - immutable publication representation + SHA verification;
 - active search, filters, facets, deterministic sorting and bounded keyset pagination;
+- server-authoritative suppression of fully reserved inventory from normal discovery, facets, saved-search reruns, Observatory scans and public storefront inventory;
+- partial inventory remains discoverable when at least one supported unit is currently sellable;
+- direct listing evidence remains addressable while inventory is fully held;
 - private saved searches with current-state reruns;
 - private watchlists;
 - explicitly published seller storefronts;
@@ -147,7 +168,7 @@ Production code availability is not the same as operator activation. A deploymen
 
 - automatic or Marketplace-authoritative Vault ownership transfer;
 - automatic sold-provenance append;
-- shipment labels, tracking or delivery verification;
+- shipment labels, carrier-verified tracking or delivery verification;
 - buyer-protection adjudication;
 - returns/dispute workflow UI and policy authority;
 - verified-purchase feedback, star ratings or verified-seller badges;
@@ -164,16 +185,20 @@ Production code availability is not the same as operator activation. A deploymen
 - external marketplace cross-posting;
 - automatic FX conversion.
 
+## Parallel verified work not yet production
+
+PR #44 — `Marketplace: evidence-locked fulfillment and Orders & Payments` remains a separate active integration stream. It must be reconciled and reverified against the PR #46 production baseline before merge because production `main` changed after its current verified head was created.
+
 ## Next safeguarded transaction gates
 
 Before enabling a complete end-to-end ownership-changing purchase workflow, the Kingdom still needs executable authority for:
-- server-authoritative suppression of fully reserved inventory from normal discovery/storefront result sets and facets while preserving direct listing evidence;
-- complete private buyer order-state UI and seller payment-onboarding/status UX;
-- shipment evidence and delivery states;
+- reconcile and reverify the fulfillment / Orders & Payments stream against current production before integration;
+- carrier/delivery verification beyond seller-declared shipment evidence;
 - cancellation/refund/return policy authority;
 - disputes and buyer-protection workflow;
 - fraud/risk controls appropriate to the deployment;
 - exact settlement/completion condition for automatic sold-provenance eligibility;
-- exact independently verified condition for Vault ownership transfer.
+- exact independently verified condition for Vault ownership transfer;
+- completed-transaction analytics only after an authoritative completion state exists.
 
 **Guiding rule:** a Marketplace click is never a sale. Payment evidence is not delivery evidence, and ownership changes only after a separately verified transaction state explicitly authorizes it.
