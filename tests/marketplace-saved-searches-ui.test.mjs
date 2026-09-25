@@ -9,7 +9,7 @@ async function source(path) {
   return readFile(resolve(root, path), "utf8");
 }
 
-test("Street Market UI exposes bounded pagination and private saved-search controls without fake alerts", async () => {
+test("Street Market UI exposes bounded pagination and private saved-search change intelligence without fake alerts", async () => {
   const html = await source("apps/web/public/marketplace.html");
   const discovery = await source("apps/web/public/marketplace.js");
   const saved = await source("apps/web/public/marketplace-saved-searches-ui.js");
@@ -29,8 +29,11 @@ test("Street Market UI exposes bounded pagination and private saved-search contr
   assert.match(discovery, /append: true/);
 
   assert.match(saved, /\/api\/marketplace\/saved-searches/);
-  assert.match(saved, /rerun the current market/i);
-  assert.match(saved, /Automatic alerts are not enabled yet/i);
+  assert.match(saved, /newly published sellable/i);
+  assert.match(saved, /last checked/i);
+  assert.match(saved, /acknowledgeNewListings:\s*true/);
+  assert.match(saved, /method:\s*"PATCH"/);
+  assert.match(saved, /Push, email, and SMS alerts are not enabled yet/i);
   assert.doesNotMatch(saved, /notificationsAvailable:\s*true/);
 
   assert.match(css, /marketplace-saved-searches/);
