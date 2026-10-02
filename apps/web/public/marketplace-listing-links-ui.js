@@ -1,5 +1,6 @@
 const DETAIL_LINK_ATTRIBUTE = "data-listing-detail-link";
 const OBSERVATORY_LINK_ATTRIBUTE = "data-market-observatory-link";
+const TRANSACTION_LINK_ATTRIBUTE = "data-market-transactions-link";
 
 function addListingDetailLinks(root = document) {
   for (const card of root.querySelectorAll?.("article.marketplace-card[data-listing-id]") ?? []) {
@@ -15,18 +16,27 @@ function addListingDetailLinks(root = document) {
   }
 }
 
-function addObservatoryNavigation(root = document) {
+function addMarketplaceNavigation(root = document) {
   const navigation = root.querySelector?.(".marketplace-header nav");
-  if (!navigation || navigation.querySelector(`[${OBSERVATORY_LINK_ATTRIBUTE}]`)) return;
-  const link = document.createElement("a");
-  link.href = "/marketplace-observatory.html";
-  link.textContent = "Market Observatory";
-  link.setAttribute(OBSERVATORY_LINK_ATTRIBUTE, "true");
-  navigation.append(link);
+  if (!navigation) return;
+  if (!navigation.querySelector(`[${OBSERVATORY_LINK_ATTRIBUTE}]`)) {
+    const observatory = document.createElement("a");
+    observatory.href = "/marketplace-observatory.html";
+    observatory.textContent = "Market Observatory";
+    observatory.setAttribute(OBSERVATORY_LINK_ATTRIBUTE, "true");
+    navigation.append(observatory);
+  }
+  if (!navigation.querySelector(`[${TRANSACTION_LINK_ATTRIBUTE}]`)) {
+    const transactions = document.createElement("a");
+    transactions.href = "/marketplace-transactions.html";
+    transactions.textContent = "Orders & Payments";
+    transactions.setAttribute(TRANSACTION_LINK_ATTRIBUTE, "true");
+    navigation.append(transactions);
+  }
 }
 
 addListingDetailLinks();
-addObservatoryNavigation();
+addMarketplaceNavigation();
 
 const observer = new MutationObserver((mutations) => {
   for (const mutation of mutations) {

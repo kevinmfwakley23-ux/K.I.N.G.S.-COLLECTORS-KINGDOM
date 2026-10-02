@@ -1,4 +1,6 @@
 import { loadMarketplaceTransactionConfig } from "../../../config/marketplace-transactions.mjs";
+import { createMarketplaceFulfillmentRepository } from "./fulfillment-repository.mjs";
+import { createMarketplaceFulfillmentService } from "./fulfillment-service.mjs";
 import { createPolicyBoundStripeConnectProvider } from "./stripe-connect-checkout-policy.mjs";
 import { createMarketplaceTransactionRepository } from "./transaction-repository.mjs";
 import { createMarketplaceReservationGuard } from "./transaction-reservation-guard.mjs";
@@ -14,6 +16,7 @@ export function createMarketplaceTransactionRuntime({
 } = {}) {
   const config = loadMarketplaceTransactionConfig(env);
   const transactionRepository = createMarketplaceTransactionRepository({ vaultStore });
+  const fulfillmentRepository = createMarketplaceFulfillmentRepository({ vaultStore });
   const paymentProvider = config.stripeConfigured
     ? createPolicyBoundStripeConnectProvider({
         secretKey: config.stripeSecretKey,
@@ -45,5 +48,17 @@ export function createMarketplaceTransactionRuntime({
     transactionService: coreService,
     now
   });
-  return Object.freeze({ config, repository: transactionRepository, provider: paymentProvider, coreService, service });
+  const fulfillmentService = createMarketplaceFulfillmentService({
+    fulfillmentRepository,
+    now
+  });
+  return Object.freeze({
+    config,
+    repository: transactionRepository,
+    provider: paymentProvider,
+    coreService,
+    service,
+    fulfillmentRepository,
+    fulfillmentService
+  });
 }
